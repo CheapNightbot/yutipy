@@ -31,7 +31,7 @@ class Spotipy:
     """
     A class to interact with the Spotify API.
 
-    This class reads the CLIENT_ID and CLIENT_SECRET from the .env file by default.
+    This class reads the ``CLIENT_ID`` and ``CLIENT_SECRET`` from environment variables or the ``.env`` file by default.
     Alternatively, users can manually provide these values when creating an object.
     """
 
@@ -147,7 +147,7 @@ class Spotipy:
 
         Returns
         -------
-        Optional[MusicInfo]
+        Optional[MusicInfo_]
             The music information if found, otherwise None.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
@@ -192,7 +192,7 @@ class Spotipy:
 
         Returns
         -------
-        Optional[MusicInfo]
+        Optional[MusicInfo_]
             The music information if found, otherwise None.
         """
         if not is_valid_string(artist) or not is_valid_string(song):

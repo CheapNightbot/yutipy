@@ -33,7 +33,7 @@ class MusicYT:
 
         Returns
         -------
-        Optional[MusicInfo]
+        Optional[MusicInfo_]
             The music information if found, otherwise None.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
