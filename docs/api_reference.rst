@@ -5,6 +5,13 @@ API Reference
 Main Classes
 =============
 
+The following classes are available for use, utilizing the APIs of their respective music streaming platforms:
+
+- ``Deezer``: https://www.deezer.com
+- ``iTunes``: https://music.apple.com
+- ``Spotify``: https://spotify.com
+- ``YouTube Music``: https://music.youtube.com
+
 Deezer
 ------
 
