@@ -4,8 +4,9 @@
 
 <p align="center">
 <a href="https://github.com/CheapNightbot/yutipy/actions/workflows/tests.yml">
-<img src="https://img.shields.io/github/actions/workflow/status/CheapNightbot/yutipy/tests.yml?branch=main&style=for-the-badge" alt="Tests" />
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/cheapnightbot/yutipy/pytest-unit-testing.yml?style=for-the-badge&label=Pytest">
 </a>
+    
 <a href="https://pypi.org/project/yutipy/">
 <img src="https://img.shields.io/pypi/v/yutipy?style=for-the-badge" alt="PyPI" />
 </a>
