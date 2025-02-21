@@ -21,8 +21,8 @@ def test_search_valid(music_yt):
 
 
 def test_search_invalid(music_yt):
-    artist = "Nonexistent Artist"
-    song = "Nonexistent Song"
+    artist = ";laksjdflkajsdfj;asdjf"
+    song = "jaksjd;fljkas;dfkjasldkjf"
     result = music_yt.search(artist, song)
     assert result is None
 
