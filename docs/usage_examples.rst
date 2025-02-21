@@ -1,8 +1,8 @@
-=====
-Usage
-=====
+==============
+Usage Examples
+==============
 
-Here's a quick example of how to use the `yutipy` package to search for a song:
+Here's a quick example of how to use the **yutipy** package to search for a song:
 
 Deezer
 ------
@@ -29,7 +29,7 @@ iTunes
 Spotify
 -------
 
-To use the Spotify API, you need to set the `CLIENT_ID` and `CLIENT_SECRET` for Spotify. You can do this by creating a `.env` file in the root directory of your project with the following content:
+To use the Spotify API, you need to set the ``CLIENT_ID`` and ``CLIENT_SECRET`` for Spotify. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
 
 .. code-block:: text
 
@@ -52,7 +52,7 @@ Alternatively, you can manually provide these values when creating an object of 
         result = spotify.search("Artist Name", "Song Title")
         print(result)
 
-OR, if you have the ISRC or UPC of the song, you can use the `search_advanced` method:
+OR, if you have the "ISRC" or "UPC" of the song, you can use the `search_advanced` method:
 
 .. code-block:: python
 
