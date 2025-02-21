@@ -2,6 +2,27 @@
 <img src="https://raw.githubusercontent.com/CheapNightbot/yutipy/main/docs/_static/yutipy_header.png" alt="yutipy" />
 </p>
 
+<p align="center">
+<a href="https://github.com/CheapNightbot/yutipy/actions/workflows/tests.yml">
+<img src="https://img.shields.io/github/actions/workflow/status/CheapNightbot/yutipy/tests.yml?branch=main&style=for-the-badge" alt="Tests" />
+</a>
+<a href="https://pypi.org/project/yutipy/">
+<img src="https://img.shields.io/pypi/v/yutipy?style=for-the-badge" alt="PyPI" />
+</a>
+<a href="https://yutipy.readthedocs.io/en/latest/">
+<img src="https://img.shields.io/readthedocs/yutipy?style=for-the-badge" alt="Documentation Status" />
+</a>
+<a href="https://github.com/CheapNightbot/yutipy/blob/master/LICENSE">
+<img src="https://img.shields.io/github/license/CheapNightbot/yutipy?style=for-the-badge" alt="License" />
+</a>
+<a href="https://github.com/CheapNightbot/yutipy/stargazers">
+<img src="https://img.shields.io/github/stars/CheapNightbot/yutipy?style=for-the-badge" alt="Stars" />
+</a>
+<a href="https://github.com/CheapNightbot/yutipy/issues">
+<img src="https://img.shields.io/github/issues/CheapNightbot/yutipy?style=for-the-badge" alt="Issues" />
+</a>
+</p>
+
 A _**simple**_ Python package for searching and retrieving music information from various music platforms APIs, including Deezer, iTunes, Spotify, and YouTube Music.
 
 ## Table of Contents
@@ -40,7 +61,7 @@ with Deezer() as deezer:
     print(result)
 ```
 
-For more usage examples, see the [docs](#).
+For more usage examples, see the [Usage Examples](https://yutipy.readthedocs.io/en/latest/usage_examples.html) page in docs.
 
 ## Contributing
 
