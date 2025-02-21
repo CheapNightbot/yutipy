@@ -14,7 +14,7 @@ build:
 sphinx:
    configuration: docs/conf.py
    builder: html
-   fail_on_warnings: true
+   fail_on_warning: true
 
 # Optionally, but recommended,
 # declare the Python requirements required to build your documentation
