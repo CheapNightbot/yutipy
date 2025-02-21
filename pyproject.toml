@@ -50,3 +50,7 @@ Repository = "https://github.com/CheapNightbot/yutipy.git"
 Issues = "https://github.com/CheapNightbot/yutipy/issues"
 Changelog = "https://github.com/CheapNightbot/yutipy/blob/master/CHANGELOG.md"
 funding = "https://ko-fi.com/cheapnightbot"
+
+[tool.setuptools_scm]
+version_scheme = "guess-next-dev"
+local_scheme = "node-and-date"
