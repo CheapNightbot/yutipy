@@ -1,1 +1,3 @@
+sphinx-copybutton
+point
 Sphinx==8.2.0
