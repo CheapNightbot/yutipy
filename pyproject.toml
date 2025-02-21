@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools_scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "yutipy",
+name = "yutipy"
 dynamic = ["version"]
 dependencies = [
   "python-dotenv==1.0.1",
@@ -18,7 +18,7 @@ authors = [
 maintainers = [
   {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"}
 ]
-description = "A simple package for retrieving music information from various music platforms APIs.",
+description = "A simple package for retrieving music information from various music platforms APIs."
 readme = "README.md"
 license = {file = "LICENSE"}
 keywords = ["music", "API", "Deezer", "iTunes", "Spotify", "YouTube Music", "search", "retrieve", "information", "yutify"]
