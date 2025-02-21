@@ -104,13 +104,12 @@ class Deezer:
         Optional[Dict]
             A dictionary containing UPC and ISRC information.
         """
-        match music_type:
-            case "track":
-                return self._get_track_info(music_id)
-            case "album":
-                return self._get_album_info(music_id)
-            case _:
-                raise DeezerException(f"Invalid music type: {music_type}")
+        if music_type == "track":
+            return self._get_track_info(music_id)
+        elif music_type == "album":
+            return self._get_album_info(music_id)
+        else:
+            raise DeezerException(f"Invalid music type: {music_type}")
 
     def _get_track_info(self, music_id: int) -> Optional[Dict]:
         """
