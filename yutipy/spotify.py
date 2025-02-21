@@ -2,7 +2,7 @@ import base64
 import os
 import time
 from pprint import pprint
-from typing import Optional
+from typing import Optional, Union
 
 import requests
 from dotenv import load_dotenv
@@ -224,7 +224,7 @@ class Spotipy:
         artist_ids = self._get_artists_ids(artist)
         return self._find_music_info(artist, song, response.json(), artist_ids)
 
-    def _get_artists_ids(self, artist: str) -> list | None:
+    def _get_artists_ids(self, artist: str) -> Union[list, None]:
         """
         Retrieves the IDs of the artists.
 
@@ -235,7 +235,7 @@ class Spotipy:
 
         Returns
         -------
-        list | None
+        Union[list, None]
             A list of artist IDs or None if not found.
         """
         artist_ids = []
