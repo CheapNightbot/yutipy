@@ -13,7 +13,8 @@ dependencies = [
 ]
 requires-python = ">= 3.8"
 authors = [
-  {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"}
+  {name = "Cheap Nightbot"},
+  {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"},
 ]
 maintainers = [
   {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"}
