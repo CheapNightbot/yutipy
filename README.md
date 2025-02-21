@@ -1,5 +1,5 @@
 <p align="center">
-<img src="docs\_static\yutipy_header.png" alt="yutipy" />
+<img src="https://raw.githubusercontent.com/CheapNightbot/yutipy/main/docs/_static/yutipy_header.png" alt="yutipy" />
 </p>
 
 A _**simple**_ Python package for searching and retrieving music information from various music platforms APIs, including Deezer, iTunes, Spotify, and YouTube Music.
