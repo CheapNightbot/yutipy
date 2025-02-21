@@ -23,6 +23,7 @@ release = "0.1.0"
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx_copybutton",
 ]
 
 # Exclude private members and special methods
@@ -34,6 +35,13 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
+
+# sphinx-copybutton optional configurations
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
+copybutton_only_copy_code_blocks = False
+copybutton_remove_prompts = True
+copybutton_trim_trailing_whitespace = True
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
@@ -56,8 +64,9 @@ htmlhelp_basename = "yutipydoc"
 
 html_theme = "alabaster"
 html_static_path = ["_static"]
-html_logo = "_static/yutipy_logo.png"
 html_favicon = "_static/yutipy_logo.png"
+html_css_files = ["custom.css"]
+
 
 html_sidebars = {
     "index": [
@@ -66,7 +75,7 @@ html_sidebars = {
         "searchbox.html",
     ],
     "**": [
-        "contents.html",
+        "logo.html",
         "localtoc.html",
         "searchbox.html",
     ],
