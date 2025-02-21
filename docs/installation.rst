@@ -2,7 +2,7 @@
 Installation
 ============
 
-You can install the package using pip. Make sure you have Python 3.6 or higher installed.
+You can install the package using pip. Make sure you have Python 3.8 or higher installed.
 
 .. code-block:: bash
 
