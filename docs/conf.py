@@ -51,6 +51,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
+pygments_dark_style = "monokai"
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 html_show_sphinx = True
@@ -61,21 +62,9 @@ html_show_sourcelink = False
 # Output file base name for HTML help builder.
 htmlhelp_basename = "yutipydoc"
 
-html_theme = "alabaster"
+html_theme = "furo"
 html_static_path = ["_static"]
 html_favicon = "_static/yutipy_logo.png"
+html_logo = "_static/yutipy_logo.png"
 html_css_files = ["custom.css"]
-
-
-html_sidebars = {
-    "index": [
-        "project_links.html",
-        "contents.html",
-        "searchbox.html",
-    ],
-    "**": [
-        "logo.html",
-        "localtoc.html",
-        "searchbox.html",
-    ],
-}
+html_title = project
