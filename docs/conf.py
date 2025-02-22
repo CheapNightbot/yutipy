@@ -23,6 +23,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx_copybutton",
+    "sphinxext.opengraph",
 ]
 
 # Exclude private members and special methods
