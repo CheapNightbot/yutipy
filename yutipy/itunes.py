@@ -31,7 +31,7 @@ class Itunes:
         """Exits the runtime context related to this object."""
         self._close_session()
 
-    def _close_session(self) -> None:
+    def close_session(self) -> None:
         """Closes the current session."""
         if not self.is_session_closed:
             self._session.close()

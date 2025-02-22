@@ -33,7 +33,7 @@ iTunes
 Spotify
 -------
 
-.. autoclass:: yutipy.spotify.Spotipy
+.. autoclass:: yutipy.spotify.Spotify
     :members:
     :inherited-members:
     :noindex:

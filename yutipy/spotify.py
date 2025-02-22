@@ -27,7 +27,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 
 
-class Spotipy:
+class Spotify:
     """
     A class to interact with the Spotify API.
 
@@ -39,7 +39,7 @@ class Spotipy:
         self, client_id: str = CLIENT_ID, client_secret: str = CLIENT_SECRET
     ) -> None:
         """
-        Initializes the Spotipy class and sets up the session.
+        Initializes the Spotify class and sets up the session.
 
         Parameters
         ----------
@@ -69,7 +69,7 @@ class Spotipy:
         """Exits the runtime context related to this object."""
         self._close_session()
 
-    def _close_session(self) -> None:
+    def close_session(self) -> None:
         """Closes the current session."""
         if not self.is_session_closed:
             self._session.close()
@@ -403,11 +403,11 @@ class Spotipy:
 
 
 if __name__ == "__main__":
-    spotipy = Spotipy(CLIENT_ID, CLIENT_SECRET)
+    Spotify = Spotify(CLIENT_ID, CLIENT_SECRET)
 
     try:
         artist_name = input("Artist Name: ")
         song_name = input("Song Name: ")
-        pprint(spotipy.search(artist_name, song_name))
+        pprint(Spotify.search(artist_name, song_name))
     finally:
-        spotipy._close_session()
+        Spotify._close_session()

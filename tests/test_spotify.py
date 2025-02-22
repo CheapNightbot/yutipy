@@ -2,13 +2,13 @@ import pytest
 
 from yutipy.exceptions import SpotifyException
 from yutipy.models import MusicInfo
-from yutipy.spotify import Spotipy
+from yutipy.spotify import Spotify
 
 
 @pytest.fixture(scope="module")
 def spotify():
     try:
-        return Spotipy()
+        return Spotify()
     except SpotifyException:
         pytest.skip("Spotify credentials not found")
 
@@ -49,5 +49,5 @@ def test_get_artists_ids(spotify):
 
 
 def test_close_session(spotify):
-    spotify._close_session()
+    spotify.close_session()
     assert spotify.is_session_closed

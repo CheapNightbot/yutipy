@@ -45,5 +45,5 @@ def test_search_empty_song(itunes):
 
 
 def test_close_session(itunes):
-    itunes._close_session()
+    itunes.close_session()
     assert itunes.is_session_closed

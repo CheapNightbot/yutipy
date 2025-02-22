@@ -43,5 +43,5 @@ def test_search_no_results(deezer):
 
 
 def test_close_session(deezer):
-    deezer._close_session()
+    deezer.close_session()
     assert deezer.is_session_closed
