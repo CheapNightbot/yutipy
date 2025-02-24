@@ -6,7 +6,6 @@
 <a href="https://github.com/CheapNightbot/yutipy/actions/workflows/tests.yml">
 <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/cheapnightbot/yutipy/pytest-unit-testing.yml?style=for-the-badge&label=Pytest">
 </a>
-    
 <a href="https://pypi.org/project/yutipy/">
 <img src="https://img.shields.io/pypi/v/yutipy?style=for-the-badge" alt="PyPI" />
 </a>
@@ -38,7 +37,8 @@ A _**simple**_ Python package for searching and retrieving music information fro
 
 - Simple & Easy integration with popular music APIs.
 - Search for music by artist and song title across multiple platforms.
-- Retrieve detailed music information, including album art, release dates, ISRC, and UPC codes.
+- It uses `RapidFuzz` to compare & return the best match so that you can be sure you got what you asked for without having to worry and doing all that work by yourself.
+- Retrieve detailed music information, including album art, release dates, lyrics, ISRC, and UPC codes.
 
 ## Installation
 
