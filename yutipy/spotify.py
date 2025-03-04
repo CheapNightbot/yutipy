@@ -36,7 +36,9 @@ class Spotify:
     """
 
     def __init__(
-        self, client_id: str = SPOTIFY_CLIENT_ID, client_secret: str = SPOTIFY_CLIENT_SECRET
+        self,
+        client_id: str = SPOTIFY_CLIENT_ID,
+        client_secret: str = SPOTIFY_CLIENT_SECRET,
     ) -> None:
         """
         Initializes the Spotify class and sets up the session.
@@ -50,7 +52,7 @@ class Spotify:
         """
         if not client_id or not client_secret:
             raise SpotifyException(
-                "Failed to read `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` from environment variables. Client ID and Client Secret must be provided."
+                "Failed to read `SPOTIFY_CLIENT_ID` and/or `SPOTIFY_CLIENT_SECRET` from environment variables. Client ID and Client Secret must be provided."
             )
 
         self.client_id = client_id
@@ -157,22 +159,29 @@ class Spotify:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.__refresh_token_if_expired()
+        queries = [
+            f"?q=artist:{artist} track:{song}&type=track&limit=10",
+            f"?q=artist:{artist} album:{song}&type=album&limit=10",
+        ]
 
-        query = f"?q=artist:{artist} track:{song}&type=track&limit=10"
-        query_url = f"{self.api_url}/search{query}"
+        for query in queries:
+            self.__refresh_token_if_expired()
 
-        try:
-            response = self._session.get(query_url, headers=self.__header, timeout=30)
-            response.raise_for_status()
-        except requests.RequestException as e:
-            raise NetworkException(f"Network error occurred: {e}")
+            query_url = f"{self.api_url}/search{query}"
 
-        if response.status_code != 200:
-            raise SpotifyException(f"Failed to search for music: {response.json()}")
+            try:
+                response = self._session.get(
+                    query_url, headers=self.__header, timeout=30
+                )
+                response.raise_for_status()
+            except requests.RequestException as e:
+                raise NetworkException(f"Network error occurred: {e}")
 
-        artist_ids = self._get_artists_ids(artist)
-        return self._find_music_info(artist, song, response.json(), artist_ids)
+            if response.status_code != 200:
+                raise SpotifyException(f"Failed to search for music: {response.json()}")
+
+            artist_ids = self._get_artists_ids(artist)
+            return self._find_music_info(artist, song, response.json(), artist_ids)
 
     def search_advanced(
         self, artist: str, song: str, isrc: str = None, upc: str = None
@@ -404,11 +413,11 @@ class Spotify:
 
 
 if __name__ == "__main__":
-    Spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+    spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
     try:
         artist_name = input("Artist Name: ")
         song_name = input("Song Name: ")
-        pprint(Spotify.search(artist_name, song_name))
+        pprint(spotify.search(artist_name, song_name))
     finally:
-        Spotify.close_session()
+        spotify.close_session()
