@@ -57,7 +57,7 @@ class Spotify:
         self.client_secret = client_secret
         self._session = requests.Session()
         self.api_url = "https://api.spotify.com/v1"
-        self.__header = self.__authenticate()
+        self.__header, self.__expires_in = self.__authenticate()
         self.__start_time = time.time()
         self._is_session_closed = False
 
@@ -80,7 +80,7 @@ class Spotify:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def __authenticate(self) -> dict:
+    def __authenticate(self) -> tuple:
         """
         Authenticates with the Spotify API and returns the authorization header.
 
@@ -90,14 +90,14 @@ class Spotify:
             The authorization header.
         """
         try:
-            token = self.__get_spotify_token()
-            return {"Authorization": f"Bearer {token}"}
+            token, expires_in = self.__get_spotify_token()
+            return {"Authorization": f"Bearer {token}"}, expires_in
         except Exception as e:
             raise AuthenticationException(
                 "Failed to authenticate with Spotify API"
             ) from e
 
-    def __get_spotify_token(self) -> str:
+    def __get_spotify_token(self) -> tuple:
         """
         Gets the Spotify API token.
 
@@ -125,14 +125,16 @@ class Spotify:
             raise NetworkException(f"Network error occurred: {e}")
 
         try:
-            return response.json().get("access_token")
+            response_json = response.json()
+            return response_json.get("access_token"), response_json.get("expires_in")
         except (KeyError, ValueError) as e:
             raise InvalidResponseException(f"Invalid response received: {e}")
 
     def __refresh_token_if_expired(self):
         """Refreshes the token if it has expired."""
-        if time.time() - self.__start_time >= 3600:
-            self.__header = self.__authenticate()
+        if time.time() - self.__start_time >= self.__expires_in:
+            self.__header, self.__expires_in = self.__authenticate()
+            self.__start_time = time.time()
 
     def search(self, artist: str, song: str) -> Optional[MusicInfo]:
         """
