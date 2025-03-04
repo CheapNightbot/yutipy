@@ -166,12 +166,11 @@ class Spotify:
         except requests.RequestException as e:
             raise NetworkException(f"Network error occurred: {e}")
 
-        try:
-            result = response.json()["tracks"]["items"]
-        except (KeyError, ValueError) as e:
-            raise InvalidResponseException(f"Invalid response received: {e}")
+        if response.status_code != 200:
+            raise SpotifyException(f"Failed to search for music: {response.json()}")
 
-        return self._parse_results(artist, song, result)
+        artist_ids = self._get_artists_ids(artist)
+        return self._find_music_info(artist, song, response.json(), artist_ids)
 
     def search_advanced(
         self, artist: str, song: str, isrc: str = None, upc: str = None
@@ -410,4 +409,4 @@ if __name__ == "__main__":
         song_name = input("Song Name: ")
         pprint(Spotify.search(artist_name, song_name))
     finally:
-        Spotify._close_session()
+        Spotify.close_session()
