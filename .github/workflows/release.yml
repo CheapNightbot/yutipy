@@ -94,27 +94,3 @@ jobs:
         gh release upload
         "$GITHUB_REF_NAME" dist/**
         --repo "$GITHUB_REPOSITORY"
-  publish-to-testpypi:
-    name: Publish Python 🐍 distribution 📦 to TestPyPI
-    needs:
-    - build
-    runs-on: ubuntu-latest
-
-    environment:
-      name: testpypi-release
-      url: https://test.pypi.org/project/yutipy
-
-    permissions:
-      id-token: write  # IMPORTANT: mandatory for trusted publishing
-
-    steps:
-    - name: Download all the dists
-      uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-      with:
-        name: python-package-distributions
-        path: dist/
-    - name: Publish distribution 📦 to TestPyPI
-      uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        verbose: true
