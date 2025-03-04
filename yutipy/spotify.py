@@ -159,12 +159,16 @@ class Spotify:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
+        music_info = None
         queries = [
             f"?q=artist:{artist} track:{song}&type=track&limit=10",
             f"?q=artist:{artist} album:{song}&type=album&limit=10",
         ]
 
         for query in queries:
+            if music_info:
+                return music_info
+
             self.__refresh_token_if_expired()
 
             query_url = f"{self.api_url}/search{query}"
@@ -181,7 +185,11 @@ class Spotify:
                 raise SpotifyException(f"Failed to search for music: {response.json()}")
 
             artist_ids = self._get_artists_ids(artist)
-            return self._find_music_info(artist, song, response.json(), artist_ids)
+            music_info = self._find_music_info(
+                artist, song, response.json(), artist_ids
+            )
+
+        return music_info
 
     def search_advanced(
         self, artist: str, song: str, isrc: str = None, upc: str = None
