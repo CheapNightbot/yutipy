@@ -11,5 +11,3 @@ __all__ = [
     "MusicYT",
     "Spotify",
 ]
-
-__version__ = "1.0.0"
