@@ -116,3 +116,9 @@ Exceptions
     :inherited-members:
     :noindex:
     :exclude-members: add_note, args, with_traceback
+
+.. autoclass:: yutipy.exceptions.KKBoxException
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: add_note, args, with_traceback
