@@ -50,3 +50,7 @@ class InvalidResponseException(YutipyException):
     """Exception raised for invalid responses from APIs."""
 
     pass
+
+
+class KKBoxException(YutipyException):
+    """Exception raised for erros related to the KKBOX Open API."""
