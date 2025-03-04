@@ -23,20 +23,20 @@ from yutipy.utils.cheap_utils import (
 
 load_dotenv()
 
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 
 class Spotify:
     """
     A class to interact with the Spotify API.
 
-    This class reads the ``CLIENT_ID`` and ``CLIENT_SECRET`` from environment variables or the ``.env`` file by default.
-    Alternatively, users can manually provide these values when creating an object.
+    This class reads the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_CLIENT_SECRET`` from environment variables or the ``.env`` file by default.
+    Alternatively, you can manually provide these values when creating an object.
     """
 
     def __init__(
-        self, client_id: str = CLIENT_ID, client_secret: str = CLIENT_SECRET
+        self, client_id: str = SPOTIFY_CLIENT_ID, client_secret: str = SPOTIFY_CLIENT_SECRET
     ) -> None:
         """
         Initializes the Spotify class and sets up the session.
@@ -44,13 +44,13 @@ class Spotify:
         Parameters
         ----------
         client_id : str, optional
-            The client ID for the Spotify API. Defaults to CLIENT_ID from .env file.
+            The Client ID for the Spotify API. Defaults to ``SPOTIFY_CLIENT_ID`` from .env file.
         client_secret : str, optional
-            The client secret for the Spotify API. Defaults to CLIENT_SECRET from .env file.
+            The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from .env file.
         """
         if not client_id or not client_secret:
             raise SpotifyException(
-                "Failed to read CLIENT_ID and CLIENT_SECRET from environment variables. Client ID and Client Secret must be provided."
+                "Failed to read `SPOTIFY_CLIENT_ID` and `SPOTIFY_CLIENT_SECRET` from environment variables. Client ID and Client Secret must be provided."
             )
 
         self.client_id = client_id
@@ -404,7 +404,7 @@ class Spotify:
 
 
 if __name__ == "__main__":
-    Spotify = Spotify(CLIENT_ID, CLIENT_SECRET)
+    Spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
     try:
         artist_name = input("Artist Name: ")
