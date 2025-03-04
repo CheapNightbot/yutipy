@@ -35,14 +35,14 @@ iTunes
 Spotify
 -------
 
-To use the Spotify API, you need to set the ``CLIENT_ID`` and ``CLIENT_SECRET`` for Spotify. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
+To use the Spotify API, you need to set the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_CLIENT_SECRET`` for Spotify. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
 
 .. admonition:: .env
 
     .. code-block:: bash
 
-        CLIENT_ID=your_spotify_client_id
-        CLIENT_SECRET=your_spotify_client_secret
+        SPOTIFY_CLIENT_ID=your_spotify_client_id
+        SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
 
 Alternatively, you can manually provide these values when creating an object of the `Spotify` class:
 

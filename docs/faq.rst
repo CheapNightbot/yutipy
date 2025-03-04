@@ -58,8 +58,8 @@ obtained from the Spotify for Developers website. To do this, follow these steps
 
         .. code-block:: bash
 
-            CLIENT_ID=<spotify_client_id>
-            CLIENT_SECRET=<spotify_client_secret>
+            SPOTIFY_CLIENT_ID=<spotify_client_id>
+            SPOTIFY_CLIENT_SECRET=<spotify_client_secret>
     - Ensure you replace ``<spotify_client_id>`` and ``<spotify_client_secret>`` with the values you copied in steps :ref:`5 <step_5>` and :ref:`6 <step_6>` respectively.
 
 After completing these steps, you should be able to use the ``Spotify`` class and its methods as expected.
