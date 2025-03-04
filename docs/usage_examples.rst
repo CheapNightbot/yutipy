@@ -32,6 +32,35 @@ iTunes
         result = itunes.search("Artist Name", "Song Title")
         print(result)
 
+
+KKBOX
+-------
+
+To use the KKBOX Open API, you need to set the ``KKBOX_CLIENT_ID`` and ``KKBOX_CLIENT_SECRET`` for KKBOX. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
+
+.. admonition:: .env
+
+    .. code-block:: bash
+
+        KKBOX_CLIENT_ID=<your_kkbox_client_id>
+        KKBOX_CLIENT_SECRET=<your_kkbox_client_secret>
+
+Alternatively, you can manually provide these values when creating an object of the `KKBox` class:
+
+.. code-block:: python
+
+    from yutipy.kkbox import KKBox
+
+    kkbox = KKBox(client_id="your_kkbox_client_id", client_secret="your_kkbox_client_secret")
+
+.. code-block:: python
+
+    from yutipy.kkbox import KKBox
+
+    with KKBox() as kkbox:
+        result = kkbox.search("Artist Name", "Song Title")
+        print(result)
+
 Spotify
 -------
 
@@ -41,8 +70,8 @@ To use the Spotify API, you need to set the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_
 
     .. code-block:: bash
 
-        SPOTIFY_CLIENT_ID=your_spotify_client_id
-        SPOTIFY_CLIENT_SECRET=your_spotify_client_secret
+        SPOTIFY_CLIENT_ID=<your_spotify_client_id>
+        SPOTIFY_CLIENT_SECRET=<your_spotify_client_secret>
 
 Alternatively, you can manually provide these values when creating an object of the `Spotify` class:
 

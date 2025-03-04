@@ -64,6 +64,12 @@ obtained from the Spotify for Developers website. To do this, follow these steps
 
 After completing these steps, you should be able to use the ``Spotify`` class and its methods as expected.
 
+Why am I receiving a ``KKBoxException`` when trying to use the ``KKBox`` class?
+-------------------------------------------------------------------------------
+
+Unfortunately, it's the same case as with Spotify. You will need a ``Client ID`` and ``Client Secret``
+obtained from the KKBOX for Developers website. Please visit https://developer.kkbox.com/ for more information.
+
 ----
 
 .. [#] There may be additional features in the future.

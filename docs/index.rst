@@ -3,9 +3,8 @@
    :target: https://github.com/CheapNightbot/yutipy
    :align: center
 
-**yutipy** is a Python package for searching and retrieving music information from various music platforms,
-including Deezer, iTunes, Spotify, and YouTube Music. This documentation will help you get started with yutipy
-and provide detailed information about its features and usage.
+**yutipy** is a Python package for searching and retrieving music information from various music platforms (see list of :doc:`available muisc platforms <available_platforms>`).
+This documentation will help you get started with yutipy and provide detailed information about its features and usage.
 
 .. raw:: html
 
@@ -45,8 +44,9 @@ Get Started
    :maxdepth: 2
 
    installation
-   usage_examples
+   available_platforms
    api_reference
+   usage_examples
    faq
 
 .. toctree::
