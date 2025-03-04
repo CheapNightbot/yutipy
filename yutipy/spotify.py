@@ -299,7 +299,7 @@ class Spotify:
         """
         try:
             for track in response_json["tracks"]["items"]:
-                music_info = self._find_tracks(song, artist, track, artist_ids)
+                music_info = self._find_track(song, artist, track, artist_ids)
                 if music_info:
                     return music_info
         except KeyError:
@@ -315,7 +315,7 @@ class Spotify:
 
         return None
 
-    def _find_tracks(
+    def _find_track(
         self, song: str, artist: str, track: dict, artist_ids: list
     ) -> Optional[MusicInfo]:
         """
