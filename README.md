@@ -28,6 +28,7 @@ A _**simple**_ Python package for searching and retrieving music information fro
 ## Table of Contents
 
 - [Features](#features)
+    - [Available Music Platforms](#available-music-platforms)
 - [Installation](#installation)
 - [Usage Example](#usage-example)
 - [Contributing](#contributing)
@@ -39,6 +40,17 @@ A _**simple**_ Python package for searching and retrieving music information fro
 - Search for music by artist and song title across multiple platforms.
 - It uses `RapidFuzz` to compare & return the best match so that you can be sure you got what you asked for without having to worry and doing all that work by yourself.
 - Retrieve detailed music information, including album art, release dates, lyrics, ISRC, and UPC codes.
+
+### Available Music Platforms
+
+Right now, the following music platforms are available in yutipy for searching music. New platforms will be added in the future.
+Feel free to request any music platform you would like me to add by opening an issue on [GitHub](https://github.com/CheapNightbot/yutipy/issues) or by emailing me.
+
+- `Deezer`: https://www.deezer.com
+- `iTunes`: https://music.apple.com
+- `KKBOX`: https://www.kkbox.com
+- `Spotify`: https://spotify.com
+- `YouTube Music`: https://music.youtube.com
 
 ## Installation
 
