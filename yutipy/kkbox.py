@@ -56,6 +56,7 @@ class KKBox:
         self.__header, self.__expires_in = self.__authenticate()
         self.__start_time = time.time()
         self._is_session_closed = False
+        self.valid_territories = ["HK", "JP", "MY", "SG", "TW"]
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -173,6 +174,58 @@ class KKBox:
             raise KKBoxException(f"Failed to search for music: {response.json()}")
 
         return self._find_music_info(artist, song, response.json())
+
+    def get_html_widget(
+        self,
+        id: str,
+        content_type: str,
+        territory: str = "TW",
+        widget_lang: str = "EN",
+        autoplay: bool = False,
+        loop: bool = False,
+    ) -> str:
+        """
+        Return KKBOX HTML widget for "Playlist", "Album" or "Song". It does not return actual HTML code,
+        the URL returned can be used in an HTML ``iframe`` with the help of ``src`` attribute.
+
+        Parameters
+        ----------
+        id : str
+             ``ID`` of playlist, album or track.
+        content_type : str
+            Content type can be ``playlist``, ``album`` or ``song``.
+        territory : str, optional
+            Territory code, i.e. "TW", "HK", "JP", "SG", "MY", by default "TW"
+        widget_lang : str, optional
+            The display language of the widget. Can be "TC", "SC", "JA", "EN", "MS", by default "EN"
+        autoplay : bool, optional
+            Whether to start playing music automatically in widget, by default False
+        loop : bool, optional
+            Repeat/loop song(s), by default False
+
+        Returns
+        -------
+        str
+            KKBOX HTML widget URL.
+        """
+        valid_content_types = ["playlist", "album", "song"]
+        valid_widget_langs = ["TC", "SC", "JA", "EN", "MS"]
+        if content_type not in valid_content_types:
+            raise InvalidValueException(
+                f"`content_type` must be one of these: {valid_content_types} !"
+            )
+
+        if territory not in self.valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self.valid_territories} !"
+            )
+
+        if widget_lang not in valid_widget_langs:
+            raise InvalidValueException(
+                f"`widget_lang` must be one of these: {valid_widget_langs} !"
+            )
+
+        return f"https://widget.kkbox.com/v1/?id={id}&type={content_type}&terr={territory}&lang={widget_lang}&autoplay={autoplay}&loop={loop}"
 
     def _find_music_info(
         self, artist: str, song: str, response_json: dict
