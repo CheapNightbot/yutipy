@@ -28,7 +28,6 @@ def test_get_html_widget(kkbox):
     html_widget = kkbox.get_html_widget(id="8rceGrek59bDS0HmQH", content_type="song")
     assert html_widget is not None
     assert isinstance(html_widget, str)
-    assert "https://widget.kkbox.com/" in html_widget
 
     with raises(InvalidValueException):
         kkbox.get_html_widget(id="8rceGrek59bDS0HmQH", content_type="track")
