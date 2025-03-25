@@ -238,7 +238,7 @@ class Deezer:
             album_title=(
                 result["album"]["title"] if music_type == "track" else result["title"]
             ),
-            album_type=result.get("record_type", music_type),
+            album_type=result.get("record_type", music_type.replace("track", "single")),
             artists=result["artist"]["name"],
             genre=None,
             id=result["id"],
