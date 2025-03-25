@@ -5,7 +5,7 @@ Usage Examples
 Here's a quick example of how to use the **yutipy** package to search for a song:
 
 .. important::
-    All examples here—except for the `YouTube Music`_—use the ``with`` context manager to initialize an instance of the respective class,
+    All examples here—except for the `YouTube Music`_ & `Yutipy Music`_—use the ``with`` context manager to initialize an instance of the respective class,
     as those classes internally use ``requests.Session()`` for making requests to APIs.
     This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` is not mandatory,
     if you instantiate an object without it, you are responsible for closing the session after use by calling the ``close_session()`` method on that object.
@@ -109,4 +109,15 @@ YouTube Music
 
     music_yt = MusicYT()
     result = music_yt.search("Artist Name", "Song Title")
+    print(result)
+
+Yutipy Music
+------------
+
+.. code-block:: python
+
+    from yutipy.yutify_music import YutipyMusic
+
+    yutipy_music = YutipyMusic()
+    result = yutify_music.search("Artist Name", "Song Title")
     print(result)

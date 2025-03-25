@@ -49,6 +49,14 @@ YouTube Music
     :inherited-members:
     :noindex:
 
+Yutipy Music
+------------
+
+.. autoclass:: yutipy.yutipy_music.YutipyMusic
+    :members:
+    :inherited-members:
+    :noindex:
+
 Data Classes
 =============
 
@@ -59,6 +67,14 @@ MusicInfo
     :members:
     :noindex:
     :exclude-members: album_art, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url
+
+MusicInfos
+----------
+
+.. autoclass:: yutipy.models.MusicInfos
+    :members:
+    :noindex:
+    :exclude-members: album_art, album_art_source, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url
 
 Exceptions
 =============
