@@ -273,4 +273,4 @@ if __name__ == "__main__":
         song_name = input("Song Name: ")
         pprint(deezer.search(artist_name, song_name))
     finally:
-        deezer._close_session()
+        deezer.close_session()

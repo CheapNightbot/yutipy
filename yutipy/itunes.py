@@ -186,4 +186,4 @@ if __name__ == "__main__":
         song_name = input("Song Name: ")
         pprint(itunes.search(artist_name, song_name))
     finally:
-        itunes._close_session()
+        itunes.close_session()
