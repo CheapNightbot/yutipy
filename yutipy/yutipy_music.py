@@ -1,5 +1,4 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
 from pprint import pprint
 from typing import Optional
 
