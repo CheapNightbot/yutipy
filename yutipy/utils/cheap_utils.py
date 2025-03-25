@@ -1,3 +1,45 @@
+import requests
+from rapidfuzz import fuzz
+from rapidfuzz.utils import default_process
+
+
+def translate_text(
+    text: str,
+    sl: str = None,
+    dl: str = "en",
+) -> dict:
+    """
+    Translate text from one language to another.
+
+    Args:
+        text (str): The text to be translated.
+        sl (str, optional): The source language code (e.g., 'en' for English, 'es' for Spanish). If not provided, the API will attempt to detect the source language.
+        dl (str, optional): The destination language code (default is 'en' for English).
+
+
+     Returns:
+        dict: A dictionary containing the following keys:
+            - 'source-text': The original text.
+            - 'source-language': The detected or provided source language code.
+            - 'destination-text': The translated text.
+            - 'destination-language': The destination language code.
+    """
+    if sl:
+        url = f"https://ftapi.pythonanywhere.com/translate?sl={sl}&dl={dl}&text={text}"
+    else:
+        url = f"https://ftapi.pythonanywhere.com/translate?dl={dl}&text={text}"
+
+    response = requests.get(url)
+    response_json = response.json()
+    result = {
+        "source-text": response_json["source-text"],
+        "source-language": response_json["source-language"],
+        "destination-text": response_json["destination-text"],
+        "destination-language": response_json["destination-language"],
+    }
+    return result
+
+
 def are_strings_similar(str1: str, str2: str, threshold: int = 80) -> bool:
     """
     Determine if two strings are similar based on a given threshold.
@@ -10,8 +52,8 @@ def are_strings_similar(str1: str, str2: str, threshold: int = 80) -> bool:
     Returns:
         bool: True if the strings are similar, otherwise False.
     """
-    from rapidfuzz import fuzz
-    from rapidfuzz.utils import default_process
+    str1 = translate_text(str1)["destination-text"]
+    str2 = translate_text(str2)["destination-text"]
 
     similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
     return similarity_score > threshold
