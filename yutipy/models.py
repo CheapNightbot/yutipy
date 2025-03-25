@@ -1,5 +1,5 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Union
 
 
 @dataclass
@@ -19,8 +19,8 @@ class MusicInfo:
         Name(s) of the artist(s).
     genre : Optional[str]
         Genre of the music.
-    id : str
-        Unique identifier for the music.
+    id : Union[int, str, Dict[str, str]]
+        Unique identifier(s) for the music from different platforms.
     isrc : Optional[str]
         International Standard Recording Code.
     lyrics : Optional[str]
@@ -35,21 +35,34 @@ class MusicInfo:
         Type of the music (e.g., track, album).
     upc : Optional[str]
         Universal Product Code.
-    url : str
-        URL to the music on the platform.
+    url : Union[str, Dict[str, str]]
+        URL(s) to the music on different platforms.
     """
 
-    album_art: Optional[str]
-    album_title: Optional[str]
-    album_type: Optional[str]
-    artists: str
-    genre: Optional[str]
-    id: str
-    isrc: Optional[str]
-    lyrics: Optional[str]
-    release_date: Optional[str]
-    tempo: Optional[float]
-    title: str
-    type: Optional[str]
-    upc: Optional[str]
-    url: str
+    album_art: Optional[str] = None
+    album_title: Optional[str] = None
+    album_type: Optional[str] = None
+    artists: str = ""
+    genre: Optional[str] = None
+    id: Union[int, str, Dict[str, int]] = field(default_factory=dict)
+    isrc: Optional[str] = None
+    lyrics: Optional[str] = None
+    release_date: Optional[str] = None
+    tempo: Optional[float] = None
+    title: str = ""
+    type: Optional[str] = None
+    upc: Optional[str] = None
+    url: Union[str, Dict[str, str]] = field(default_factory=dict)
+
+
+@dataclass
+class MusicInfos(MusicInfo):
+    """A data class to store music information from different services.
+
+    Attributes
+    ----------
+    album_art_source : Optional[str]
+        The source of the album art.
+    """
+
+    album_art_source: Optional[str] = None
