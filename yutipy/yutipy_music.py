@@ -64,7 +64,10 @@ class YutipyMusic:
                 result = future.result()
                 self._combine_results(result, service_name)
 
-        return self.music_info if self.music_info else None
+        if len(self.music_info.url) == 0:
+            return None
+
+        return self.music_info
 
     def _combine_results(self, result: Optional[MusicInfo], service_name: str) -> None:
         """
