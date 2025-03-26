@@ -138,7 +138,7 @@ class Spotify:
             self.__header, self.__expires_in = self.__authenticate()
             self.__start_time = time.time()
 
-    def search(self, artist: str, song: str) -> Optional[MusicInfo]:
+    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -148,6 +148,9 @@ class Spotify:
             The name of the artist.
         song : str
             The title of the song.
+        limit: int, optional
+            The number of items to retrieve from API.
+            ``limit >=1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -161,8 +164,8 @@ class Spotify:
 
         music_info = None
         queries = [
-            f"?q=artist:{artist} track:{song}&type=track&limit=10",
-            f"?q=artist:{artist} album:{song}&type=album&limit=10",
+            f"?q=artist:{artist} track:{song}&type=track&limit={limit}",
+            f"?q=artist:{artist} album:{song}&type=album&limit={limit}",
         ]
 
         for query in queries:

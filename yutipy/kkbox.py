@@ -134,7 +134,7 @@ class KKBox:
             self.__start_time = time.time()
 
     def search(
-        self, artist: str, song: str, territory: str = "TW"
+        self, artist: str, song: str, territory: str = "TW", limit: int = 10,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -148,6 +148,9 @@ class KKBox:
         territory : str
             Two-letter country codes from ISO 3166-1 alpha-2.
             Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
+        limit: int, optional
+            The number of items to retrieve from API.
+            ``limit >=1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -161,7 +164,7 @@ class KKBox:
 
         self.__refresh_token_if_expired()
 
-        query = f"?q={artist} - {song}&type=track,album&territory={territory}&limit=10"
+        query = f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
         query_url = f"{self.api_url}/search{query}"
 
         try:

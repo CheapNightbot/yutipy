@@ -20,7 +20,7 @@ class MusicYT:
         """Initializes the YouTube Music class and sets up the session."""
         self.ytmusic = YTMusic()
 
-    def search(self, artist: str, song: str) -> Optional[MusicInfo]:
+    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -30,6 +30,9 @@ class MusicYT:
             The name of the artist.
         song : str
             The title of the song.
+        limit: int, optional
+            The number of items to retrieve from API.
+            ``limit >=1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -44,7 +47,7 @@ class MusicYT:
         query = f"{artist} - {song}"
 
         try:
-            results = self.ytmusic.search(query=query)
+            results = self.ytmusic.search(query=query, limit=limit)
         except exceptions.YTMusicServerError as e:
             raise NetworkException(f"Network error occurred: {e}")
 

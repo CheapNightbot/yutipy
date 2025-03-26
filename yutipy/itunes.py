@@ -42,7 +42,7 @@ class Itunes:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def search(self, artist: str, song: str) -> Optional[MusicInfo]:
+    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -52,6 +52,9 @@ class Itunes:
             The name of the artist.
         song : str
             The title of the song.
+        limit: int, optional
+        The number of items to retrieve from API.
+        ``limit >=1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -66,7 +69,7 @@ class Itunes:
         entities = ["song", "album"]
         for entity in entities:
             endpoint = f"{self.api_url}/search"
-            query = f"?term={artist} - {song}&media=music&entity={entity}&limit=10"
+            query = f"?term={artist} - {song}&media=music&entity={entity}&limit={limit}"
             query_url = endpoint + query
 
             try:

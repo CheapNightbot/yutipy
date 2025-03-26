@@ -41,7 +41,7 @@ class Deezer:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def search(self, artist: str, song: str) -> Optional[MusicInfo]:
+    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -51,6 +51,9 @@ class Deezer:
             The name of the artist.
         song : str
             The title of the song.
+        limit: int, optional
+            The number of items to retrieve from API.
+            ``limit >=1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -66,7 +69,7 @@ class Deezer:
 
         for search_type in search_types:
             endpoint = f"{self.api_url}/search/{search_type}"
-            query = f'?q=artist:"{artist}" {search_type}:"{song}"&limit=10'
+            query = f'?q=artist:"{artist}" {search_type}:"{song}"&limit={limit}'
             query_url = endpoint + query
 
             try:
