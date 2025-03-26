@@ -2,6 +2,7 @@ import os
 from pprint import pprint
 from typing import Optional
 
+import requests
 from ytmusicapi import YTMusic, exceptions
 
 from yutipy.exceptions import (
@@ -19,8 +20,28 @@ class MusicYT:
     def __init__(self) -> None:
         """Initializes the YouTube Music class and sets up the session."""
         self.ytmusic = YTMusic()
+        self._is_session_closed = False
+        self.normalize_non_english = True
+        self._translation_session = requests.Session()
 
-    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
+    def close_session(self) -> None:
+        """Closes the current session(s)."""
+        if not self.is_session_closed:
+            self._translation_session.close()
+            self._is_session_closed = True
+
+    @property
+    def is_session_closed(self) -> bool:
+        """Checks if the session is closed."""
+        return self._is_session_closed
+
+    def search(
+        self,
+        artist: str,
+        song: str,
+        limit: int = 10,
+        normalize_non_english: bool = True,
+    ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -31,8 +52,9 @@ class MusicYT:
         song : str
             The title of the song.
         limit: int, optional
-            The number of items to retrieve from API.
-            ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
 
         Returns
         -------
@@ -43,6 +65,8 @@ class MusicYT:
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
+
+        self.normalize_non_english = normalize_non_english
 
         query = f"{artist} - {song}"
 
@@ -79,8 +103,18 @@ class MusicYT:
             return False
 
         return any(
-            are_strings_similar(result.get("title"), song)
-            and are_strings_similar(_artist.get("name"), artist)
+            are_strings_similar(
+                result.get("title"),
+                song,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
+            and are_strings_similar(
+                _artist.get("name"),
+                artist,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
             for _artist in result.get("artists", [])
         )
 

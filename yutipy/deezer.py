@@ -21,6 +21,8 @@ class Deezer:
         self._session = requests.Session()
         self.api_url = "https://api.deezer.com"
         self._is_session_closed = False
+        self.normalize_non_english = True
+        self._translation_session = requests.Session()
 
     def __enter__(self) -> "Deezer":
         """Enters the runtime context related to this object."""
@@ -34,6 +36,7 @@ class Deezer:
         """Closes the current session."""
         if not self.is_session_closed:
             self._session.close()
+            self._translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -41,7 +44,13 @@ class Deezer:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
+    def search(
+        self,
+        artist: str,
+        song: str,
+        limit: int = 10,
+        normalize_non_english: bool = True,
+    ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -52,8 +61,10 @@ class Deezer:
         song : str
             The title of the song.
         limit: int, optional
-            The number of items to retrieve from API.
-            ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
+
 
         Returns
         -------
@@ -64,6 +75,8 @@ class Deezer:
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
+
+        self.normalize_non_english = normalize_non_english
 
         search_types = ["track", "album"]
 
@@ -208,8 +221,18 @@ class Deezer:
         """
         for result in results:
             if not (
-                are_strings_similar(result["title"], song)
-                and are_strings_similar(result["artist"]["name"], artist)
+                are_strings_similar(
+                    result["title"],
+                    song,
+                    use_translation=self.normalize_non_english,
+                    translation_session=self._translation_session,
+                )
+                and are_strings_similar(
+                    result["artist"]["name"],
+                    artist,
+                    use_translation=self.normalize_non_english,
+                    translation_session=self._translation_session,
+                )
             ):
                 continue
 

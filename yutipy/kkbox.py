@@ -57,6 +57,8 @@ class KKBox:
         self.__start_time = time.time()
         self._is_session_closed = False
         self.valid_territories = ["HK", "JP", "MY", "SG", "TW"]
+        self.normalize_non_english = True
+        self._translation_session = requests.Session()
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -70,6 +72,7 @@ class KKBox:
         """Closes the current session."""
         if not self.is_session_closed:
             self._session.close()
+            self._translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -134,7 +137,12 @@ class KKBox:
             self.__start_time = time.time()
 
     def search(
-        self, artist: str, song: str, territory: str = "TW", limit: int = 10,
+        self,
+        artist: str,
+        song: str,
+        territory: str = "TW",
+        limit: int = 10,
+        normalize_non_english: bool = True,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -149,8 +157,9 @@ class KKBox:
             Two-letter country codes from ISO 3166-1 alpha-2.
             Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
         limit: int, optional
-            The number of items to retrieve from API.
-            ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
 
         Returns
         -------
@@ -162,9 +171,13 @@ class KKBox:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
+        self.normalize_non_english = normalize_non_english
+
         self.__refresh_token_if_expired()
 
-        query = f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
+        query = (
+            f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
+        )
         query_url = f"{self.api_url}/search{query}"
 
         try:
@@ -288,12 +301,24 @@ class KKBox:
         Optional[MusicInfo]
             The music information if found, otherwise None.
         """
-        if not are_strings_similar(track["name"], song):
+        if not are_strings_similar(
+            track["name"],
+            song,
+            use_translation=self.normalize_non_english,
+            translation_session=self._translation_session,
+        ):
             return None
 
         artists_name = track["album"]["artist"]["name"]
         matching_artists = (
-            artists_name if are_strings_similar(artists_name, artist) else None
+            artists_name
+            if are_strings_similar(
+                artists_name,
+                artist,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
+            else None
         )
 
         if matching_artists:
@@ -336,12 +361,24 @@ class KKBox:
         Optional[MusicInfo]
             The music information if found, otherwise None.
         """
-        if not are_strings_similar(album["name"], song):
+        if not are_strings_similar(
+            album["name"],
+            song,
+            use_translation=self.normalize_non_english,
+            translation_session=self._translation_session,
+        ):
             return None
 
         artists_name = album["artist"]["name"]
         matching_artists = (
-            artists_name if are_strings_similar(artists_name, artist) else None
+            artists_name
+            if are_strings_similar(
+                artists_name,
+                artist,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
+            else None
         )
 
         if matching_artists:

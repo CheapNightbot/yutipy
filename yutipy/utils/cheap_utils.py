@@ -51,7 +51,13 @@ def translate_text(
     return result
 
 
-def are_strings_similar(str1: str, str2: str, threshold: int = 80) -> bool:
+def are_strings_similar(
+    str1: str,
+    str2: str,
+    threshold: int = 80,
+    use_translation: bool = True,
+    translation_session: requests.Session = None,
+) -> bool:
     """
     Determine if two strings are similar based on a given threshold.
 
@@ -59,12 +65,24 @@ def are_strings_similar(str1: str, str2: str, threshold: int = 80) -> bool:
         str1 (str): First string to compare.
         str2 (str): Second string to compare.
         threshold (int, optional): Similarity threshold. Defaults to 80.
+        use_translation (bool, optional): Use translations to compare strings. Defaults to ``True``
+        translation_session (requests.Session, optional): A `requests.Session` object to use for making the API request. If not provided, a new session will be created and closed within the function.
+            Providing your own session can improve performance by reusing the same session for multiple requests. Don't forget to close the session afterwards.
 
     Returns:
         bool: True if the strings are similar, otherwise False.
     """
-    str1 = translate_text(str1)["destination-text"]
-    str2 = translate_text(str2)["destination-text"]
+    if use_translation:
+        str1 = (
+            translate_text(str1, session=translation_session)["destination-text"]
+            if translation_session
+            else translate_text(str1)["destination-text"]
+        )
+        str2 = (
+            translate_text(str2, session=translation_session)["destination-text"]
+            if translation_session
+            else translate_text(str2)["destination-text"]
+        )
 
     similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
     return similarity_score > threshold

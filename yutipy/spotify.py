@@ -62,6 +62,8 @@ class Spotify:
         self.__header, self.__expires_in = self.__authenticate()
         self.__start_time = time.time()
         self._is_session_closed = False
+        self.normalize_non_english = True
+        self._translation_session = requests.Session()
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -72,9 +74,10 @@ class Spotify:
         self.close_session()
 
     def close_session(self) -> None:
-        """Closes the current session."""
+        """Closes the current session(s)."""
         if not self.is_session_closed:
             self._session.close()
+            self._translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -138,7 +141,13 @@ class Spotify:
             self.__header, self.__expires_in = self.__authenticate()
             self.__start_time = time.time()
 
-    def search(self, artist: str, song: str, limit: int = 10) -> Optional[MusicInfo]:
+    def search(
+        self,
+        artist: str,
+        song: str,
+        limit: int = 10,
+        normalize_non_english: bool = True,
+    ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
 
@@ -149,8 +158,9 @@ class Spotify:
         song : str
             The title of the song.
         limit: int, optional
-            The number of items to retrieve from API.
-            ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
 
         Returns
         -------
@@ -161,6 +171,8 @@ class Spotify:
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
+
+        self.normalize_non_english = normalize_non_english
 
         music_info = None
         queries = [
@@ -195,7 +207,13 @@ class Spotify:
         return music_info
 
     def search_advanced(
-        self, artist: str, song: str, isrc: str = None, upc: str = None
+        self,
+        artist: str,
+        song: str,
+        isrc: str = None,
+        upc: str = None,
+        limit: int = 1,
+        normalize_non_english: bool = True,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist, title, ISRC, or UPC.
@@ -210,6 +228,10 @@ class Spotify:
             The ISRC of the track.
         upc : str, optional
             The UPC of the album.
+        limit: int, optional
+            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``1``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
 
         Returns
         -------
@@ -221,12 +243,14 @@ class Spotify:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
+        self.normalize_non_english = normalize_non_english
+
         self.__refresh_token_if_expired()
 
         if isrc:
-            query = f"?q={artist} {song} isrc:{isrc}&type=track&limit=1"
+            query = f"?q={artist} {song} isrc:{isrc}&type=track&limit={limit}"
         elif upc:
-            query = f"?q={artist} {song} upc:{upc}&type=album&limit=1"
+            query = f"?q={artist} {song} upc:{upc}&type=album&limit={limit}"
         else:
             raise InvalidValueException("ISRC or UPC must be provided.")
 
@@ -340,14 +364,25 @@ class Spotify:
         Optional[MusicInfo]
             The music information if found, otherwise None.
         """
-        if not are_strings_similar(track["name"], song):
+        if not are_strings_similar(
+            track["name"],
+            song,
+            use_translation=self.normalize_non_english,
+            translation_session=self._translation_session,
+        ):
             return None
 
         artists_name = [x["name"] for x in track["artists"]]
         matching_artists = [
             x["name"]
             for x in track["artists"]
-            if are_strings_similar(x["name"], artist) or x["id"] in artist_ids
+            if are_strings_similar(
+                x["name"],
+                artist,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
+            or x["id"] in artist_ids
         ]
 
         if matching_artists:
@@ -392,14 +427,25 @@ class Spotify:
         Optional[MusicInfo]
             The music information if found, otherwise None.
         """
-        if not are_strings_similar(album["name"], song):
+        if not are_strings_similar(
+            album["name"],
+            song,
+            use_translation=self.normalize_non_english,
+            translation_session=self._translation_session,
+        ):
             return None
 
         artists_name = [x["name"] for x in album["artists"]]
         matching_artists = [
             x["name"]
             for x in album["artists"]
-            if are_strings_similar(x["name"], artist) or x["id"] in artist_ids
+            if are_strings_similar(
+                x["name"],
+                artist,
+                use_translation=self.normalize_non_english,
+                translation_session=self._translation_session,
+            )
+            or x["id"] in artist_ids
         ]
 
         if matching_artists:

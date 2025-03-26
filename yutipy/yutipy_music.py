@@ -2,6 +2,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pprint import pprint
 from typing import Optional
 
+import requests
+
 from yutipy.deezer import Deezer
 from yutipy.exceptions import InvalidValueException
 from yutipy.itunes import Itunes
@@ -30,6 +32,13 @@ class YutipyMusic:
             "ytmusic": MusicYT(),
             "spotify": Spotify(),
         }
+        self.normalize_non_english = True
+        self._translation_session = requests.Session()
+
+        # Assign the translation session to each service
+        for service in self.services.values():
+            if hasattr(service, "_translation_session"):
+                service._translation_session = self._translation_session
 
     def __enter__(self) -> "YutipyMusic":
         return self
@@ -37,7 +46,13 @@ class YutipyMusic:
     def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
         self.close_sessions()
 
-    def search(self, artist: str, song: str, limit: int = 5) -> Optional[MusicInfos]:
+    def search(
+        self,
+        artist: str,
+        song: str,
+        limit: int = 5,
+        normalize_non_english: bool = True,
+    ) -> Optional[MusicInfos]:
         """
         Searches for a song by artist and title.
 
@@ -48,8 +63,9 @@ class YutipyMusic:
         song : str
             The title of the song.
         limit: int, optional
-            The number of items to retrieve from all APIs.
-            ``limit >=1 and <= 50``. Default is ``5``.
+            The number of items to retrieve from all APIs. ``limit >=1 and <= 50``. Default is ``5``.
+        normalize_non_english : bool, optional
+            Whether to normalize non-English characters for comparison. Default is ``True``.
 
         Returns
         -------
@@ -61,10 +77,16 @@ class YutipyMusic:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
+        self.normalize_non_english = normalize_non_english
+
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
-                    service.search, artist=artist, song=song, limit=limit
+                    service.search,
+                    artist=artist,
+                    song=song,
+                    limit=limit,
+                    normalize_non_english=self.normalize_non_english,
                 ): name
                 for name, service in self.services.items()
             }
