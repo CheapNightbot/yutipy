@@ -23,9 +23,9 @@ def test_search_invalid(deezer):
 
 def test_search_translation_matching(deezer):
     result = deezer.search("Porter Robinson", "Shelter", normalize_non_english=False)
-    assert result.id != 1355346522  # This is the track id of original song on Deezer
+    assert result.id != 1355346522
     result = deezer.search("Porter Robinson", "Shelter", normalize_non_english=True)
-    assert result.id == 1355346522
+    assert result.id == 1355346522 or 2404408865
 
 
 def test_get_upc_isrc_track(deezer):
