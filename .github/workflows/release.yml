@@ -57,6 +57,8 @@ jobs:
   draft-release:
     name: Draft Release Notes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     needs:
     - publish-to-pypi
     steps:
