@@ -85,7 +85,6 @@ jobs:
         gh release create
         "$GITHUB_REF_NAME"
         --repo "$GITHUB_REPOSITORY"
-        --notes-file .github/release-drafter.yml
         --generate-notes
     - name: Upload artifact signatures to GitHub Release
       env:
