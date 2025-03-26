@@ -54,27 +54,12 @@ jobs:
         path: dist/
     - name: Publish distribution 📦 to PyPI
       uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
-  draft-release:
-    name: Draft Release Notes
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    needs:
-    - publish-to-pypi
-    steps:
-    - name: Draft Release Notes
-      uses: release-drafter/release-drafter@b1476f6e6eb133afa41ed8589daba6dc69b4d3f5 # v6.1.0
-      with:
-        config-name: .github/release-drafter.yml
   github-release:
     name: >-
       Sign the Python 🐍 distribution 📦 with Sigstore
       and upload them to GitHub Release
     needs:
     - publish-to-pypi
-    - draft-release
     runs-on: ubuntu-latest
 
     permissions:
