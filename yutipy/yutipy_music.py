@@ -22,9 +22,16 @@ class YutipyMusic:
     def __init__(self) -> None:
         """Initializes the YutipyMusic class."""
         self.music_info = MusicInfos()
-        self.album_art_priority = ["deezer", "kkbox", "spotify", "musicyt", "itunes"]
+        self.album_art_priority = ["deezer", "kkbox", "spotify", "ytmusic", "itunes"]
+        self.services = {
+            "deezer": Deezer(),
+            "itunes": Itunes(),
+            "kkbox": KKBox(),
+            "ytmusic": MusicYT(),
+            "spotify": Spotify(),
+        }
 
-    def search(self, artist: str, song: str) -> Optional[MusicInfos]:
+    def search(self, artist: str, song: str, limit: int = 5) -> Optional[MusicInfos]:
         """
         Searches for a song by artist and title.
 
@@ -34,10 +41,13 @@ class YutipyMusic:
             The name of the artist.
         song : str
             The title of the song.
+        limit: int, optional
+            The number of items to retrieve from all APIs.
+            ``limit >=1 and <= 50``. Default is ``5``.
 
         Returns
         -------
-        Optional[MusicInfos_]
+        Optional[MusicInfos]
             The music information if found, otherwise None.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
@@ -45,18 +55,10 @@ class YutipyMusic:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        services = [
-            (Deezer, "deezer"),
-            (Itunes, "itunes"),
-            (KKBox, "kkbox"),
-            (MusicYT, "musicyt"),
-            (Spotify, "spotify"),
-        ]
-
         with ThreadPoolExecutor() as executor:
             futures = {
-                executor.submit(service().search, artist, song): name
-                for service, name in services
+                executor.submit(service.search, artist=artist, song=song, limit=limit): name
+                for name, service in self.services.items()
             }
 
             for future in as_completed(futures):
@@ -117,9 +119,16 @@ class YutipyMusic:
         self.music_info.id[service_name] = result.id
         self.music_info.url[service_name] = result.url
 
+    def close_sessions(self) -> None:
+        """Closes the sessions for all services."""
+        for service in self.services.values():
+            if hasattr(service, "close_session"):
+                service.close_session()
+
 
 if __name__ == "__main__":
     yutipy_music = YutipyMusic()
     artist_name = input("Artist Name: ")
     song_name = input("Song Name: ")
     pprint(yutipy_music.search(artist_name, song_name))
+    yutipy_music.close_sessions()
