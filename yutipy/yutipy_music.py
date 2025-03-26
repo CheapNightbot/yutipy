@@ -31,6 +31,12 @@ class YutipyMusic:
             "spotify": Spotify(),
         }
 
+    def __enter__(self) -> "YutipyMusic":
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        self.close_sessions()
+
     def search(self, artist: str, song: str, limit: int = 5) -> Optional[MusicInfos]:
         """
         Searches for a song by artist and title.
@@ -57,7 +63,9 @@ class YutipyMusic:
 
         with ThreadPoolExecutor() as executor:
             futures = {
-                executor.submit(service.search, artist=artist, song=song, limit=limit): name
+                executor.submit(
+                    service.search, artist=artist, song=song, limit=limit
+                ): name
                 for name, service in self.services.items()
             }
 
