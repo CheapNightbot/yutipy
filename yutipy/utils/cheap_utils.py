@@ -7,6 +7,7 @@ def translate_text(
     text: str,
     sl: str = None,
     dl: str = "en",
+    session: requests.Session = None,
 ) -> dict:
     """
     Translate text from one language to another.
@@ -15,7 +16,8 @@ def translate_text(
         text (str): The text to be translated.
         sl (str, optional): The source language code (e.g., 'en' for English, 'es' for Spanish). If not provided, the API will attempt to detect the source language.
         dl (str, optional): The destination language code (default is 'en' for English).
-
+        session (requests.Session, optional): A `requests.Session` object to use for making the API request. If not provided, a new session will be created and closed within the function.
+            Providing your own session can improve performance by reusing the same session for multiple requests. Don't forget to close the session afterwards.
 
      Returns:
         dict: A dictionary containing the following keys:
@@ -24,12 +26,17 @@ def translate_text(
             - 'destination-text': The translated text.
             - 'destination-language': The destination language code.
     """
+    default_session = False
+    if session is None:
+        default_session = True
+        session = requests.Session()
+
     if sl:
         url = f"https://ftapi.pythonanywhere.com/translate?sl={sl}&dl={dl}&text={text}"
     else:
         url = f"https://ftapi.pythonanywhere.com/translate?dl={dl}&text={text}"
 
-    response = requests.get(url)
+    response = session.get(url)
     response_json = response.json()
     result = {
         "source-text": response_json["source-text"],
@@ -37,6 +44,10 @@ def translate_text(
         "destination-text": response_json["destination-text"],
         "destination-language": response_json["destination-language"],
     }
+
+    if default_session:
+        session.close()
+
     return result
 
 
