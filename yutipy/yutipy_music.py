@@ -5,13 +5,14 @@ from typing import Optional
 import requests
 
 from yutipy.deezer import Deezer
-from yutipy.exceptions import InvalidValueException
+from yutipy.exceptions import InvalidValueException, KKBoxException, SpotifyException
 from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
 from yutipy.models import MusicInfo, MusicInfos
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
 from yutipy.utils.cheap_utils import is_valid_string
+from yutipy.utils.logger import logger
 
 
 class YutipyMusic:
@@ -24,14 +25,32 @@ class YutipyMusic:
     def __init__(self) -> None:
         """Initializes the YutipyMusic class."""
         self.music_info = MusicInfos()
-        self.album_art_priority = ["deezer", "kkbox", "spotify", "ytmusic", "itunes"]
+        self.album_art_priority = ["deezer", "ytmusic", "itunes"]
         self.services = {
             "deezer": Deezer(),
             "itunes": Itunes(),
-            "kkbox": KKBox(),
             "ytmusic": MusicYT(),
-            "spotify": Spotify(),
         }
+
+        try:
+            self.services["kkbox"] = KKBox()
+        except KKBoxException as e:
+            logger.warning(
+                f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
+            )
+        else:
+            idx = self.album_art_priority.index("ytmusic")
+            self.album_art_priority.insert(idx, "kkbox")
+
+        try:
+            self.services["spotify"] = Spotify()
+        except SpotifyException as e:
+            logger.warning(
+                f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
+            )
+        else:
+            idx = self.album_art_priority.index("ytmusic")
+            self.album_art_priority.insert(idx, "spotify")
         self.normalize_non_english = True
         self._translation_session = requests.Session()
 
