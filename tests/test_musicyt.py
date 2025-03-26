@@ -49,3 +49,8 @@ def test_search_empty_song(music_yt):
 
     with raises(InvalidValueException):
         music_yt.search(artist, song)
+
+
+def test_close_session(music_yt):
+    music_yt.close_session()
+    assert music_yt.is_session_closed
