@@ -16,8 +16,8 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.cheap_utils import (
-    guess_album_type,
     are_strings_similar,
+    guess_album_type,
     is_valid_string,
     separate_artists,
 )
@@ -459,7 +459,7 @@ class Spotify:
             return MusicInfo(
                 album_art=album["images"][0]["url"],
                 album_title=album["name"],
-                album_type=album.get("alnum_type") if guessed_right else guess,
+                album_type=album.get("album_type") if guessed_right else guess,
                 artists=", ".join(artists_name),
                 genre=None,
                 id=album["id"],
