@@ -2,8 +2,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pprint import pprint
 from typing import Optional
 
-import requests
-
 from yutipy.deezer import Deezer
 from yutipy.exceptions import InvalidValueException, KKBoxException, SpotifyException
 from yutipy.itunes import Itunes
