@@ -1,6 +1,9 @@
+import pykakasi
 import requests
 from rapidfuzz import fuzz
 from rapidfuzz.utils import default_process
+
+kakasi = pykakasi.kakasi()
 
 
 def translate_text(
@@ -72,17 +75,28 @@ def are_strings_similar(
     Returns:
         bool: True if the strings are similar, otherwise False.
     """
+
     if use_translation:
-        str1 = (
+        translated_str1 = (
             translate_text(str1, session=translation_session)["destination-text"]
             if translation_session
             else translate_text(str1)["destination-text"]
         )
-        str2 = (
+        translated_str2 = (
             translate_text(str2, session=translation_session)["destination-text"]
             if translation_session
             else translate_text(str2)["destination-text"]
         )
+
+        similarity_score = fuzz.WRatio(
+            translated_str1, translated_str2, processor=default_process
+        )
+        if similarity_score > threshold:
+            return True
+
+    # Use transliterated strings for comparison
+    str1 = "".join(item["hepburn"] for item in kakasi.convert(str1)) or str1
+    str2 = "".join(item["hepburn"] for item in kakasi.convert(str2)) or str2
 
     similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
     return similarity_score > threshold
