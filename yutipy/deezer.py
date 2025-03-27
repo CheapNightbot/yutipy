@@ -11,6 +11,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.cheap_utils import are_strings_similar, is_valid_string
+from yutipy.utils.logger import logger
 
 
 class Deezer:
@@ -86,22 +87,34 @@ class Deezer:
             query_url = endpoint + query
 
             try:
+                logger.info(
+                    f'Searching music info for `artist="{artist}"` and `song="{song}"`'
+                )
+                logger.debug(f"Query URL: {query_url}")
                 response = self._session.get(query_url, timeout=30)
+                logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
+                logger.error(f"Network error while fetching music info: {e}")
                 raise NetworkException(f"Network error occurred: {e}")
             except Exception as e:
+                logger.exception(f"Unexpected error while searching Deezer: {e}")
                 raise DeezerException(f"An error occurred while searching Deezer: {e}")
 
             try:
+                logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["data"]
             except (IndexError, KeyError, ValueError) as e:
+                logger.error(f"Invalid response structure from Deezer: {e}")
                 raise InvalidResponseException(f"Invalid response received: {e}")
 
             music_info = self._parse_results(artist, song, result)
             if music_info:
                 return music_info
 
+        logger.warning(
+            f"No matching results found for artist='{artist}' and song='{song}'"
+        )
         return None
 
     def _get_upc_isrc(self, music_id: int, music_type: str) -> Optional[Dict]:
@@ -127,7 +140,7 @@ class Deezer:
         else:
             raise DeezerException(f"Invalid music type: {music_type}")
 
-    def _get_track_info(self, music_id: int) -> Optional[Dict]:
+    def _get_track_info(self, track_id: int) -> Optional[Dict]:
         """
         Retrieves track information for a given track ID.
 
@@ -141,18 +154,25 @@ class Deezer:
         Optional[Dict]
             A dictionary containing track information.
         """
-        query_url = f"{self.api_url}/track/{music_id}"
+        query_url = f"{self.api_url}/track/{track_id}"
         try:
+            logger.info(f"Fetching track info for track_id: {track_id}")
+            logger.debug(f"Query URL: {query_url}")
             response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.error(f"Error fetching track info: {e}")
             raise NetworkException(f"Network error occurred: {e}")
         except Exception as e:
+            logger.error(f"Error fetching track info: {e}")
             raise DeezerException(f"An error occurred while fetching track info: {e}")
 
         try:
+            logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
+            logger.error(f"Invalid response received from Deezer: {e}")
             raise InvalidResponseException(f"Invalid response received: {e}")
 
         return {
@@ -161,7 +181,7 @@ class Deezer:
             "tempo": result.get("bpm"),
         }
 
-    def _get_album_info(self, music_id: int) -> Optional[Dict]:
+    def _get_album_info(self, album_id: int) -> Optional[Dict]:
         """
         Retrieves album information for a given album ID.
 
@@ -175,18 +195,25 @@ class Deezer:
         Optional[Dict]
             A dictionary containing album information.
         """
-        query_url = f"{self.api_url}/album/{music_id}"
+        query_url = f"{self.api_url}/album/{album_id}"
         try:
+            logger.info(f"Fetching album info for album_id: {album_id}")
+            logger.debug(f"Query URL: {query_url}")
             response = self._session.get(query_url, timeout=30)
+            logger.info(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.error(f"Error fetching album info: {e}")
             raise NetworkException(f"Network error occurred: {e}")
         except Exception as e:
+            logger.error(f"Error fetching album info: {e}")
             raise DeezerException(f"An error occurred while fetching album info: {e}")
 
         try:
+            logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
+            logger.error(f"Invalid response received from Deezer: {e}")
             raise InvalidResponseException(f"Invalid response received: {e}")
 
         return {
@@ -293,6 +320,10 @@ class Deezer:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     deezer = Deezer()
     try:
         artist_name = input("Artist Name: ")

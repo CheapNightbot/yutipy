@@ -98,6 +98,10 @@ class YutipyMusic:
 
         self.normalize_non_english = normalize_non_english
 
+        logger.info(
+            f"Searching all platforms for `artist='{artist}'` and `song='{song}'`"
+        )
+
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
@@ -116,6 +120,9 @@ class YutipyMusic:
                 self._combine_results(result, service_name)
 
         if len(self.music_info.url) == 0:
+            logger.warning(
+                f"No matching results found across all platforms for artist='{artist}' and song='{song}'"
+            )
             return None
 
         return self.music_info
@@ -177,8 +184,14 @@ class YutipyMusic:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     yutipy_music = YutipyMusic()
+
     artist_name = input("Artist Name: ")
     song_name = input("Song Name: ")
+
     pprint(yutipy_music.search(artist_name, song_name))
     yutipy_music.close_sessions()

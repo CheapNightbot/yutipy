@@ -16,6 +16,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.cheap_utils import are_strings_similar, is_valid_string
+from yutipy.utils.logger import logger
 
 load_dotenv()
 
@@ -117,11 +118,14 @@ class KKBox:
         data = {"grant_type": "client_credentials"}
 
         try:
+            logger.info("Authenticating with KKBOX Open API")
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
+            logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.error(f"Network error during KKBOX authentication: {e}")
             raise NetworkException(f"Network error occurred: {e}")
 
         try:
@@ -180,8 +184,12 @@ class KKBox:
         )
         query_url = f"{self.api_url}/search{query}"
 
+        logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
+        logger.debug(f"Query URL: {query_url}")
+
         try:
             response = self._session.get(query_url, headers=self.__header, timeout=30)
+            logger.debug(f"Parsing response JSON: {response.json()}")
             response.raise_for_status()
         except requests.RequestException as e:
             raise NetworkException(f"Network error occurred: {e}")
@@ -279,6 +287,9 @@ class KKBox:
         except KeyError:
             pass
 
+        logger.warning(
+            f"No matching results found for artist='{artist}' and song='{song}'"
+        )
         return None
 
     def _find_track(self, song: str, artist: str, track: dict) -> Optional[MusicInfo]:
@@ -403,6 +414,10 @@ class KKBox:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     kkbox = KKBox(KKBOX_CLIENT_ID, KKBOX_CLIENT_SECRET)
 
     try:

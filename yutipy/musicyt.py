@@ -12,6 +12,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.cheap_utils import are_strings_similar, is_valid_string
+from yutipy.utils.logger import logger
 
 
 class MusicYT:
@@ -70,15 +71,23 @@ class MusicYT:
 
         query = f"{artist} - {song}"
 
+        logger.info(
+            f"Searching YouTube Music for `artist='{artist}'` and `song='{song}'`"
+        )
+
         try:
             results = self.ytmusic.search(query=query, limit=limit)
         except exceptions.YTMusicServerError as e:
+            logger.error(f"Network error while searching YouTube Music: {e}")
             raise NetworkException(f"Network error occurred: {e}")
 
         for result in results:
             if self._is_relevant_result(artist, song, result):
                 return self._process_result(result)
 
+        logger.warning(
+            f"No matching results found for artist='{artist}' and song='{song}'"
+        )
         return None
 
     def _is_relevant_result(self, artist: str, song: str, result: dict) -> bool:
@@ -276,6 +285,10 @@ class MusicYT:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     music_yt = MusicYT()
 
     artist_name = input("Artist Name: ")

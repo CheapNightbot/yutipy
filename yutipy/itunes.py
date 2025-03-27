@@ -16,6 +16,7 @@ from yutipy.utils.cheap_utils import (
     guess_album_type,
     is_valid_string,
 )
+from yutipy.utils.logger import logger
 
 
 class Itunes:
@@ -89,22 +90,34 @@ class Itunes:
             query_url = endpoint + query
 
             try:
+                logger.info(
+                    f'Searching iTunes for `artist="{artist}"` and `song="{song}"`'
+                )
+                logger.debug(f"Query URL: {query_url}")
                 response = self._session.get(query_url, timeout=30)
+                logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
+                logger.error(f"Network error while searching iTunes: {e}")
                 raise NetworkException(f"Network error occurred: {e}")
             except Exception as e:
+                logger.exception(f"Unexpected error while searching iTunes: {e}")
                 raise ItunesException(f"An error occurred while searching iTunes: {e}")
 
             try:
+                logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["results"]
             except (IndexError, KeyError, ValueError) as e:
+                logger.error(f"Invalid response structure from iTunes: {e}")
                 raise InvalidResponseException(f"Invalid response received: {e}")
 
             music_info = self._parse_result(artist, song, result)
             if music_info:
                 return music_info
 
+        logger.warning(
+            f"No matching results found for artist='{artist}' and song='{song}'"
+        )
         return None
 
     def _parse_result(
@@ -212,6 +225,10 @@ class Itunes:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     itunes = Itunes()
 
     try:

@@ -21,6 +21,7 @@ from yutipy.utils.cheap_utils import (
     is_valid_string,
     separate_artists,
 )
+from yutipy.utils.logger import logger
 
 load_dotenv()
 
@@ -123,11 +124,14 @@ class Spotify:
         data = {"grant_type": "client_credentials"}
 
         try:
+            logger.info("Authenticating with Spotify API")
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
+            logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.error(f"Network error during Spotify authentication: {e}")
             raise NetworkException(f"Network error occurred: {e}")
 
         try:
@@ -189,6 +193,11 @@ class Spotify:
             self.__refresh_token_if_expired()
 
             query_url = f"{self.api_url}/search{query}"
+
+            logger.info(
+                f"Searching Spotify for `artist='{artist}'` and `song='{song}'`"
+            )
+            logger.debug(f"Query URL: {query_url}")
 
             try:
                 response = self._session.get(
@@ -342,6 +351,9 @@ class Spotify:
         except KeyError:
             pass
 
+        logger.warning(
+            f"No matching results found for artist='{artist}' and song='{song}'"
+        )
         return None
 
     def _find_track(
@@ -477,6 +489,10 @@ class Spotify:
 
 
 if __name__ == "__main__":
+    import logging
+    from yutipy.utils.logger import enable_logging
+
+    enable_logging(level=logging.DEBUG)
     spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
     try:
