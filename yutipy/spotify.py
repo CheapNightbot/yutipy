@@ -16,6 +16,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.cheap_utils import (
+    guess_album_type,
     are_strings_similar,
     is_valid_string,
     separate_artists,
@@ -175,6 +176,7 @@ class Spotify:
         self.normalize_non_english = normalize_non_english
 
         music_info = None
+        artist_ids = None
         queries = [
             f"?q=artist:{artist} track:{song}&type=track&limit={limit}",
             f"?q=artist:{artist} album:{song}&type=album&limit={limit}",
@@ -199,7 +201,7 @@ class Spotify:
             if response.status_code != 200:
                 raise SpotifyException(f"Failed to search for music: {response.json()}")
 
-            artist_ids = self._get_artists_ids(artist)
+            artist_ids = artist_ids if artist_ids else self._get_artists_ids(artist)
             music_info = self._find_music_info(
                 artist, song, response.json(), artist_ids
             )
@@ -449,10 +451,15 @@ class Spotify:
         ]
 
         if matching_artists:
+            guess = guess_album_type(album.get("total_tracks", 1))
+            guessed_right = are_strings_similar(
+                album.get("album_type", "x"), guess, use_translation=False
+            )
+
             return MusicInfo(
                 album_art=album["images"][0]["url"],
                 album_title=album["name"],
-                album_type=album["album_type"],
+                album_type=album.get("alnum_type") if guessed_right else guess,
                 artists=", ".join(artists_name),
                 genre=None,
                 id=album["id"],
@@ -461,7 +468,7 @@ class Spotify:
                 release_date=album["release_date"],
                 tempo=None,
                 title=album["name"],
-                type="album",
+                type=album.get("type"),
                 upc=None,
                 url=album["external_urls"]["spotify"],
             )
