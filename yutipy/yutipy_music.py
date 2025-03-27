@@ -25,6 +25,7 @@ class YutipyMusic:
     def __init__(self) -> None:
         """Initializes the YutipyMusic class."""
         self.music_info = MusicInfos()
+        self.normalize_non_english = True
         self.album_art_priority = ["deezer", "ytmusic", "itunes"]
         self.services = {
             "deezer": Deezer(),
@@ -51,13 +52,6 @@ class YutipyMusic:
         else:
             idx = self.album_art_priority.index("ytmusic")
             self.album_art_priority.insert(idx, "spotify")
-        self.normalize_non_english = True
-        self._translation_session = requests.Session()
-
-        # Assign the translation session to each service
-        for service in self.services.values():
-            if hasattr(service, "_translation_session"):
-                service._translation_session = self._translation_session
 
     def __enter__(self) -> "YutipyMusic":
         return self
