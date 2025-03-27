@@ -1,17 +1,21 @@
 from datetime import datetime
 from pprint import pprint
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 import requests
 
 from yutipy.exceptions import (
     InvalidResponseException,
     InvalidValueException,
-    NetworkException,
     ItunesException,
+    NetworkException,
 )
 from yutipy.models import MusicInfo
-from yutipy.utils.cheap_utils import are_strings_similar, is_valid_string
+from yutipy.utils.cheap_utils import (
+    are_strings_similar,
+    guess_album_type,
+    is_valid_string,
+)
 
 
 class Itunes:
@@ -180,7 +184,13 @@ class Itunes:
             album_title, album_type = result["collectionName"].split("-")
             return album_title.strip(), album_type.strip()
         except ValueError:
-            return result["collectionName"], result["wrapperType"]
+            guess = guess_album_type(result.get("trackCount", 1))
+            guessed_right = are_strings_similar(
+                result.get("wrapperType", "x"), guess, use_translation=False
+            )
+            return result["collectionName"], (
+                result["wrapperType"] if guessed_right else guess
+            )
 
     def _format_release_date(self, release_date: str) -> str:
         """
