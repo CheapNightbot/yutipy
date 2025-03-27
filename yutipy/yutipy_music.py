@@ -98,6 +98,20 @@ class YutipyMusic:
 
         self.normalize_non_english = normalize_non_english
 
+        attributes = [
+            "album_title",
+            "album_type",
+            "artists",
+            "genre",
+            "isrc",
+            "lyrics",
+            "release_date",
+            "tempo",
+            "title",
+            "type",
+            "upc",
+        ]
+
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(
@@ -113,14 +127,16 @@ class YutipyMusic:
             for future in as_completed(futures):
                 service_name = futures[future]
                 result = future.result()
-                self._combine_results(result, service_name)
+                self._combine_results(result, service_name, attributes)
 
         if len(self.music_info.url) == 0:
             return None
 
         return self.music_info
 
-    def _combine_results(self, result: Optional[MusicInfo], service_name: str) -> None:
+    def _combine_results(
+        self, result: Optional[MusicInfo], service_name: str, attributes: list
+    ) -> None:
         """
         Combines the results from different services.
 
@@ -134,25 +150,16 @@ class YutipyMusic:
         if not result:
             return
 
-        attributes = [
-            "album_title",
-            "album_type",
-            "artists",
-            "genre",
-            "isrc",
-            "lyrics",
-            "release_date",
-            "tempo",
-            "title",
-            "type",
-            "upc",
-        ]
-
         for attr in attributes:
             if getattr(result, attr) and (
-                not getattr(self.music_info, attr) or service_name == "spotify"
+                not getattr(self.music_info, attr)
+                or (attr in ["genre", "album_type"] and service_name == "itunes")
             ):
-                setattr(self.music_info, attr, getattr(result, attr))
+                setattr(
+                    self.music_info,
+                    attr,
+                    getattr(result, attributes.pop(attributes.index(attr))),
+                )
 
         if result.album_art:
             current_priority = self.album_art_priority.index(service_name)
