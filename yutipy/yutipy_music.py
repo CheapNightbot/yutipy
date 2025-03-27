@@ -33,7 +33,7 @@ class YutipyMusic:
 
         try:
             self.services["kkbox"] = KKBox()
-        except KKBoxException as e:
+        except (KKBoxException, Exception) as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
             )
@@ -43,7 +43,7 @@ class YutipyMusic:
 
         try:
             self.services["spotify"] = Spotify()
-        except SpotifyException as e:
+        except (SpotifyException, Exception) as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
             )
@@ -108,8 +108,13 @@ class YutipyMusic:
 
             for future in as_completed(futures):
                 service_name = futures[future]
-                result = future.result()
-                self._combine_results(result, service_name)
+                try:
+                    result = future.result()
+                    self._combine_results(result, service_name)
+                except Exception as e:
+                    logger.error(
+                        f"Error occurred while searching with {service_name}: {e}"
+                    )
 
         if len(self.music_info.url) == 0:
             logger.warning(
