@@ -117,5 +117,15 @@ def is_valid_string(string: str) -> bool:
     return bool(string and (string.isalnum() or not string.isspace()))
 
 
+def guess_album_type(total_tracks: int):
+    """Just guessing the album type (i.e. single, ep or album) by total track counts."""
+    if total_tracks == 1:
+        return "single"
+    if 3 <= total_tracks <= 5:
+        return "ep"
+    if total_tracks >= 7:
+        return "album"
+
+
 if __name__ == "__main__":
     separate_artists("Artist A ft. Artist B")
