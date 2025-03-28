@@ -4,4 +4,3 @@ include requirements.txt
 include requirements-dev.txt
 recursive-include yutipy *
 recursive-include tests *
-include cli/*.py
