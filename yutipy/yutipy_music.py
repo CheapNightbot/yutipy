@@ -9,7 +9,7 @@ from yutipy.kkbox import KKBox
 from yutipy.models import MusicInfo, MusicInfos
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
-from yutipy.utils.cheap_utils import is_valid_string
+from yutipy.utils.helpers import is_valid_string
 from yutipy.utils.logger import logger
 
 
