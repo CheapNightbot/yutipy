@@ -19,25 +19,6 @@ You can use the CLI tool to search for music directly from the command line:
 
     yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
 
-### Options:
-- **artist** (required): The name of the artist.
-- **song** (required): The title of the song.
-- **--limit**: The number of results to retrieve (default: 5).
-- **--normalize**: Normalize non-English characters for comparison.
-- **--verbose**: Enable logging in the terminal.
-- **--service**: Specify a single service to search (e.g., `deezer`, `spotify`, `itunes`).
-
-Configuration Wizard
---------------------
-
-To set up your API keys interactively, use the configuration wizard:
-
-.. code-block:: bash
-
-    yutipy-config
-
-The wizard will guide you through obtaining and setting up API keys for supported services like Spotify and KKBOX. If the required environment variables are already set, the wizard will skip those steps.
-
 Deezer
 ------
 
