@@ -54,3 +54,7 @@ funding = "https://ko-fi.com/cheapnightbot"
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"
 local_scheme = "no-local-version"
+
+[project.scripts]
+yutipy-cli = "cli.search:main"
+yutipy-config = "cli.config:run_config_wizard"

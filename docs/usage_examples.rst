@@ -5,10 +5,38 @@ Usage Examples
 Here's a quick example of how to use the **yutipy** package to search for a song:
 
 .. important::
-    All examples here—except for the `YouTube Music`_—use the ``with`` context manager to initialize an instance of the respective class,
+    All examples here use the ``with`` context manager to initialize an instance of the respective class,
     as those classes internally use ``requests.Session()`` for making requests to APIs.
     This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` is not mandatory,
     if you instantiate an object without it, you are responsible for closing the session after use by calling the ``close_session()`` method on that object.
+
+CLI Tool
+--------
+
+You can use the CLI tool to search for music directly from the command line:
+
+.. code-block:: bash
+
+    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+
+### Options:
+- **artist** (required): The name of the artist.
+- **song** (required): The title of the song.
+- **--limit**: The number of results to retrieve (default: 5).
+- **--normalize**: Normalize non-English characters for comparison.
+- **--verbose**: Enable logging in the terminal.
+- **--service**: Specify a single service to search (e.g., `deezer`, `spotify`, `itunes`).
+
+Configuration Wizard
+--------------------
+
+To set up your API keys interactively, use the configuration wizard:
+
+.. code-block:: bash
+
+    yutipy-config
+
+The wizard will guide you through obtaining and setting up API keys for supported services like Spotify and KKBOX. If the required environment variables are already set, the wizard will skip those steps.
 
 Deezer
 ------
@@ -107,9 +135,9 @@ YouTube Music
 
     from yutipy.musicyt import MusicYT
 
-    music_yt = MusicYT()
-    result = music_yt.search("Artist Name", "Song Title")
-    print(result)
+    with MusicYT() as music_yt:
+        result = music_yt.search("Artist Name", "Song Title")
+        print(result)
 
 Yutipy Music
 ------------

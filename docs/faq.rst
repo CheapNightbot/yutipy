@@ -70,6 +70,28 @@ Why am I receiving a ``KKBoxException`` when trying to use the ``KKBox`` class?
 Unfortunately, it's the same case as with Spotify. You will need a ``Client ID`` and ``Client Secret``
 obtained from the KKBOX for Developers website. Please visit https://developer.kkbox.com/ for more information.
 
+How do I use the CLI tool to search for music?
+---------------------------------------------
+
+You can use the CLI tool to search for music directly from the command line. For example:
+
+.. code-block:: bash
+
+    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+
+For more details, see the :doc:`usage_examples`.
+
+How do I set up API keys for the library?
+-----------------------------------------
+
+You can use the configuration wizard to set up API keys interactively:
+
+.. code-block:: bash
+
+    yutipy-config
+
+The wizard will guide you through obtaining and setting up API keys for supported services like Spotify and KKBOX.
+
 ----
 
 .. [#] There may be additional features in the future.

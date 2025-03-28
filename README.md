@@ -31,6 +31,10 @@ A _**simple**_ Python package for searching and retrieving music information fro
     - [Available Music Platforms](#available-music-platforms)
 - [Installation](#installation)
 - [Usage Example](#usage-example)
+- [Command-Line Interface (CLI)](#command-line-interface-cli)
+    - [Search for Music](#search-for-music)
+        - [Options](#options)
+    - [Configuration Wizard](#configuration-wizard)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -62,9 +66,7 @@ pip install -U yutipy
 
 ## Usage Example
 
-Here's a quick example of how to use the `yutipy` package to search for a song:
-
-### Deezer
+Here's a quick example of how to use the `yutipy` package to search for a song on **Deezer**:
 
 ```python
 from yutipy.deezer import Deezer
@@ -75,6 +77,36 @@ with Deezer() as deezer:
 ```
 
 For more usage examples, see the [Usage Examples](https://yutipy.readthedocs.io/en/latest/usage_examples.html) page in docs.
+
+## Command-Line Interface (CLI)
+
+The `yutipy` package includes a CLI tool that allows you to search for music directly from the command line and configure API keys interactively.
+
+### Search for Music
+
+You can use the CLI tool to search for music across multiple platforms:
+
+```bash
+yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+```
+
+#### Options:
+- `artist` (required): The name of the artist.
+- `song` (required): The title of the song.
+- `--limit`: The number of results to retrieve (default: 5).
+- `--normalize`: Normalize non-English characters for comparison.
+- `--verbose`: Enable logging in the terminal.
+- `--service`: Specify a single service to search (e.g., `deezer`, `spotify`, `itunes`).
+
+### Configuration Wizard
+
+To set up your API keys interactively, use the configuration wizard:
+
+```bash
+yutipy-config
+```
+
+The wizard will guide you through obtaining and setting up API keys for supported services like Spotify and KKBOX. If the required environment variables are already set, the wizard will skip those steps.
 
 ## Contributing
 
