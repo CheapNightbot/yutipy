@@ -139,7 +139,3 @@ def guess_album_type(total_tracks: int):
         return "ep"
     if total_tracks >= 7:
         return "album"
-
-
-if __name__ == "__main__":
-    separate_artists("Artist A ft. Artist B")

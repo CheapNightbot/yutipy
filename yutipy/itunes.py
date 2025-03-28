@@ -11,7 +11,7 @@ from yutipy.exceptions import (
     NetworkException,
 )
 from yutipy.models import MusicInfo
-from yutipy.utils.cheap_utils import (
+from yutipy.utils.helpers import (
     are_strings_similar,
     guess_album_type,
     is_valid_string,
