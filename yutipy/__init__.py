@@ -15,3 +15,5 @@ __all__ = [
     "Spotify",
     "YutipyMusic",
 ]
+
+__version__ = "1.4.22"
