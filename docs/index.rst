@@ -45,8 +45,9 @@ Get Started
 
    installation
    available_platforms
-   api_reference
    usage_examples
+   api_reference
+   cli
    faq
 
 .. toctree::
