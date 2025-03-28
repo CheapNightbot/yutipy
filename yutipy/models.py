@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Union
+from typing import Dict, Optional, Union
 
 
 @dataclass
