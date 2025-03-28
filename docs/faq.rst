@@ -71,7 +71,7 @@ Unfortunately, it's the same case as with Spotify. You will need a ``Client ID``
 obtained from the KKBOX for Developers website. Please visit https://developer.kkbox.com/ for more information.
 
 How do I use the CLI tool to search for music?
----------------------------------------------
+----------------------------------------------
 
 You can use the CLI tool to search for music directly from the command line. For example:
 
