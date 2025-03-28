@@ -25,6 +25,14 @@ class MusicYT:
         self.normalize_non_english = True
         self._translation_session = requests.Session()
 
+    def __enter__(self) -> "MusicYT":
+        """Enters the runtime context related to this object."""
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
+        """Exits the runtime context related to this object."""
+        self.close_session()
+
     def close_session(self) -> None:
         """Closes the current session(s)."""
         if not self.is_session_closed:
