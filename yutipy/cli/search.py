@@ -2,7 +2,13 @@ import argparse
 from dataclasses import asdict
 from pprint import pprint
 
-from yutipy import __version__
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version("yutipy")
+except PackageNotFoundError:
+    __version__ = "unknown"
+
 from yutipy.deezer import Deezer
 from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
@@ -43,7 +49,7 @@ def main():
         "--version",
         action="version",
         version=f"yutipy v{__version__}",
-        help="Show the version of the CLI tool and exit.",
+        help="Show the version of the yutipy and exit.",
     )
     parser.add_argument(
         "--service",
