@@ -33,7 +33,7 @@ class YutipyMusic:
 
         try:
             self.services["kkbox"] = KKBox()
-        except (KKBoxException, Exception) as e:
+        except (KKBoxException) as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
             )
@@ -43,7 +43,7 @@ class YutipyMusic:
 
         try:
             self.services["spotify"] = Spotify()
-        except (SpotifyException, Exception) as e:
+        except (SpotifyException) as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
             )
