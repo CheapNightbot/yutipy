@@ -33,7 +33,7 @@ SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
 
 class Spotify:
     """
-    A class to interact with the Spotify API.
+    A class to interact with the Spotify API. It uses "Client Credentials" grant type (or flow).
 
     This class reads the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_CLIENT_SECRET`` from environment variables or the ``.env`` file by default.
     Alternatively, you can manually provide these values when creating an object.
@@ -45,14 +45,14 @@ class Spotify:
         client_secret: str = SPOTIFY_CLIENT_SECRET,
     ) -> None:
         """
-        Initializes the Spotify class and sets up the session.
+        Initializes the Spotify class (using Client Credentials grant type/flow) and sets up the session.
 
         Parameters
         ----------
         client_id : str, optional
-            The Client ID for the Spotify API. Defaults to ``SPOTIFY_CLIENT_ID`` from .env file.
+            The Client ID for the Spotify API. Defaults to ``SPOTIFY_CLIENT_ID`` from environment variable or the ``.env`` file.
         client_secret : str, optional
-            The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from .env file.
+            The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
         """
         if not client_id or not client_secret:
             raise SpotifyException(
