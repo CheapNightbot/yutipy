@@ -1,3 +1,5 @@
+__all__ = ["KKBox", "KKBoxException"]
+
 import base64
 import os
 import time

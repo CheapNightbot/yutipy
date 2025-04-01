@@ -1,3 +1,5 @@
+__all__ = ["Spotify", "SpotifyException"]
+
 import base64
 import os
 import time
@@ -490,6 +492,7 @@ class Spotify:
 
 if __name__ == "__main__":
     import logging
+
     from yutipy.utils.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)

@@ -1,3 +1,5 @@
+__all__ = ["Itunes", "ItunesException"]
+
 from datetime import datetime
 from pprint import pprint
 from typing import Dict, Optional

@@ -4,7 +4,6 @@ from .kkbox import KKBox
 from .musicyt import MusicYT
 from .spotify import Spotify
 from .yutipy_music import YutipyMusic
-from . import exceptions
 
 __all__ = [
     "Deezer",
@@ -13,5 +12,4 @@ __all__ = [
     "MusicYT",
     "Spotify",
     "YutipyMusic",
-    "exceptions"
 ]

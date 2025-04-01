@@ -1,4 +1,5 @@
-import os
+__all__ = ["MusicYT", "MusicYTException"]
+
 from pprint import pprint
 from typing import Optional
 
@@ -8,7 +9,7 @@ from ytmusicapi import YTMusic, exceptions
 from yutipy.exceptions import (
     InvalidResponseException,
     InvalidValueException,
-    NetworkException,
+    MusicYTException,
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
@@ -86,8 +87,8 @@ class MusicYT:
         try:
             results = self.ytmusic.search(query=query, limit=limit)
         except exceptions.YTMusicServerError as e:
-            logger.error(f"Network error while searching YouTube Music: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.error(f"Something went wrong while searching YTMusic: {e}")
+            raise MusicYTException(f"Something went wrong while searching YTMusic: {e}")
 
         for result in results:
             if self._is_relevant_result(artist, song, result):
@@ -294,6 +295,7 @@ class MusicYT:
 
 if __name__ == "__main__":
     import logging
+
     from yutipy.utils.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)

@@ -1,15 +1,20 @@
+__all__ = [
+    "AuthenticationException",
+    "InvalidResponseException",
+    "InvalidValueException",
+    "NetworkException",
+    "YutipyException",
+]
+
+
+# Base Exception
 class YutipyException(Exception):
     """Base class for exceptions in the Yutipy package."""
 
     pass
 
 
-class InvalidValueException(YutipyException):
-    """Exception raised for invalid values."""
-
-    pass
-
-
+# Service Exceptions
 class DeezerException(YutipyException):
     """Exception raised for errors related to the Deezer API."""
 
@@ -22,8 +27,8 @@ class ItunesException(YutipyException):
     pass
 
 
-class SpotifyException(YutipyException):
-    """Exception raised for errors related to the Spotify API."""
+class KKBoxException(YutipyException):
+    """Exception raised for erros related to the KKBOX Open API."""
 
     pass
 
@@ -34,14 +39,15 @@ class MusicYTException(YutipyException):
     pass
 
 
-class AuthenticationException(YutipyException):
-    """Exception raised for authentication errors."""
+class SpotifyException(YutipyException):
+    """Exception raised for errors related to the Spotify API."""
 
     pass
 
 
-class NetworkException(YutipyException):
-    """Exception raised for network-related errors."""
+# Generic Exceptions
+class AuthenticationException(YutipyException):
+    """Exception raised for authentication errors."""
 
     pass
 
@@ -52,5 +58,13 @@ class InvalidResponseException(YutipyException):
     pass
 
 
-class KKBoxException(YutipyException):
-    """Exception raised for erros related to the KKBOX Open API."""
+class InvalidValueException(YutipyException):
+    """Exception raised for invalid values."""
+
+    pass
+
+
+class NetworkException(YutipyException):
+    """Exception raised for network-related errors."""
+
+    pass

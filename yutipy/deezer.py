@@ -1,3 +1,5 @@
+__all__ = ["Deezer", "DeezerException"]
+
 from pprint import pprint
 from typing import Dict, List, Optional
 
