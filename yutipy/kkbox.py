@@ -18,7 +18,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.utils.logger import logger
+from yutipy.logging import logger
 
 load_dotenv()
 
@@ -417,7 +417,7 @@ class KKBox:
 
 if __name__ == "__main__":
     import logging
-    from yutipy.utils.logger import enable_logging
+    from yutipy.logging import enable_logging
 
     enable_logging(level=logging.DEBUG)
     kkbox = KKBox(KKBOX_CLIENT_ID, KKBOX_CLIENT_SECRET)

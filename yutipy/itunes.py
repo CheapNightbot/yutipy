@@ -18,7 +18,7 @@ from yutipy.utils.helpers import (
     guess_album_type,
     is_valid_string,
 )
-from yutipy.utils.logger import logger
+from yutipy.logging import logger
 
 
 class Itunes:
@@ -228,7 +228,7 @@ class Itunes:
 
 if __name__ == "__main__":
     import logging
-    from yutipy.utils.logger import enable_logging
+    from yutipy.logging import enable_logging
 
     enable_logging(level=logging.DEBUG)
     itunes = Itunes()

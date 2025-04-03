@@ -23,7 +23,7 @@ from yutipy.utils.helpers import (
     is_valid_string,
     separate_artists,
 )
-from yutipy.utils.logger import logger
+from yutipy.logging import logger
 
 load_dotenv()
 
@@ -493,7 +493,7 @@ class Spotify:
 if __name__ == "__main__":
     import logging
 
-    from yutipy.utils.logger import enable_logging
+    from yutipy.logging import enable_logging
 
     enable_logging(level=logging.DEBUG)
     spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)

@@ -13,7 +13,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.utils.logger import logger
+from yutipy.logging import logger
 
 
 class MusicYT:
@@ -296,7 +296,7 @@ class MusicYT:
 if __name__ == "__main__":
     import logging
 
-    from yutipy.utils.logger import enable_logging
+    from yutipy.logging import enable_logging
 
     enable_logging(level=logging.DEBUG)
     music_yt = MusicYT()
