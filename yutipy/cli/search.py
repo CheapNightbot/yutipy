@@ -14,7 +14,7 @@ from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
-from yutipy.logging import disable_logging, enable_logging
+from yutipy.logger import disable_logging, enable_logging
 from yutipy.yutipy_music import YutipyMusic
 
 

@@ -10,7 +10,7 @@ from yutipy.models import MusicInfo, MusicInfos
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
 from yutipy.utils.helpers import is_valid_string
-from yutipy.logging import logger
+from yutipy.logger import logger
 
 
 class YutipyMusic:
@@ -182,7 +182,7 @@ class YutipyMusic:
 
 if __name__ == "__main__":
     import logging
-    from yutipy.logging import enable_logging
+    from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
     yutipy_music = YutipyMusic()

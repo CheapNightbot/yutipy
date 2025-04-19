@@ -13,7 +13,7 @@ from yutipy.exceptions import (
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.logging import logger
+from yutipy.logger import logger
 
 
 class Deezer:
@@ -323,7 +323,7 @@ class Deezer:
 
 if __name__ == "__main__":
     import logging
-    from yutipy.logging import enable_logging
+    from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
     deezer = Deezer()

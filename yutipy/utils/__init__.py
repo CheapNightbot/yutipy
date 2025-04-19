@@ -4,7 +4,7 @@ from .helpers import (
     is_valid_string,
     separate_artists,
 )
-from ..logging import disable_logging, enable_logging
+from ..logger import disable_logging, enable_logging
 
 __all__ = [
     "guess_album_type",
