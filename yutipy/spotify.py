@@ -704,7 +704,7 @@ class SpotifyAuth:
             response_json["requested_at"] = time()
             return response_json
         else:
-            raise InvalidResponseException(f"Invalid response received: {e}")
+            raise InvalidResponseException(f"Invalid response received: {response.json()}")
 
     def refresh_access_token(self):
         """Refreshes the token if it has expired."""
