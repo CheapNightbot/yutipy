@@ -41,6 +41,12 @@ Spotify
     :noindex:
     :exclude-members: is_session_closed
 
+.. autoclass:: yutipy.spotify.SpotifyAuth
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
 YouTube Music
 -------------
 

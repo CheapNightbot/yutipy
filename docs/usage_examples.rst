@@ -73,7 +73,11 @@ Alternatively, you can manually provide these values when creating an object of 
 Spotify
 -------
 
-To use the Spotify API, you need to set the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_CLIENT_SECRET`` for Spotify. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
+Client Credentials Grant Type
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To use the Spotify API with Client Credentials flow, you need to set the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_CLIENT_SECRET`` for Spotify.
+You can do this by creating a ``.env`` file in the root directory of your project with the following content:
 
 .. admonition:: .env
 
@@ -82,7 +86,7 @@ To use the Spotify API, you need to set the ``SPOTIFY_CLIENT_ID`` and ``SPOTIFY_
         SPOTIFY_CLIENT_ID=<your_spotify_client_id>
         SPOTIFY_CLIENT_SECRET=<your_spotify_client_secret>
 
-Alternatively, you can manually provide these values when creating an object of the `Spotify` class:
+Alternatively, you can manually provide these values when creating an object of the ``Spotify`` class:
 
 .. code-block:: python
 
@@ -108,6 +112,89 @@ OR, if you have the ":abbr:`ISRC (International Standard Recording Code)`" or ":
         # ISRC for "single" tracks & UPC for "album" tracks. Only one of them is required.
         result = spotify.search_advanced("Artist Name", "Song Title", isrc="USAT29900609", upc="00602517078194")
         print(result)
+
+Authorization Code Flow
+~~~~~~~~~~~~~~~~~~~~~~~
+
+To use the Spotify API with the Authorization Code Flow, you need to set the ``SPOTIFY_CLIENT_ID``, ``SPOTIFY_CLIENT_SECRET``, and ``SPOTIFY_REDIRECT_URI``.
+You can do this by creating a ``.env`` file in the root directory of your project with the following content:
+
+.. admonition:: .env
+
+    .. code-block:: bash
+
+        SPOTIFY_CLIENT_ID=<your_spotify_client_id>
+        SPOTIFY_CLIENT_SECRET=<your_spotify_client_secret>
+        SPOTIFY_REDIRECT_URI=<your_redirect_uri>
+
+Alternatively, you can manually provide these values when creating an object of the ``SpotifyAuth`` class.
+
+Here’s an example of how to use the ``SpotifyAuth`` class in a web application:
+
+.. code-block:: python
+
+    from flask import Flask, request, session, redirect, url_for
+    from yutipy.spotify import SpotifyAuth, SpotifyAuthException
+
+    app = Flask(__name__)
+    app.secret_key = "your_secret_key"  # Replace with a secure secret key
+
+    # Initialize SpotifyAuth with your credentials
+    SPOTIFY_CLIENT_ID = "your_spotify_client_id"
+    SPOTIFY_CLIENT_SECRET = "your_spotify_client_secret"
+    SPOTIFY_REDIRECT_URI = "http://localhost:5000/callback"
+
+    spotify_auth = SpotifyAuth(
+        client_id=SPOTIFY_CLIENT_ID,
+        client_secret=SPOTIFY_CLIENT_SECRET,
+        redirect_uri=SPOTIFY_REDIRECT_URI,
+        scopes=["user-read-email", "user-read-private"],
+    )
+
+    @app.route("/")
+    def home():
+        """Home route to start the authorization process."""
+        state = spotify_auth.generate_state()
+        session["state"] = state  # Save the state in the session for validation
+        auth_url = spotify_auth.get_authorization_url(state=state)
+        return redirect(auth_url)
+
+    @app.route("/callback")
+    def callback():
+        """Callback route to handle Spotify's response after user authorization."""
+        code = request.args.get("code")
+        state = request.args.get("state")
+        expected_state = session.get("state")
+
+        if not code or not state:
+            return "Authorization failed: Missing code or state.", 400
+
+        try:
+            spotify_auth.callback_handler(code, state, expected_state)
+            user_profile = spotify_auth.get_user_profile()
+            if user_profile:
+                return f"Successfully authenticated! Welcome, {user_profile['display_name']}."
+            else:
+                return "Authentication successful, but failed to fetch user profile."
+        except SpotifyAuthException as e:
+            return f"Authorization failed: {e}", 400
+
+    @app.route("/logout")
+    def logout():
+        """Logout route to close the session."""
+        spotify_auth.close_session()
+        session.clear()
+        return "Logged out successfully."
+
+    if __name__ == "__main__":
+        app.run(debug=True)
+
+.. note::
+
+    - Avoid hard-coding your credentials in the code. Instead, define them in a ``.env`` file, which will be automatically read by the library.
+    - Ensure that the redirect URI matches the one configured in your Spotify Developer Dashboard.
+    - This example uses Flask, but it can be adapted to other web frameworks as needed.
+
 
 YouTube Music
 -------------
