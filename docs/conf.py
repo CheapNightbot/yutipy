@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath("../yutipy"))
 project = "yutipy"
 copyright = "%Y, Cheap Nightbot"
 author = "Cheap Nightbot"
-release = "0.1.0"
+release = ""
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
