@@ -59,7 +59,7 @@ Feel free to request any music platform you would like me to add by opening an i
 
 ## Installation
 
-You can install the package using pip. Make sure you have Python 3.8 or higher installed.
+You can install the package using pip. Make sure you have Python 3.9 or higher installed.
 
 ```bash
 pip install -U yutipy
