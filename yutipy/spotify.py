@@ -63,15 +63,6 @@ class Spotify:
         self.client_id = client_id or SPOTIFY_CLIENT_ID
         self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
 
-        self._is_session_closed = False
-        self._normalize_non_english = True
-
-        self.__api_url = "https://api.spotify.com/v1"
-        self.__session = requests.Session()
-        self.__translation_session = requests.Session()
-        self.__start_time = time()
-        self.__header, self.__expires_in = self.__authenticate()
-
         if not self.client_id:
             raise SpotifyException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
@@ -81,6 +72,15 @@ class Spotify:
             raise SpotifyException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
+
+        self._is_session_closed = False
+        self._normalize_non_english = True
+
+        self.__api_url = "https://api.spotify.com/v1"
+        self.__session = requests.Session()
+        self.__translation_session = requests.Session()
+        self.__start_time = time()
+        self.__header, self.__expires_in = self.__authenticate()
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -539,16 +539,6 @@ class SpotifyAuth:
         self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
         self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
-        self.scope = scopes
-        self.defer_load = defer_load
-
-        self._is_session_closed = False
-
-        self.__access_token = None
-        self.__refresh_token = None
-        self.__token_expires_in = None
-        self.__token_requested_at = None
-        self.__session = requests.Session()
 
         if not self.client_id:
             raise SpotifyAuthException(
@@ -564,6 +554,17 @@ class SpotifyAuth:
             raise SpotifyAuthException(
                 "No redirect URI was provided! Set it in environment variable or directly pass it when creating object."
             )
+
+        self.scope = scopes
+        self.defer_load = defer_load
+
+        self._is_session_closed = False
+
+        self.__access_token = None
+        self.__refresh_token = None
+        self.__token_expires_in = None
+        self.__token_requested_at = None
+        self.__session = requests.Session()
 
         if not scopes:
             logger.warning(
@@ -704,7 +705,9 @@ class SpotifyAuth:
             response_json["requested_at"] = time()
             return response_json
         else:
-            raise InvalidResponseException(f"Invalid response received: {response.json()}")
+            raise InvalidResponseException(
+                f"Invalid response received: {response.json()}"
+            )
 
     def refresh_access_token(self):
         """Refreshes the token if it has expired."""
@@ -738,7 +741,7 @@ class SpotifyAuth:
         """
         return secrets.token_urlsafe(16)
 
-    def get_authorization_url(self, state=None):
+    def get_authorization_url(self, state: str = None):
         """
         Constructs the Spotify authorization URL for user authentication.
 
@@ -798,7 +801,7 @@ class SpotifyAuth:
             "If not implemented, access token information will not be persisted, and users will need to re-authenticate after application restarts."
         )
 
-    def load_access_token(self) -> dict | None:
+    def load_access_token(self) -> Union[dict, None]:
         """
         Loads the access token and related information.
 
