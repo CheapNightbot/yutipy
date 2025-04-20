@@ -968,7 +968,7 @@ if __name__ == "__main__":
 
             user_profile = spotify_auth.get_user_profile()
             if user_profile:
-                print(f'Successfully authenticated "{user_profile['display_name']}".')
+                print(f"Successfully authenticated \"{user_profile['display_name']}\".")
             else:
                 print("Authentication successful, but failed to fetch user profile.")
         finally:
