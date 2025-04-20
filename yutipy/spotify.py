@@ -1,10 +1,13 @@
-__all__ = ["Spotify", "SpotifyException"]
+__all__ = ["Spotify", "SpotifyException", "SpotifyAuthException"]
 
 import base64
 import os
-import time
+import secrets
+import webbrowser
 from pprint import pprint
+from time import time
 from typing import Optional, Union
+from urllib.parse import urlencode
 
 import requests
 from dotenv import load_dotenv
@@ -14,8 +17,10 @@ from yutipy.exceptions import (
     InvalidResponseException,
     InvalidValueException,
     NetworkException,
+    SpotifyAuthException,
     SpotifyException,
 )
+from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import (
     are_strings_similar,
@@ -23,12 +28,12 @@ from yutipy.utils.helpers import (
     is_valid_string,
     separate_artists,
 )
-from yutipy.logging import logger
 
 load_dotenv()
 
 SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
 SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
 
 
 class Spotify:
@@ -41,8 +46,8 @@ class Spotify:
 
     def __init__(
         self,
-        client_id: str = SPOTIFY_CLIENT_ID,
-        client_secret: str = SPOTIFY_CLIENT_SECRET,
+        client_id: str = None,
+        client_secret: str = None,
     ) -> None:
         """
         Initializes the Spotify class (using Client Credentials grant type/flow) and sets up the session.
@@ -54,20 +59,28 @@ class Spotify:
         client_secret : str, optional
             The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
         """
-        if not client_id or not client_secret:
+
+        self.client_id = client_id or SPOTIFY_CLIENT_ID
+        self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
+
+        self._is_session_closed = False
+        self._normalize_non_english = True
+
+        self.__api_url = "https://api.spotify.com/v1"
+        self.__session = requests.Session()
+        self.__translation_session = requests.Session()
+        self.__start_time = time()
+        self.__header, self.__expires_in = self.__authenticate()
+
+        if not self.client_id:
             raise SpotifyException(
-                "Failed to read `SPOTIFY_CLIENT_ID` and/or `SPOTIFY_CLIENT_SECRET` from environment variables. Client ID and Client Secret must be provided."
+                "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self._session = requests.Session()
-        self.api_url = "https://api.spotify.com/v1"
-        self.__header, self.__expires_in = self.__authenticate()
-        self.__start_time = time.time()
-        self._is_session_closed = False
-        self.normalize_non_english = True
-        self._translation_session = requests.Session()
+        if not self.client_secret:
+            raise SpotifyException(
+                "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
+            )
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -80,8 +93,8 @@ class Spotify:
     def close_session(self) -> None:
         """Closes the current session(s)."""
         if not self.is_session_closed:
-            self._session.close()
-            self._translation_session.close()
+            self.__session.close()
+            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -127,7 +140,7 @@ class Spotify:
 
         try:
             logger.info("Authenticating with Spotify API")
-            response = self._session.post(
+            response = self.__session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
             logger.debug(f"Authentication response status code: {response.status_code}")
@@ -144,9 +157,9 @@ class Spotify:
 
     def __refresh_token_if_expired(self):
         """Refreshes the token if it has expired."""
-        if time.time() - self.__start_time >= self.__expires_in:
+        if time() - self.__start_time >= self.__expires_in:
             self.__header, self.__expires_in = self.__authenticate()
-            self.__start_time = time.time()
+            self.__start_time = time()
 
     def search(
         self,
@@ -179,7 +192,7 @@ class Spotify:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
+        self._normalize_non_english = normalize_non_english
 
         music_info = None
         artist_ids = None
@@ -194,7 +207,7 @@ class Spotify:
 
             self.__refresh_token_if_expired()
 
-            query_url = f"{self.api_url}/search{query}"
+            query_url = f"{self.__api_url}/search{query}"
 
             logger.info(
                 f"Searching Spotify for `artist='{artist}'` and `song='{song}'`"
@@ -202,7 +215,7 @@ class Spotify:
             logger.debug(f"Query URL: {query_url}")
 
             try:
-                response = self._session.get(
+                response = self.__session.get(
                     query_url, headers=self.__header, timeout=30
                 )
                 response.raise_for_status()
@@ -256,7 +269,7 @@ class Spotify:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
+        self._normalize_non_english = normalize_non_english
 
         self.__refresh_token_if_expired()
 
@@ -267,9 +280,9 @@ class Spotify:
         else:
             raise InvalidValueException("ISRC or UPC must be provided.")
 
-        query_url = f"{self.api_url}/search{query}"
+        query_url = f"{self.__api_url}/search{query}"
         try:
-            response = self._session.get(query_url, headers=self.__header, timeout=30)
+            response = self.__session.get(query_url, headers=self.__header, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             raise NetworkException(f"Network error occurred: {e}")
@@ -298,9 +311,9 @@ class Spotify:
         """
         artist_ids = []
         for name in separate_artists(artist):
-            query_url = f"{self.api_url}/search?q={name}&type=artist&limit=5"
+            query_url = f"{self.__api_url}/search?q={name}&type=artist&limit=5"
             try:
-                response = self._session.get(
+                response = self.__session.get(
                     query_url, headers=self.__header, timeout=30
                 )
                 response.raise_for_status()
@@ -383,8 +396,8 @@ class Spotify:
         if not are_strings_similar(
             track["name"],
             song,
-            use_translation=self.normalize_non_english,
-            translation_session=self._translation_session,
+            use_translation=self._normalize_non_english,
+            translation_session=self.__translation_session,
         ):
             return None
 
@@ -395,8 +408,8 @@ class Spotify:
             if are_strings_similar(
                 x["name"],
                 artist,
-                use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                use_translation=self._normalize_non_english,
+                translation_session=self.__translation_session,
             )
             or x["id"] in artist_ids
         ]
@@ -446,8 +459,8 @@ class Spotify:
         if not are_strings_similar(
             album["name"],
             song,
-            use_translation=self.normalize_non_english,
-            translation_session=self._translation_session,
+            use_translation=self._normalize_non_english,
+            translation_session=self.__translation_session,
         ):
             return None
 
@@ -458,8 +471,8 @@ class Spotify:
             if are_strings_similar(
                 x["name"],
                 artist,
-                use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                use_translation=self._normalize_non_english,
+                translation_session=self.__translation_session,
             )
             or x["id"] in artist_ids
         ]
@@ -490,17 +503,476 @@ class Spotify:
         return None
 
 
+class SpotifyAuth:
+    """
+    A class to interact with the Spotify API. It uses "Authorization Code" grant type (or flow).
+
+    This class reads the ``SPOTIFY_CLIENT_ID``, ``SPOTIFY_CLIENT_SECRET`` and ``SPOTIFY_REDIRECT_URI``
+    from environment variables or the ``.env`` file by default.
+    Alternatively, you can manually provide these values when creating an object.
+    """
+
+    def __init__(
+        self,
+        client_id: str = None,
+        client_secret: str = None,
+        redirect_uri: str = None,
+        scopes: list[str] = None,
+        defer_load: bool = False,
+    ):
+        """
+        Initializes the SpotifyAuth class (using Authorization Code grant type/flow) and sets up the session.
+
+        Parameters
+        ----------
+        client_id : str, optional
+            The Client ID for the Spotify API. Defaults to ``SPOTIFY_CLIENT_ID`` from environment variable or the ``.env`` file.
+        client_secret : str, optional
+            The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
+        redirect_uri : str, optional
+            The Redirect URI for the Spotify API. Defaults to ``SPOTIFY_REDIRECT_URI`` from environment variable or the ``.env`` file.
+        scopes : list[str], optional
+            A list of scopes for the Spotify API. For example: `['user-read-email', 'user-read-private']`.
+        defer_load : bool, optional
+            Whether to defer loading the access token during initialization. Default is ``False``.
+        """
+        self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
+        self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
+        self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
+        self.scope = scopes
+        self.defer_load = defer_load
+
+        self._is_session_closed = False
+
+        self.__access_token = None
+        self.__refresh_token = None
+        self.__token_expires_in = None
+        self.__token_requested_at = None
+        self.__session = requests.Session()
+
+        if not self.client_id:
+            raise SpotifyAuthException(
+                "Client ID was not found. Set it in environment variable or directly pass it when creating object."
+            )
+
+        if not self.client_secret:
+            raise SpotifyAuthException(
+                "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
+            )
+
+        if not self.redirect_uri:
+            raise SpotifyAuthException(
+                "No redirect URI was provided! Set it in environment variable or directly pass it when creating object."
+            )
+
+        if not scopes:
+            logger.warning(
+                "No scopes were provided. Authorization will only grant access to publicly available information."
+            )
+            self.scope = None
+        else:
+            self.scope = " ".join(scopes)
+
+        if not defer_load:
+            # Attempt to load access token during initialization if not deferred
+            try:
+                token_info = self.load_access_token()
+                if token_info:
+                    self.__access_token = token_info.get("access_token")
+                    self.__refresh_token = token_info.get("refresh_token")
+                    self.__token_expires_in = token_info.get("expires_in")
+                    self.__token_requested_at = token_info.get("requested_at")
+                else:
+                    logger.warning(
+                        "No access token found during initialization. You must authenticate to obtain a new token."
+                    )
+            except NotImplementedError:
+                logger.warning(
+                    "`load_access_token` is not implemented. Falling back to in-memory storage."
+                )
+        else:
+            logger.warning(
+                "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
+            )
+
+    def __enter__(self):
+        """Enters the runtime context related to this object."""
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        """Exits the runtime context related to this object."""
+        self.close_session()
+
+    def close_session(self) -> None:
+        """Closes the current session(s)."""
+        if not self.is_session_closed:
+            self.__session.close()
+            self.__translation_session.close()
+            self._is_session_closed = True
+
+    @property
+    def is_session_closed(self) -> bool:
+        """Checks if the session is closed."""
+        return self._is_session_closed
+
+    def load_token_after_init(self):
+        """
+        Explicitly load the access token after initialization.
+        This is useful when ``defer_load`` is set to ``True`` during initialization.
+        """
+        try:
+            token_info = self.load_access_token()
+            if token_info:
+                self.__access_token = token_info.get("access_token")
+                self.__refresh_token = token_info.get("refresh_token")
+                self.__token_expires_in = token_info.get("expires_in")
+                self.__token_requested_at = token_info.get("requested_at")
+            else:
+                logger.warning(
+                    "No access token found. You must authenticate to obtain a new token."
+                )
+        except NotImplementedError:
+            logger.warning(
+                "`load_access_token` is not implemented. Falling back to in-memory storage."
+            )
+
+    def __authorization_header(self) -> dict:
+        """
+        Generates the authorization header for Spotify API requests.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the Bearer token for authentication.
+        """
+        return {"Authorization": f"Bearer {self.__access_token}"}
+
+    def __get_access_token(
+        self,
+        authorization_code: str = None,
+        refresh_token: str = None,
+    ) -> dict:
+        """
+        Gets the Spotify API access token information.
+
+        If ``authorization_code`` provided, it will try to get a new access token from Spotify.
+        Otherwise, if `refresh_token` is provided, it will refresh the access token using it
+        and return new access token information.
+
+        Returns
+        -------
+        dict
+            The Spotify API access token, with additional information such as expires in, refresh token, etc.
+        """
+        auth_string = f"{self.client_id}:{self.client_secret}"
+        auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
+
+        url = "https://accounts.spotify.com/api/token"
+        headers = {
+            "Authorization": f"Basic {auth_base64}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        if authorization_code:
+            data = {
+                "grant_type": "authorization_code",
+                "code": authorization_code,
+                "redirect_uri": self.redirect_uri,
+            }
+
+        if refresh_token:
+            data = {
+                "grant_type": "refresh_token",
+                "refresh_token": self.__refresh_token,
+            }
+
+        try:
+            logger.info(
+                "Authenticating with Spotify API using Authorization Code grant type."
+            )
+            response = self.__session.post(
+                url=url, headers=headers, data=data, timeout=30
+            )
+            logger.debug(f"Authentication response status code: {response.status_code}")
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f"Network error during Spotify authentication: {e}")
+            raise NetworkException(f"Network error occurred: {e}")
+
+        if response.status_code == 200:
+            response_json = response.json()
+            response_json["requested_at"] = time()
+            return response_json
+        else:
+            raise InvalidResponseException(f"Invalid response received: {e}")
+
+    def refresh_access_token(self):
+        """Refreshes the token if it has expired."""
+        if time() - self.__token_requested_at >= self.__token_expires_in:
+            token_info = self.__get_access_token(refresh_token=self.__refresh_token)
+
+            try:
+                self.save_access_token(token_info)
+            except NotImplementedError as e:
+                print(e)
+
+            self.__access_token = token_info.get("access_token")
+            self.__refresh_token = token_info.get("refresh_token")
+            self.__token_expires_in = token_info.get("expires_in")
+            self.__token_requested_at = token_info.get("requested_at")
+
+        logger.info("The access token is still valid, no need to refresh.")
+
+    @staticmethod
+    def generate_state() -> str:
+        """
+        Generates a random state string for use in OAuth 2.0 authorization.
+
+        This method creates a cryptographically secure, URL-safe string that can be used
+        to prevent cross-site request forgery (CSRF) attacks during the authorization process.
+
+        Returns
+        -------
+        str
+            A random URL-safe string to be used as the state parameter in OAuth 2.0.
+        """
+        return secrets.token_urlsafe(16)
+
+    def get_authorization_url(self, state=None):
+        """
+        Constructs the Spotify authorization URL for user authentication.
+
+        This method generates a URL that can be used to redirect users to Spotify's
+        authorization page for user authentication.
+
+        Parameters
+        ----------
+        state : str, optional
+            A random string to maintain state between the request and callback.
+            If not provided, no state parameter is included.
+
+            You may use :meth:`SpotifyAuth.generate_state` method to generate one.
+
+        Returns
+        -------
+        str
+            The full authorization URL to redirect users for Spotify authentication.
+        """
+        auth_endpoint = "https://accounts.spotify.com/authorize"
+        payload = {
+            "response_type": "code",
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+        }
+
+        if self.scope:
+            payload["scope"] = self.scope
+
+        if state:
+            payload["state"] = state
+
+        return f"{auth_endpoint}?{urlencode(payload)}"
+
+    def save_access_token(self, token_info: dict) -> None:
+        """
+        Saves the access token and related information.
+
+        This method must be overridden in a subclass to persist the access token and other
+        related information (e.g., refresh token, expiration time). If not implemented,
+        the access token will not be saved, and users will need to re-authenticate after
+        application restarts.
+
+        Parameters
+        ----------
+        token_info : dict
+            A dictionary containing the access token and related information, such as
+            refresh token, expiration time, etc.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not overridden in a subclass.
+        """
+        raise NotImplementedError(
+            "The `save_access_token` method must be overridden in a subclass to save the access token and related information. "
+            "If not implemented, access token information will not be persisted, and users will need to re-authenticate after application restarts."
+        )
+
+    def load_access_token(self) -> dict | None:
+        """
+        Loads the access token and related information.
+
+        This method must be overridden in a subclass to retrieve the access token and other
+        related information (e.g., refresh token, expiration time) from persistent storage.
+        If not implemented, the access token will not be loaded, and users will need to
+        re-authenticate after application restarts.
+
+        Returns
+        -------
+        dict | None
+            A dictionary containing the access token and related information, such as
+            refresh token, expiration time, etc., or None if no token is found.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not overridden in a subclass.
+        """
+        raise NotImplementedError(
+            "The `load_access_token` method must be overridden in a subclass to load access token and related information. "
+            "If not implemented, access token information will not be loaded, and users will need to re-authenticate after application restarts."
+        )
+
+    def callback_handler(self, code, state, expected_state):
+        """
+        Handles the callback phase of the OAuth 2.0 authorization process.
+
+        This method processes the authorization code and state returned by Spotify after the user
+        has granted permission. It validates the state to prevent CSRF attacks, exchanges the
+        authorization code for an access token, and saves the token for future use.
+
+        Parameters
+        ----------
+        code : str
+            The authorization code returned by Spotify after user authorization.
+        state : str
+            The state parameter returned by Spotify to ensure the request's integrity.
+        expected_state : str
+            The original state parameter sent during the authorization request, used to validate the response.
+
+        Raises
+        ------
+        SpotifyAuthException
+            If the returned state does not match the expected state.
+
+        Notes
+        -----
+        - This method can be used in a web application (e.g., Flask) in the `/callback` route to handle
+          successful authorization.
+        - Ensure that the ``save_access_token`` and ``load_access_token`` methods are implemented in a subclass
+          if token persistence is required.
+
+        Example
+        -------
+        In a Flask application, you can use this method in the ``/callback`` route:
+
+        .. code-block:: python
+
+            @app.route('/callback')
+            def callback():
+                code = request.args.get('code')
+                state = request.args.get('state')
+                expected_state = session['state']  # Retrieve the state stored during authorization URL generation
+
+                try:
+                    spotify_auth.callback_handler(code, state, expected_state)
+                    return "Authorization successful!"
+                except SpotifyAuthException as e:
+                    return f"Authorization failed: {e}", 400
+        """
+        if state != expected_state:
+            raise SpotifyAuthException("state does not match!")
+
+        try:
+            token_info = self.load_access_token()
+        except NotImplementedError as e:
+            logger.warning(e)
+            token_info = self.__get_access_token(authorization_code=code)
+
+        self.__access_token = token_info.get("access_token")
+        self.__refresh_token = token_info.get("refresh_token")
+        self.__token_expires_in = token_info.get("expires_in")
+        self.__token_requested_at = token_info.get("requested_at")
+
+        try:
+            self.save_access_token(token_info)
+        except NotImplementedError as e:
+            logger.warning(e)
+
+    def get_user_profile(self):
+        """
+        Fetches the user's display name and profile images.
+
+        Notes
+        -----
+        - ``user-read-email`` and ``user-read-private`` scopes are required to access user profile information.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the user's display name and profile images.
+        """
+        endpoint_url = "https://api.spotify.com/v1/me"
+        header = self.__authorization_header()
+
+        try:
+            response = self.__session.get(endpoint_url, headers=header, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.error(f"Failed to fetch user profile: {e}")
+            return None
+
+        if response.status_code != 200:
+            logger.error(f"Unexpected response: {response.json()}")
+            return None
+
+        response_json = response.json()
+        return {
+            "display_name": response_json.get("display_name"),
+            "images": response_json.get("images", []),
+        }
+
+
 if __name__ == "__main__":
     import logging
+    from dataclasses import asdict
 
-    from yutipy.logging import enable_logging
+    from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
-    spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
 
-    try:
-        artist_name = input("Artist Name: ")
-        song_name = input("Song Name: ")
-        pprint(spotify.search(artist_name, song_name))
-    finally:
-        spotify.close_session()
+    print("\nChoose Spotify Grant Type/Flow:")
+    print("1. Client Credentials (Spotify)")
+    print("2. Authorization Code (SpotifyAuth)")
+    choice = input("\nEnter your choice (1 or 2): ")
+
+    if choice == "1":
+        spotify = Spotify(SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET)
+
+        try:
+            artist_name = input("Artist Name: ")
+            song_name = input("Song Name: ")
+            pprint(f"\n{asdict(spotify.search(artist_name, song_name))}")
+        finally:
+            spotify.close_session()
+
+    elif choice == "2":
+        redirect_uri = input("Enter Redirect URI: ")
+        scopes = ["user-read-email", "user-read-private"]
+
+        spotify_auth = SpotifyAuth(
+            client_id=SPOTIFY_CLIENT_ID,
+            client_secret=SPOTIFY_CLIENT_SECRET,
+            redirect_uri=redirect_uri,
+            scopes=scopes,
+        )
+
+        try:
+            state = spotify_auth.generate_state()
+            auth_url = spotify_auth.get_authorization_url(state=state)
+            print(f"Opening the following URL in your browser: {auth_url}")
+            webbrowser.open(auth_url)
+
+            code = input("Enter the authorization code: ")
+            spotify_auth.callback_handler(code, state, state)
+
+            user_profile = spotify_auth.get_user_profile()
+            if user_profile:
+                print(f'Successfully authenticated "{user_profile['display_name']}".')
+            else:
+                print("Authentication successful, but failed to fetch user profile.")
+        finally:
+            spotify_auth.close_session()
+
+    else:
+        print("Invalid choice. Exiting.")
