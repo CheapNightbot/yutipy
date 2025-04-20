@@ -85,7 +85,25 @@ MusicInfos
 Exceptions
 =============
 
+Base Exception
+--------------
+
 .. autoclass:: yutipy.exceptions.YutipyException
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: add_note, args, with_traceback
+
+Generic Exceptions
+------------------
+
+.. autoclass:: yutipy.exceptions.AuthenticationException
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: add_note, args, with_traceback
+
+.. autoclass:: yutipy.exceptions.InvalidResponseException
     :members:
     :inherited-members:
     :noindex:
@@ -96,6 +114,15 @@ Exceptions
     :inherited-members:
     :noindex:
     :exclude-members: add_note, args, with_traceback
+
+.. autoclass:: yutipy.exceptions.NetworkException
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: add_note, args, with_traceback
+
+Service Exceptions
+------------------
 
 .. autoclass:: yutipy.exceptions.DeezerException
     :members:
@@ -109,7 +136,7 @@ Exceptions
     :noindex:
     :exclude-members: add_note, args, with_traceback
 
-.. autoclass:: yutipy.exceptions.SpotifyException
+.. autoclass:: yutipy.exceptions.KKBoxException
     :members:
     :inherited-members:
     :noindex:
@@ -121,25 +148,13 @@ Exceptions
     :noindex:
     :exclude-members: add_note, args, with_traceback
 
-.. autoclass:: yutipy.exceptions.AuthenticationException
+.. autoclass:: yutipy.exceptions.SpotifyException
     :members:
     :inherited-members:
     :noindex:
     :exclude-members: add_note, args, with_traceback
 
-.. autoclass:: yutipy.exceptions.NetworkException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.InvalidResponseException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.KKBoxException
+.. autoclass:: yutipy.exceptions.SpotifyAuthException
     :members:
     :inherited-members:
     :noindex:
