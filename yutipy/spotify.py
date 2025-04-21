@@ -876,10 +876,14 @@ class SpotifyAuth:
         if state != expected_state:
             raise SpotifyAuthException("state does not match!")
 
+        token_info = None
+
         try:
             token_info = self.load_access_token()
         except NotImplementedError as e:
             logger.warning(e)
+
+        if not token_info:
             token_info = self.__get_access_token(authorization_code=code)
 
         self.__access_token = token_info.get("access_token")
