@@ -608,7 +608,6 @@ class SpotifyAuth:
         """Closes the current session(s)."""
         if not self.is_session_closed:
             self.__session.close()
-            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
