@@ -66,3 +66,16 @@ class MusicInfos(MusicInfo):
     """
 
     album_art_source: Optional[str] = None
+
+
+@dataclass
+class UserPlaying(MusicInfo):
+    """A data class to store users' currently playing music information.
+
+    Attributes
+    ----------
+    is_playing : Optional[bool]
+        Whether the music is currently playing or paused.
+    """
+
+    is_playing: Optional[bool] = None
