@@ -21,7 +21,7 @@ from yutipy.exceptions import (
     SpotifyException,
 )
 from yutipy.logger import logger
-from yutipy.models import MusicInfo
+from yutipy.models import MusicInfo, UserPlaying
 from yutipy.utils.helpers import (
     are_strings_similar,
     guess_album_type,
@@ -560,6 +560,7 @@ class SpotifyAuth:
 
         self._is_session_closed = False
 
+        self.__api_url = "https://api.spotify.com/v1/me"
         self.__access_token = None
         self.__refresh_token = None
         self.__token_expires_in = None
@@ -908,11 +909,11 @@ class SpotifyAuth:
         dict
             A dictionary containing the user's display name and profile images.
         """
-        endpoint_url = "https://api.spotify.com/v1/me"
+        query_url = self.__api_url
         header = self.__authorization_header()
 
         try:
-            response = self.__session.get(endpoint_url, headers=header, timeout=30)
+            response = self.__session.get(query_url, headers=header, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             logger.error(f"Failed to fetch user profile: {e}")
@@ -927,6 +928,71 @@ class SpotifyAuth:
             "display_name": response_json.get("display_name"),
             "images": response_json.get("images", []),
         }
+
+    def get_currently_playing(self) -> Optional[UserPlaying]:
+        """
+        Fetches information about the currently playing track for the authenticated user.
+
+        This method interacts with the Spotify API to retrieve details about the track
+        the user is currently listening to. It includes information such as the track's
+        title, album, artists, release date, and more.
+
+        Returns
+        -------
+        Optional[UserPlaying_]
+            An instance of the ``UserPlaying`` model containing details about the currently
+            playing track if available, or ``None`` if no track is currently playing or an
+            error occurs.
+
+        Notes
+        -----
+        - The user must have granted the necessary permissions (e.g., `user-read-currently-playing` scope) for this method to work.
+        - If the API response does not contain the expected data, the method will return `None`.
+
+        """
+        query_url = f"{self.__api_url}/player/currently-playing"
+        header = self.__authorization_header()
+
+        try:
+            response = self.__session.get(query_url, headers=header, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            raise NetworkException(f"Network error occurred: {e}")
+
+        if response.status_code != 200:
+            logger.error(f"Unexpected response: {response.json()}")
+            return None
+
+        response_json = response.json()
+        result = response_json.get("item")
+        if result:
+            guess = guess_album_type(result.get("album", {}).get("total_tracks", 1))
+            guessed_right = are_strings_similar(
+                result.get("album", {}).get("album_type", "x"),
+                guess,
+                use_translation=False,
+            )
+            return UserPlaying(
+                album_art=result.get("album", {}).get("images", [])[0].get("url"),
+                album_title=result.get("album", {}).get("name"),
+                album_type=(
+                    result.get("album", {}).get("album_type")
+                    if guessed_right
+                    else guess
+                ),
+                artists=", ".join([x["name"] for x in result.get("artists", [])]),
+                genre=None,
+                id=result.get("id"),
+                isrc=result.get("external_ids", {}).get("isrc"),
+                is_playing=response_json.get("is_playing"),
+                lyrics=None,
+                release_date=result.get("album", {}).get("release_date"),
+                tempo=None,
+                title=result.get("name"),
+                type=result.get("type"),
+                upc=result.get("external_ids", {}).get("upc"),
+                url=result.get("external_urls", {}).get("spotify"),
+            )
 
 
 if __name__ == "__main__":
