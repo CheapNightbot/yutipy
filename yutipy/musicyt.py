@@ -300,8 +300,9 @@ if __name__ == "__main__":
 
     enable_logging(level=logging.DEBUG)
     music_yt = MusicYT()
-
-    artist_name = input("Artist Name: ")
-    song_name = input("Song Name: ")
-
-    pprint(music_yt.search(artist_name, song_name))
+    try:
+        artist_name = input("Artist Name: ")
+        song_name = input("Song Name: ")
+        pprint(music_yt.search(artist_name, song_name))
+    finally:
+        music_yt.close_session()
