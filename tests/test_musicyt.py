@@ -1,8 +1,9 @@
 import pytest
 from pytest import raises
-from yutipy.musicyt import MusicYT
-from yutipy.models import MusicInfo
+
 from yutipy.exceptions import InvalidValueException
+from yutipy.models import MusicInfo
+from yutipy.musicyt import MusicYT
 
 
 @pytest.fixture

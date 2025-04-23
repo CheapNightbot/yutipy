@@ -1,4 +1,4 @@
-from yutipy.models import MusicInfo
+from yutipy.models import MusicInfo, MusicInfos, UserPlaying
 
 
 def test_music_info():
@@ -33,3 +33,17 @@ def test_music_info():
     assert music_info.type == "track"
     assert music_info.upc == "123456789012"
     assert music_info.url == "https://example.com/song"
+
+
+def test_music_infos():
+    music_infos = MusicInfos(album_art_source="Example Source")
+
+    assert music_infos.album_art_source == "Example Source"
+    assert isinstance(music_infos.album_art_source, str)
+
+
+def test_user_playing():
+    user_playing = UserPlaying(is_playing=False)
+
+    assert user_playing.is_playing is False
+    assert isinstance(user_playing.is_playing, bool)

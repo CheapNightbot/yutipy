@@ -1,5 +1,6 @@
 import pytest
 
+from tests import BaseResponse
 from yutipy.deezer import Deezer
 from yutipy.models import MusicInfo
 
@@ -9,13 +10,8 @@ def deezer():
     return Deezer()
 
 
-class MockSearchResponse:
-    status_code = 200
-
-    @staticmethod
-    def raise_for_status():
-        pass
-
+# Mock response only for the search endpoint
+class MockSearchResponse(BaseResponse):
     @staticmethod
     def json():
         return {
@@ -46,13 +42,8 @@ class MockSearchResponse:
         }
 
 
-class MockResponse:
-    status_code = 200
-
-    @staticmethod
-    def raise_for_status():
-        pass
-
+# Mock response for requesting individual track or album
+class MockResponse(BaseResponse):
     @staticmethod
     def json():
         return {

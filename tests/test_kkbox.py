@@ -1,9 +1,10 @@
 import pytest
 from pytest import raises
 
+from tests import BaseResponse
 from yutipy.exceptions import InvalidValueException
-from yutipy.models import MusicInfo
 from yutipy.kkbox import KKBox
+from yutipy.models import MusicInfo
 
 
 @pytest.fixture(scope="module")
@@ -24,13 +25,7 @@ def kkbox():
     return kkbox_instance
 
 
-class MockResponse:
-    status_code = 200
-
-    @staticmethod
-    def raise_for_status():
-        pass
-
+class MockResponse(BaseResponse):
     @staticmethod
     def json():
         return {
