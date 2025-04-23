@@ -35,4 +35,4 @@ Set up API keys interactively:
 
     yutipy-config
 
-The wizard will guide you through obtaining and setting up API keys for supported services like Spotify and KKBOX.
+The wizard will guide you through obtaining and setting up API keys for supported services like KKBOX, Lastfm and Spotify.

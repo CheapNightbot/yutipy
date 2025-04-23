@@ -5,10 +5,14 @@ Usage Examples
 Here's a quick example of how to use the **yutipy** package to search for a song:
 
 .. important::
-    All examples here use the ``with`` context manager to initialize an instance of the respective class,
-    as those classes internally use ``requests.Session()`` for making requests to APIs.
-    This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` is not mandatory,
-    if you instantiate an object without it, you are responsible for closing the session after use by calling the ``close_session()`` method on that object.
+    - All examples here use the ``with`` context manager to initialize an instance of the respective class,
+      as those classes internally use ``requests.Session()`` for making requests to APIs.
+      This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` is not mandatory,
+      if you instantiate an object without it, you are responsible for closing the session after use by calling the ``close_session()`` method on that object.
+
+    - Following examples suggest to create ``.env`` file for storing, for example api keys. However, when hosting or deplyoing your application on production,
+      it is suggested and you may store them in environment variable(s) provided by your hosting provider.
+
 
 CLI Tool
 --------
@@ -41,11 +45,11 @@ iTunes
         result = itunes.search("Artist Name", "Song Title")
         print(result)
 
-
 KKBOX
--------
+-----
 
-To use the KKBOX Open API, you need to set the ``KKBOX_CLIENT_ID`` and ``KKBOX_CLIENT_SECRET`` for KKBOX. You can do this by creating a ``.env`` file in the root directory of your project with the following content:
+To use the KKBOX Open API, you need to set the ``KKBOX_CLIENT_ID`` and ``KKBOX_CLIENT_SECRET`` for KKBOX.
+You can do this by creating a ``.env`` file in the root directory of your project with the following content:
 
 .. admonition:: .env
 
@@ -54,7 +58,7 @@ To use the KKBOX Open API, you need to set the ``KKBOX_CLIENT_ID`` and ``KKBOX_C
         KKBOX_CLIENT_ID=<your_kkbox_client_id>
         KKBOX_CLIENT_SECRET=<your_kkbox_client_secret>
 
-Alternatively, you can manually provide these values when creating an object of the `KKBox` class:
+Alternatively, you can manually provide these values when creating an object of the ``KKBox`` class:
 
 .. code-block:: python
 
@@ -68,6 +72,34 @@ Alternatively, you can manually provide these values when creating an object of 
 
     with KKBox() as kkbox:
         result = kkbox.search("Artist Name", "Song Title")
+        print(result)
+
+Lastfm
+------
+
+To use and retreive information from Lastfm, you need Lastfm API Key and need to set ``LASTFM_API_KEY``.
+You can do this by creating a ``.env`` file int the root directory of your project with the following content:
+
+.. admonition:: .env
+
+    .. code-block:: bash
+
+        LASTFM_API_KEY=<your_lastfm_api_key>
+
+Alternatively, you can manually provide these values when creating an object of the ``LastFm`` class:
+
+.. code-block:: python
+
+    from yutipy.lastfm import LastFm
+
+    lastfm = LastFm(api_key="your_lastfm_api_key")
+
+.. code-block:: python
+
+    from yutipy.lastfm import LastFm
+
+    with LastFm() as lastfm:
+        result = lastfm.get_currently_playing(username="username")
         print(result)
 
 Spotify
