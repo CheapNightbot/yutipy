@@ -206,8 +206,8 @@ class KKBox:
         Saves the access token and related information.
 
         This method must be overridden in a subclass to persist the access token and other
-        related information (e.g., refresh token, expiration time). If not implemented,
-        the access token will not be saved, and users will need to re-authenticate after
+        related information (e.g., expiration time). If not implemented,
+        the access token will not be saved, and it will be requested each time the
         application restarts.
 
         Parameters
@@ -231,9 +231,9 @@ class KKBox:
         Loads the access token and related information.
 
         This method must be overridden in a subclass to retrieve the access token and other
-        related information (e.g., refresh token, expiration time) from persistent storage.
-        If not implemented, the access token will not be loaded, and users will need to
-        re-authenticate after application restarts.
+        related information (e.g., expiration time) from persistent storage.
+        If not implemented, the access token will not be loaded, and it will be requested
+        each time the application restarts.
 
         Returns
         -------
