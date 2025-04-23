@@ -1,3 +1,5 @@
+__all__ = ["YutipyMusic"]
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pprint import pprint
 from typing import Optional

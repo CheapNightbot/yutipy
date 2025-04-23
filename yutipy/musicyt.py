@@ -24,7 +24,7 @@ class MusicYT:
         self.ytmusic = YTMusic()
         self._is_session_closed = False
         self.normalize_non_english = True
-        self._translation_session = requests.Session()
+        self.__translation_session = requests.Session()
 
     def __enter__(self) -> "MusicYT":
         """Enters the runtime context related to this object."""
@@ -37,7 +37,7 @@ class MusicYT:
     def close_session(self) -> None:
         """Closes the current session(s)."""
         if not self.is_session_closed:
-            self._translation_session.close()
+            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -125,13 +125,13 @@ class MusicYT:
                 result.get("title"),
                 song,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             and are_strings_similar(
                 _artist.get("name"),
                 artist,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             for _artist in result.get("artists", [])
         )
@@ -199,9 +199,9 @@ class MusicYT:
         MusicInfo
             The extracted music information.
         """
-        title = result["title"]
-        artist_names = ", ".join([artist["name"] for artist in result["artists"]])
-        video_id = result["videoId"]
+        title = result.get("title")
+        artist_names = ", ".join([artist.get("name") for artist in result.get("artists", [])])
+        video_id = result.get("videoId")
         song_url = f"https://music.youtube.com/watch?v={video_id}"
         lyrics_id = self.ytmusic.get_watch_playlist(video_id)
 
@@ -300,8 +300,9 @@ if __name__ == "__main__":
 
     enable_logging(level=logging.DEBUG)
     music_yt = MusicYT()
-
-    artist_name = input("Artist Name: ")
-    song_name = input("Song Name: ")
-
-    pprint(music_yt.search(artist_name, song_name))
+    try:
+        artist_name = input("Artist Name: ")
+        song_name = input("Song Name: ")
+        pprint(music_yt.search(artist_name, song_name))
+    finally:
+        music_yt.close_session()

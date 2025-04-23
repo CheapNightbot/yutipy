@@ -21,10 +21,10 @@ class Deezer:
 
     def __init__(self) -> None:
         """Initializes the Deezer class and sets up the session."""
-        self._session = requests.Session()
         self.api_url = "https://api.deezer.com"
         self._is_session_closed = False
         self.normalize_non_english = True
+        self.__session = requests.Session()
         self._translation_session = requests.Session()
 
     def __enter__(self) -> "Deezer":
@@ -38,7 +38,7 @@ class Deezer:
     def close_session(self) -> None:
         """Closes the current session."""
         if not self.is_session_closed:
-            self._session.close()
+            self.__session.close()
             self._translation_session.close()
             self._is_session_closed = True
 
@@ -93,7 +93,7 @@ class Deezer:
                     f'Searching music info for `artist="{artist}"` and `song="{song}"`'
                 )
                 logger.debug(f"Query URL: {query_url}")
-                response = self._session.get(query_url, timeout=30)
+                response = self.__session.get(query_url, timeout=30)
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
@@ -160,7 +160,7 @@ class Deezer:
         try:
             logger.info(f"Fetching track info for track_id: {track_id}")
             logger.debug(f"Query URL: {query_url}")
-            response = self._session.get(query_url, timeout=30)
+            response = self.__session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
@@ -201,7 +201,7 @@ class Deezer:
         try:
             logger.info(f"Fetching album info for album_id: {album_id}")
             logger.debug(f"Query URL: {query_url}")
-            response = self._session.get(query_url, timeout=30)
+            response = self.__session.get(query_url, timeout=30)
             logger.info(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
