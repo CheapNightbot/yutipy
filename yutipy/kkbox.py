@@ -2,8 +2,9 @@ __all__ = ["KKBox", "KKBoxException"]
 
 import base64
 import os
-import time
+from dataclasses import asdict
 from pprint import pprint
+from time import time
 from typing import Optional, Union
 
 import requests
@@ -16,9 +17,9 @@ from yutipy.exceptions import (
     KKBoxException,
     NetworkException,
 )
+from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.logger import logger
 
 load_dotenv()
 
@@ -35,7 +36,7 @@ class KKBox:
     """
 
     def __init__(
-        self, client_id: str = KKBOX_CLIENT_ID, client_secret: str = KKBOX_CLIENT_SECRET
+        self, client_id: str = None, client_secret: str = None, defer_load: bool = False
     ) -> None:
         """
         Initializes the KKBox class and sets up the session.
@@ -46,22 +47,54 @@ class KKBox:
             The Client ID for the KKBOX Open API. Defaults to ``KKBOX_CLIENT_ID`` from .env file.
         client_secret : str, optional
             The Client secret for the KKBOX Open API. Defaults to ``KKBOX_CLIENT_SECRET`` from .env file.
+        defer_load : bool, optional
+            Whether to defer loading the access token during initialization. Default is ``False``.
         """
-        if not client_id or not client_secret:
+        self.client_id = client_id or KKBOX_CLIENT_ID
+        self.client_secret = client_secret or KKBOX_CLIENT_SECRET
+
+        if not self.client_id:
             raise KKBoxException(
-                "Failed to read `KKBOX_CLIENT_ID` and/or `KKBOX_CLIENT_SECRET` from environment variables. Client ID and Client Secret must be provided."
+                "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        self.client_id = client_id
-        self.client_secret = client_secret
-        self.__session = requests.Session()
-        self.api_url = "https://api.kkbox.com/v1.1"
-        self.__header, self.__expires_in = self.__authenticate()
-        self.__start_time = time.time()
+        if not self.client_secret:
+            raise KKBoxException(
+                "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
+            )
+
+        self.defer_load = defer_load
+
         self._is_session_closed = False
-        self.valid_territories = ["HK", "JP", "MY", "SG", "TW"]
-        self.normalize_non_english = True
+        self._normalize_non_english = True
+        self._valid_territories = ["HK", "JP", "MY", "SG", "TW"]
+
+        self.api_url = "https://api.kkbox.com/v1.1"
+        self.__access_token = None
+        self.__token_expires_in = None
+        self.__token_requested_at = None
+        self.__session = requests.Session()
         self.__translation_session = requests.Session()
+
+        if not defer_load:
+            # Attempt to load access token during initialization if not deferred
+            token_info = None
+            try:
+                token_info = self.load_access_token()
+            except NotImplementedError:
+                logger.warning(
+                    "`load_access_token` is not implemented. Falling back to in-memory storage and requesting new access token."
+                )
+            finally:
+                if not token_info:
+                    token_info = self.__get_access_token()
+                self.__access_token = token_info.get("access_token")
+                self.__token_expires_in = token_info.get("expires_in")
+                self.__token_requested_at = token_info.get("requested_at")
+        else:
+            logger.warning(
+                "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
+            )
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -83,31 +116,44 @@ class KKBox:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def __authenticate(self) -> tuple:
+    def load_token_after_init(self):
         """
-        Authenticates with the KKBOX Open API and returns the authorization header.
+        Explicitly load the access token after initialization.
+        This is useful when ``defer_load`` is set to ``True`` during initialization.
+        """
+        token_info = None
+        try:
+            token_info = self.load_access_token()
+        except NotImplementedError:
+            logger.warning(
+                "`load_access_token` is not implemented. Falling back to in-memory storage and requesting new access token."
+            )
+        finally:
+            if not token_info:
+                token_info = self.__get_access_token()
+            self.__access_token = token_info.get("access_token")
+            self.__token_expires_in = token_info.get("expires_in")
+            self.__token_requested_at = token_info.get("requested_at")
+
+    def __authorization_header(self) -> dict:
+        """
+        Generates the authorization header for Spotify API requests.
 
         Returns
         -------
         dict
-            The authorization header.
+            A dictionary containing the Bearer token for authentication.
         """
-        try:
-            token, expires_in = self.__get_access_token()
-            return {"Authorization": f"Bearer {token}"}, expires_in
-        except Exception as e:
-            raise AuthenticationException(
-                "Failed to authenticate with KKBOX Open API"
-            ) from e
+        return {"Authorization": f"Bearer {self.__access_token}"}
 
-    def __get_access_token(self) -> tuple:
+    def __get_access_token(self) -> dict:
         """
-        Gets the KKBOX Open API token.
+        Gets the KKBOX Open API access token information.
 
         Returns
         -------
         str
-            The KKBOX Open API token.
+            The KKBOX Open API access token, with additional information such as expires in, etc.
         """
         auth_string = f"{self.client_id}:{self.client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
@@ -130,17 +176,80 @@ class KKBox:
             logger.error(f"Network error during KKBOX authentication: {e}")
             raise NetworkException(f"Network error occurred: {e}")
 
-        try:
+        if response.status_code == 200:
             response_json = response.json()
-            return response_json.get("access_token"), response_json.get("expires_in")
-        except (KeyError, ValueError) as e:
-            raise InvalidResponseException(f"Invalid response received: {e}")
+            response_json["requested_at"] = time()
+            return response_json
+        else:
+            raise InvalidResponseException(
+                f"Invalid response received: {response.json()}"
+            )
 
-    def __refresh_token_if_expired(self):
+    def __refresh_access_token(self):
         """Refreshes the token if it has expired."""
-        if time.time() - self.__start_time >= self.__expires_in:
-            self.__header, self.__expires_in = self.__authenticate()
-            self.__start_time = time.time()
+        if time() - self.__token_requested_at >= self.__token_expires_in:
+            token_info = self.__get_access_token()
+
+            try:
+                self.save_access_token(token_info)
+            except NotImplementedError as e:
+                logger.warning(e)
+
+            self.__access_token = token_info.get("access_token")
+            self.__token_expires_in = token_info.get("expires_in")
+            self.__token_requested_at = token_info.get("requested_at")
+
+        logger.info("The access token is still valid, no need to refresh.")
+
+    def save_access_token(self, token_info: dict) -> None:
+        """
+        Saves the access token and related information.
+
+        This method must be overridden in a subclass to persist the access token and other
+        related information (e.g., refresh token, expiration time). If not implemented,
+        the access token will not be saved, and users will need to re-authenticate after
+        application restarts.
+
+        Parameters
+        ----------
+        token_info : dict
+            A dictionary containing the access token and related information, such as
+            refresh token, expiration time, etc.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not overridden in a subclass.
+        """
+        raise NotImplementedError(
+            "The `save_access_token` method must be overridden in a subclass to save the access token and related information. "
+            "If not implemented, access token information will not be persisted, and users will need to re-authenticate after application restarts."
+        )
+
+    def load_access_token(self) -> Union[dict, None]:
+        """
+        Loads the access token and related information.
+
+        This method must be overridden in a subclass to retrieve the access token and other
+        related information (e.g., refresh token, expiration time) from persistent storage.
+        If not implemented, the access token will not be loaded, and users will need to
+        re-authenticate after application restarts.
+
+        Returns
+        -------
+        dict | None
+            A dictionary containing the access token and related information, such as
+            refresh token, expiration time, etc., or None if no token is found.
+
+        Raises
+        ------
+        NotImplementedError
+            If the method is not overridden in a subclass.
+        """
+        raise NotImplementedError(
+            "The `load_access_token` method must be overridden in a subclass to load access token and related information. "
+            "If not implemented, access token information will not be loaded, and users will need to re-authenticate after application restarts."
+        )
 
     def search(
         self,
@@ -177,9 +286,9 @@ class KKBox:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
+        self._normalize_non_english = normalize_non_english
 
-        self.__refresh_token_if_expired()
+        self.__refresh_access_token()
 
         query = (
             f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
@@ -190,7 +299,9 @@ class KKBox:
         logger.debug(f"Query URL: {query_url}")
 
         try:
-            response = self.__session.get(query_url, headers=self.__header, timeout=30)
+            response = self.__session.get(
+                query_url, headers=self.__authorization_header(), timeout=30
+            )
             logger.debug(f"Parsing response JSON: {response.json()}")
             response.raise_for_status()
         except requests.RequestException as e:
@@ -241,9 +352,9 @@ class KKBox:
                 f"`content_type` must be one of these: {valid_content_types} !"
             )
 
-        if territory not in self.valid_territories:
+        if territory not in self._valid_territories:
             raise InvalidValueException(
-                f"`territory` must be one of these: {self.valid_territories} !"
+                f"`territory` must be one of these: {self._valid_territories} !"
             )
 
         if widget_lang not in valid_widget_langs:
@@ -306,8 +417,6 @@ class KKBox:
             The name of the artist.
         track : dict
             A single track from the search results.
-        artist_ids : list
-            A list of artist IDs.
 
         Returns
         -------
@@ -317,18 +426,18 @@ class KKBox:
         if not are_strings_similar(
             track["name"],
             song,
-            use_translation=self.normalize_non_english,
+            use_translation=self._normalize_non_english,
             translation_session=self.__translation_session,
         ):
             return None
 
-        artists_name = track["album"]["artist"]["name"]
+        artists_name = track.get("album", {}).get("artist", {}).get("name")
         matching_artists = (
             artists_name
             if are_strings_similar(
                 artists_name,
                 artist,
-                use_translation=self.normalize_non_english,
+                use_translation=self._normalize_non_english,
                 translation_session=self.__translation_session,
             )
             else None
@@ -336,20 +445,20 @@ class KKBox:
 
         if matching_artists:
             return MusicInfo(
-                album_art=track["album"]["images"][2]["url"],
-                album_title=track["album"]["name"],
+                album_art=track.get("album", {}).get("images", [])[2]["url"],
+                album_title=track.get("album", {}).get("name"),
                 album_type=None,
                 artists=artists_name,
                 genre=None,
-                id=track["id"],
-                isrc=track["isrc"],
+                id=track.get("id"),
+                isrc=track.get("isrc"),
                 lyrics=None,
-                release_date=track["album"]["release_date"],
+                release_date=track.get("album", {}).get("release_date"),
                 tempo=None,
-                title=track["name"],
+                title=track.get("name"),
                 type="track",
                 upc=None,
-                url=track["url"],
+                url=track.get("url"),
             )
 
         return None
@@ -366,8 +475,6 @@ class KKBox:
             The name of the artist.
         album : dict
             A single album from the search results.
-        artist_ids : list
-            A list of artist IDs.
 
         Returns
         -------
@@ -377,18 +484,18 @@ class KKBox:
         if not are_strings_similar(
             album["name"],
             song,
-            use_translation=self.normalize_non_english,
+            use_translation=self._normalize_non_english,
             translation_session=self.__translation_session,
         ):
             return None
 
-        artists_name = album["artist"]["name"]
+        artists_name = album.get("artist", {}).get("name")
         matching_artists = (
             artists_name
             if are_strings_similar(
                 artists_name,
                 artist,
-                use_translation=self.normalize_non_english,
+                use_translation=self._normalize_non_english,
                 translation_session=self.__translation_session,
             )
             else None
@@ -396,20 +503,20 @@ class KKBox:
 
         if matching_artists:
             return MusicInfo(
-                album_art=album["images"][2]["url"],
-                album_title=album["name"],
+                album_art=album.get("images", [])[2]["url"],
+                album_title=album.get("name"),
                 album_type=None,
                 artists=artists_name,
                 genre=None,
-                id=album["id"],
+                id=album.get("id"),
                 isrc=None,
                 lyrics=None,
-                release_date=album["release_date"],
+                release_date=album.get("release_date"),
                 tempo=None,
-                title=album["name"],
+                title=album.get("name"),
                 type="album",
                 upc=None,
-                url=album["url"],
+                url=album.get("url"),
             )
 
         return None
@@ -417,6 +524,7 @@ class KKBox:
 
 if __name__ == "__main__":
     import logging
+
     from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
@@ -425,6 +533,7 @@ if __name__ == "__main__":
     try:
         artist_name = input("Artist Name: ")
         song_name = input("Song Name: ")
-        pprint(kkbox.search(artist_name, song_name))
+        result = kkbox.search(artist_name, song_name)
+        pprint(asdict(result))
     finally:
         kkbox.close_session()
