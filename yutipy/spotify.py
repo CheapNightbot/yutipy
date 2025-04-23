@@ -192,7 +192,7 @@ class Spotify:
             response_json["requested_at"] = time()
             return response_json
         else:
-            raise InvalidResponseException(
+            raise AuthenticationException(
                 f"Invalid response received: {response.json()}"
             )
 
@@ -1121,6 +1121,8 @@ class SpotifyAuth:
                 upc=result.get("external_ids", {}).get("upc"),
                 url=result.get("external_urls", {}).get("spotify"),
             )
+
+        return None
 
 
 if __name__ == "__main__":
