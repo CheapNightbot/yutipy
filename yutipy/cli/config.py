@@ -1,5 +1,6 @@
 import os
 import webbrowser
+
 from dotenv import load_dotenv, set_key
 
 
@@ -12,45 +13,80 @@ def run_config_wizard():
     env_file = ".env"
     load_dotenv(env_file)
 
-    # List of required environment variables and their instructions
-    required_vars = {
-        "SPOTIFY_CLIENT_ID": {
-            "description": "Spotify Client ID",
-            "url": "https://developer.spotify.com/dashboard",
-            "instructions": """
+    # List of available services and their required environment variables
+    services = {
+        "Spotify": {
+            "SPOTIFY_CLIENT_ID": {
+                "description": "Spotify Client ID",
+                "url": "https://developer.spotify.com/dashboard",
+                "instructions": """
 1. Go to your Spotify Developer Dashboard: https://developer.spotify.com/dashboard
 2. Create a new app and fill in the required details.
 3. Copy the "Client ID" and "Client Secret" from the app's settings.
 4. Paste them here when prompted.
-            """,
+                """,
+            },
+            "SPOTIFY_CLIENT_SECRET": {
+                "description": "Spotify Client Secret",
+                "url": "https://developer.spotify.com/dashboard",
+                "instructions": "See the steps above for Spotify Client ID.",
+            },
         },
-        "SPOTIFY_CLIENT_SECRET": {
-            "description": "Spotify Client Secret",
-            "url": "https://developer.spotify.com/dashboard",
-            "instructions": "See the steps above for Spotify Client ID.",
-        },
-        "KKBOX_CLIENT_ID": {
-            "description": "KKBox Client ID",
-            "url": "https://developer.kkbox.com/",
-            "instructions": """
+        "KKBox": {
+            "KKBOX_CLIENT_ID": {
+                "description": "KKBox Client ID",
+                "url": "https://developer.kkbox.com/",
+                "instructions": """
 1. Go to the KKBOX Developer Portal: https://developer.kkbox.com/
 2. Log in and create a new application.
 3. Copy the "Client ID" and "Client Secret" from the app's settings.
 4. Paste them here when prompted.
-            """,
+                """,
+            },
+            "KKBOX_CLIENT_SECRET": {
+                "description": "KKBox Client Secret",
+                "url": "https://developer.kkbox.com/",
+                "instructions": "See the steps above for KKBox Client ID.",
+            },
         },
-        "KKBOX_CLIENT_SECRET": {
-            "description": "KKBox Client Secret",
-            "url": "https://developer.kkbox.com/",
-            "instructions": "See the steps above for KKBox Client ID.",
+        "Last.fm": {
+            "LASTFM_API_KEY": {
+                "description": "Last.fm API Key",
+                "url": "https://www.last.fm/api/account/create",
+                "instructions": """
+1. Go to the Last.fm API account creation page: https://www.last.fm/api/account/create
+2. Log in with your Last.fm account.
+3. Create a new application and fill in the required details.
+4. Copy the "API Key" from the application settings.
+5. Paste it here when prompted.
+                """,
+            },
         },
     }
+
+    # Display available services
+    print("Available services:")
+    for i, service in enumerate(services.keys(), start=1):
+        print(f"{i}. {service}")
+
+    # Prompt the user to select a service
+    choice = input("\nEnter the number of the service you want to configure: ").strip()
+    try:
+        service_name = list(services.keys())[int(choice) - 1]
+    except (IndexError, ValueError):
+        print("Invalid choice. Exiting configuration wizard.")
+        return
+
+    print(f"\nYou selected: {service_name}")
+
+    # Get the selected service's variables
+    selected_service = services[service_name]
 
     # Track whether the browser has already been opened for a service
     browser_opened = set()
 
-    # Prompt the user for each variable
-    for var, details in required_vars.items():
+    # Prompt the user for each variable in the selected service
+    for var, details in selected_service.items():
         current_value = os.getenv(var)
         if current_value:
             print(f"{details['description']} is already set.")
