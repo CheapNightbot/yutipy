@@ -1,6 +1,7 @@
 __all__ = ["LastFm", "LastFmException"]
 
 import os
+from dataclasses import asdict
 from pprint import pprint
 from typing import Optional
 
@@ -25,7 +26,7 @@ class LastFm:
     Alternatively, you can manually provide this values when creating an object.
     """
 
-    def __init__(self, lastfm_api_key: str = None):
+    def __init__(self, api_key: str = None):
         """
         Initializes the LastFm class.
 
@@ -41,7 +42,7 @@ class LastFm:
         Raises:
             LastFmException: If the API key is not provided or found in the environment.
         """
-        self.api_key = lastfm_api_key or LASTFM_API_KEY
+        self.api_key = api_key or LASTFM_API_KEY
 
         if not self.api_key:
             raise LastFmException(
@@ -72,9 +73,7 @@ class LastFm:
         """Checks if the session is closed."""
         return self._is_session_closed
 
-    def get_currently_playing(
-        self, username: str, limit: int = 1
-    ) -> Optional[UserPlaying]:
+    def get_currently_playing(self, username: str) -> Optional[UserPlaying]:
         """
         Fetches information about the currently playing or most recent track for a user.
 
@@ -82,8 +81,6 @@ class LastFm:
         ----------
         username : str
             The Last.fm username to fetch data for.
-        limit : int, optional
-            The number of recent tracks to fetch. Defaults to 1.
 
         Returns
         -------
@@ -91,7 +88,7 @@ class LastFm:
             An instance of the ``UserPlaying`` model containing details about the currently
             playing track if available, or ``None`` if the request fails or no data is available.
         """
-        query = f"?method=user.getrecenttracks&user={username}&limit={limit}&api_key={self.api_key}&format=json"
+        query = f"?method=user.getrecenttracks&user={username}&limit=1&api_key={self.api_key}&format=json"
         query_url = self.__api_url + query
 
         try:
@@ -121,4 +118,10 @@ class LastFm:
 
 if __name__ == "__main__":
     with LastFm() as lastfm:
-        pprint(lastfm.get_currently_playing(username="cheapnightbot"))
+        username = input("Enter Lasfm Username: ").strip()
+        result = lastfm.get_currently_playing(username=username, limit=5)
+
+        if result:
+            pprint(asdict(result))
+        else:
+            print("No result was found. Make sure the username is correct!")
