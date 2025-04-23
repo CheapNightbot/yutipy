@@ -24,7 +24,7 @@ class MusicYT:
         self.ytmusic = YTMusic()
         self._is_session_closed = False
         self.normalize_non_english = True
-        self._translation_session = requests.Session()
+        self.__translation_session = requests.Session()
 
     def __enter__(self) -> "MusicYT":
         """Enters the runtime context related to this object."""
@@ -37,7 +37,7 @@ class MusicYT:
     def close_session(self) -> None:
         """Closes the current session(s)."""
         if not self.is_session_closed:
-            self._translation_session.close()
+            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -125,13 +125,13 @@ class MusicYT:
                 result.get("title"),
                 song,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             and are_strings_similar(
                 _artist.get("name"),
                 artist,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             for _artist in result.get("artists", [])
         )

@@ -54,14 +54,14 @@ class KKBox:
 
         self.client_id = client_id
         self.client_secret = client_secret
-        self._session = requests.Session()
+        self.__session = requests.Session()
         self.api_url = "https://api.kkbox.com/v1.1"
         self.__header, self.__expires_in = self.__authenticate()
         self.__start_time = time.time()
         self._is_session_closed = False
         self.valid_territories = ["HK", "JP", "MY", "SG", "TW"]
         self.normalize_non_english = True
-        self._translation_session = requests.Session()
+        self.__translation_session = requests.Session()
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -74,8 +74,8 @@ class KKBox:
     def close_session(self) -> None:
         """Closes the current session."""
         if not self.is_session_closed:
-            self._session.close()
-            self._translation_session.close()
+            self.__session.close()
+            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -121,7 +121,7 @@ class KKBox:
 
         try:
             logger.info("Authenticating with KKBOX Open API")
-            response = self._session.post(
+            response = self.__session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
             logger.debug(f"Authentication response status code: {response.status_code}")
@@ -190,7 +190,7 @@ class KKBox:
         logger.debug(f"Query URL: {query_url}")
 
         try:
-            response = self._session.get(query_url, headers=self.__header, timeout=30)
+            response = self.__session.get(query_url, headers=self.__header, timeout=30)
             logger.debug(f"Parsing response JSON: {response.json()}")
             response.raise_for_status()
         except requests.RequestException as e:
@@ -318,7 +318,7 @@ class KKBox:
             track["name"],
             song,
             use_translation=self.normalize_non_english,
-            translation_session=self._translation_session,
+            translation_session=self.__translation_session,
         ):
             return None
 
@@ -329,7 +329,7 @@ class KKBox:
                 artists_name,
                 artist,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             else None
         )
@@ -378,7 +378,7 @@ class KKBox:
             album["name"],
             song,
             use_translation=self.normalize_non_english,
-            translation_session=self._translation_session,
+            translation_session=self.__translation_session,
         ):
             return None
 
@@ -389,7 +389,7 @@ class KKBox:
                 artists_name,
                 artist,
                 use_translation=self.normalize_non_english,
-                translation_session=self._translation_session,
+                translation_session=self.__translation_session,
             )
             else None
         )

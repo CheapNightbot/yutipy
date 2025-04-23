@@ -26,11 +26,11 @@ class Itunes:
 
     def __init__(self) -> None:
         """Initializes the iTunes class and sets up the session."""
-        self._session = requests.Session()
+        self.__session = requests.Session()
         self.api_url = "https://itunes.apple.com"
         self._is_session_closed = False
         self.normalize_non_english = True
-        self._translation_session = requests.Session()
+        self.__translation_session = requests.Session()
 
     def __enter__(self) -> "Itunes":
         """Enters the runtime context related to this object."""
@@ -43,8 +43,8 @@ class Itunes:
     def close_session(self) -> None:
         """Closes the current session."""
         if not self.is_session_closed:
-            self._session.close()
-            self._translation_session.close()
+            self.__session.close()
+            self.__translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -96,7 +96,7 @@ class Itunes:
                     f'Searching iTunes for `artist="{artist}"` and `song="{song}"`'
                 )
                 logger.debug(f"Query URL: {query_url}")
-                response = self._session.get(query_url, timeout=30)
+                response = self.__session.get(query_url, timeout=30)
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
@@ -148,13 +148,13 @@ class Itunes:
                     result.get("trackName", result["collectionName"]),
                     song,
                     use_translation=self.normalize_non_english,
-                    translation_session=self._translation_session,
+                    translation_session=self.__translation_session,
                 )
                 and are_strings_similar(
                     result["artistName"],
                     artist,
                     use_translation=self.normalize_non_english,
-                    translation_session=self._translation_session,
+                    translation_session=self.__translation_session,
                 )
             ):
                 continue
