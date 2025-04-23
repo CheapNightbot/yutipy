@@ -844,7 +844,7 @@ class SpotifyAuth:
         """
         return secrets.token_urlsafe(16)
 
-    def get_authorization_url(self, state: str = None):
+    def get_authorization_url(self, state: str = None, show_dialog: bool = False):
         """
         Constructs the Spotify authorization URL for user authentication.
 
@@ -858,6 +858,11 @@ class SpotifyAuth:
             If not provided, no state parameter is included.
 
             You may use :meth:`SpotifyAuth.generate_state` method to generate one.
+        show_dialog : bool, optional
+            Whether or not to force the user to approve the app again if they’ve already done so.
+            If ``False`` (default), a user who has already approved the application may be automatically
+            redirected to the URI specified by redirect_uri. If ``True``, the user will not be automatically
+            redirected and will have to approve the app again.
 
         Returns
         -------
@@ -869,6 +874,7 @@ class SpotifyAuth:
             "response_type": "code",
             "client_id": self.client_id,
             "redirect_uri": self.redirect_uri,
+            "show_dialog": show_dialog,
         }
 
         if self.scope:
