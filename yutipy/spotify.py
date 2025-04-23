@@ -1087,8 +1087,16 @@ class SpotifyAuth:
         except requests.RequestException as e:
             raise NetworkException(f"Network error occurred: {e}")
 
+        if response.status_code == 204:
+            logger.info("Requested user is currently not listening to any music.")
+            return None
         if response.status_code != 200:
-            logger.error(f"Unexpected response: {response.json()}")
+            try:
+                logger.error(f"Unexpected response: {response.json()}")
+            except requests.exceptions.JSONDecodeError:
+                logger.error(
+                    f"Response Code: {response.status_code}, Reason: {response.reason}"
+                )
             return None
 
         response_json = response.json()
