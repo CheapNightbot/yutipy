@@ -1,5 +1,6 @@
 import pytest
 
+from tests import BaseResponse
 from yutipy.models import MusicInfo, UserPlaying
 from yutipy.spotify import Spotify, SpotifyAuth
 
@@ -45,13 +46,7 @@ def spotify_auth():
 
 # Custom class to be the mock return value of requests.get()
 # for `Spotify` class only ~
-class MockResponse:
-    status_code = 200
-
-    @staticmethod
-    def raise_for_status():
-        pass
-
+class MockResponse(BaseResponse):
     @staticmethod
     def json():
         return {
@@ -184,13 +179,7 @@ def test_get_currently_playing(spotify_auth, monkeypatch):
         return {"Authorization": "Bearer test_token"}
 
     def mock_get(*args, **kwargs):
-        class MockResponse:
-            status_code = 200
-
-            @staticmethod
-            def raise_for_status():
-                pass
-
+        class MockResponse(BaseResponse):
             @staticmethod
             def json():
                 return {
@@ -242,13 +231,7 @@ def test_get_user_profile(spotify_auth, monkeypatch):
         return {"Authorization": "Bearer test_token"}
 
     def mock_get(*args, **kwargs):
-        class MockResponse:
-            status_code = 200
-
-            @staticmethod
-            def raise_for_status():
-                pass  # Simulates a successful response with no exceptions raised
-
+        class MockResponse(BaseResponse):
             @staticmethod
             def json():
                 return {

@@ -24,9 +24,18 @@ iTunes
     :exclude-members: is_session_closed
 
 KKBox
--------
+-----
 
 .. autoclass:: yutipy.kkbox.KKBox
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
+Lastfm
+------
+
+.. autoclass:: yutipy.lastfm.LastFm
     :members:
     :inherited-members:
     :noindex:
@@ -145,6 +154,12 @@ Service Exceptions
     :exclude-members: add_note, args, with_traceback
 
 .. autoclass:: yutipy.exceptions.KKBoxException
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: add_note, args, with_traceback
+
+.. autoclass:: yutipy.exceptions.LastFmException
     :members:
     :inherited-members:
     :noindex:
