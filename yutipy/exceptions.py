@@ -39,7 +39,11 @@ class ItunesException(YutipyException):
 
 
 class KKBoxException(YutipyException):
-    """Exception raised for erros related to the KKBOX Open API."""
+    """Exception raised for errors related to the KKBOX Open API."""
+
+
+class LastFmException(YutipyException):
+    """Exception raised for errors related to the LastFm API."""
 
 
 class MusicYTException(YutipyException):
