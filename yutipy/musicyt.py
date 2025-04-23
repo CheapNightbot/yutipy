@@ -199,9 +199,9 @@ class MusicYT:
         MusicInfo
             The extracted music information.
         """
-        title = result["title"]
-        artist_names = ", ".join([artist["name"] for artist in result["artists"]])
-        video_id = result["videoId"]
+        title = result.get("title")
+        artist_names = ", ".join([artist.get("name") for artist in result.get("artists", [])])
+        video_id = result.get("videoId")
         song_url = f"https://music.youtube.com/watch?v={video_id}"
         lyrics_id = self.ytmusic.get_watch_playlist(video_id)
 
