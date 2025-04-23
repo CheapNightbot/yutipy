@@ -50,7 +50,7 @@ class MockResponse:
 
     @staticmethod
     def raise_for_status():
-        pass
+        pass  # Simulates a successful response with no exceptions raised
 
     @staticmethod
     def json():
@@ -189,7 +189,7 @@ def test_get_currently_playing(spotify_auth, monkeypatch):
 
             @staticmethod
             def raise_for_status():
-                pass
+                pass  # Simulates a successful response with no exceptions raised
 
             @staticmethod
             def json():
