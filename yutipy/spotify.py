@@ -162,7 +162,7 @@ class Spotify:
         Returns
         -------
         dict
-            The Spotify API access token, with additional information such as expires in, refresh token, etc.
+            The Spotify API access token, with additional information such as expires in, etc.
         """
         auth_string = f"{self.client_id}:{self.client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
