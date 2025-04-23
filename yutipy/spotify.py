@@ -814,6 +814,9 @@ class SpotifyAuth:
 
     def __refresh_access_token(self):
         """Refreshes the token if it has expired."""
+        if not self.__access_token:
+            raise SpotifyAuthException("No access token was found.")
+
         if time() - self.__token_requested_at >= self.__token_expires_in:
             token_info = self.__get_access_token(refresh_token=self.__refresh_token)
 
@@ -1018,7 +1021,14 @@ class SpotifyAuth:
         dict
             A dictionary containing the user's display name and profile images.
         """
-        self.__refresh_access_token()
+        try:
+            self.__refresh_access_token()
+        except SpotifyAuthException:
+            logger.warning(
+                "No access token was found. You may authenticate the user again."
+            )
+            return None
+
         query_url = self.__api_url
         header = self.__authorization_header()
 
@@ -1060,7 +1070,14 @@ class SpotifyAuth:
         - If the API response does not contain the expected data, the method will return `None`.
 
         """
-        self.__refresh_access_token()
+        try:
+            self.__refresh_access_token()
+        except SpotifyAuthException:
+            logger.warning(
+                "No access token was found. You may authenticate the user again."
+            )
+            return None
+
         query_url = f"{self.__api_url}/player/currently-playing"
         header = self.__authorization_header()
 
