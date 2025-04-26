@@ -27,9 +27,12 @@ def enable_logging(level=logging.INFO, handler=None):
         console_handler.setFormatter(formatter)
         handler = console_handler
 
-    # Add the handler if not already added
-    if not any(isinstance(h, type(handler)) for h in logger.handlers):
+    # Add the handler if it is not already added
+    if handler not in logger.handlers:
         logger.addHandler(handler)
+
+    # Disable propagation to avoid duplicate logs
+    logger.propagate = False
 
 
 def disable_logging():
