@@ -22,8 +22,23 @@ class YutipyMusic:
     Instead of calling each service separately, you can use this class to get the information from all services at once.
     """
 
-    def __init__(self) -> None:
-        """Initializes the YutipyMusic class."""
+    def __init__(
+    self,
+    custom_kkbox_class: Optional[type] = KKBox,
+    custom_spotify_class: Optional[type] = Spotify,
+) -> None:
+        """
+        Initializes the YutipyMusic class.
+
+        Parameters
+        ----------
+        custom_kkbox_class : Optional[type], optional
+            A custom class inherited from ``KKBox`` to override the default KKBox implementation.
+            This class should implement ``load_access_token()`` and ``save_access_token()`` methods. Default is ``KKBox``.
+        custom_spotify_class : Optional[type], optional
+            A custom class inherited from ``Spotify`` to override the default Spotify implementation.
+            This class should implement ``load_access_token()`` and ``save_access_token()`` methods. Default is ``Spotify``.
+        """
         self.music_info = MusicInfos()
         self.normalize_non_english = True
         self.album_art_priority = ["deezer", "ytmusic", "itunes"]
@@ -34,8 +49,8 @@ class YutipyMusic:
         }
 
         try:
-            self.services["kkbox"] = KKBox()
-        except (KKBoxException) as e:
+            self.services["kkbox"] = custom_kkbox_class()
+        except KKBoxException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
             )
@@ -44,8 +59,8 @@ class YutipyMusic:
             self.album_art_priority.insert(idx, "kkbox")
 
         try:
-            self.services["spotify"] = Spotify()
-        except (SpotifyException) as e:
+            self.services["spotify"] = custom_spotify_class()
+        except SpotifyException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
             )
