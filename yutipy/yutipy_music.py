@@ -24,8 +24,8 @@ class YutipyMusic:
 
     def __init__(
     self,
-    custom_kkbox_class: Optional[type] = KKBox,
-    custom_spotify_class: Optional[type] = Spotify,
+    custom_kkbox_class = KKBox,
+    custom_spotify_class = Spotify,
 ) -> None:
         """
         Initializes the YutipyMusic class.
