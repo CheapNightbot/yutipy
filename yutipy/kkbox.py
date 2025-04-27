@@ -91,6 +91,13 @@ class KKBox:
                 self.__access_token = token_info.get("access_token")
                 self.__token_expires_in = token_info.get("expires_in")
                 self.__token_requested_at = token_info.get("requested_at")
+
+                try:
+                    self.save_access_token(token_info)
+                except NotImplementedError:
+                    logger.warning(
+                        "`save_access_token` is not implemented, falling back to in-memory storage. Access token will not be saved."
+                    )
         else:
             logger.warning(
                 "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
@@ -134,6 +141,13 @@ class KKBox:
             self.__access_token = token_info.get("access_token")
             self.__token_expires_in = token_info.get("expires_in")
             self.__token_requested_at = token_info.get("requested_at")
+
+            try:
+                self.save_access_token(token_info)
+            except NotImplementedError:
+                logger.warning(
+                    "`save_access_token` is not implemented, falling back to in-memory storage. Access token will not be saved."
+                )
 
     def __authorization_header(self) -> dict:
         """
