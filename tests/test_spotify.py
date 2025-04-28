@@ -183,6 +183,7 @@ def test_get_currently_playing(spotify_auth, monkeypatch):
             @staticmethod
             def json():
                 return {
+                    "timestamp": 1745797530935,
                     "is_playing": False,
                     "item": {
                         "album": {
