@@ -110,6 +110,7 @@ class LastFm:
             album_title=result.get("album", {}).get("#text"),
             artists=", ".join(separate_artists(result.get("artist", {}).get("#text"))),
             id=result.get("mbid"),
+            timestamp=result.get("date", {}).get("uts"),
             title=result.get("name"),
             url=result.get("url"),
             is_playing=result.get("@attr", {}).get("nowplaying", False),

@@ -1122,6 +1122,8 @@ class SpotifyAuth:
                 guess,
                 use_translation=False,
             )
+            # Spotify returns timestamp in milliseconds, so convert milliseconds to seconds:
+            timestamp = response_json.get("timestamp") / 1000.0
             return UserPlaying(
                 album_art=result.get("album", {}).get("images", [])[0].get("url"),
                 album_title=result.get("album", {}).get("name"),
@@ -1138,6 +1140,7 @@ class SpotifyAuth:
                 lyrics=None,
                 release_date=result.get("album", {}).get("release_date"),
                 tempo=None,
+                timestamp=timestamp,
                 title=result.get("name"),
                 type=result.get("type"),
                 upc=result.get("external_ids", {}).get("upc"),

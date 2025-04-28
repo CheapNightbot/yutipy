@@ -74,8 +74,11 @@ class UserPlaying(MusicInfo):
 
     Attributes
     ----------
+    timetamp : Optional[int]
+        Unix Timestamp (in seconds) when playback was started.
     is_playing : Optional[bool]
         Whether the music is currently playing or paused.
     """
 
+    timestamp: Optional[int] = None
     is_playing: Optional[bool] = None
