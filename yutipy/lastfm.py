@@ -95,7 +95,7 @@ class LastFm:
             response = self.__session.get(query_url, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Failed to fetch user profile: {e}")
+            logger.warning(f"Failed to fetch user profile: {e}")
             return None
 
         response_json = response.json()
@@ -110,6 +110,7 @@ class LastFm:
             album_title=result.get("album", {}).get("#text"),
             artists=", ".join(separate_artists(result.get("artist", {}).get("#text"))),
             id=result.get("mbid"),
+            timestamp=result.get("date", {}).get("uts"),
             title=result.get("name"),
             url=result.get("url"),
             is_playing=result.get("@attr", {}).get("nowplaying", False),

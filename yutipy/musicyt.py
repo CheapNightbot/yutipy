@@ -11,9 +11,9 @@ from yutipy.exceptions import (
     InvalidValueException,
     MusicYTException,
 )
+from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.logger import logger
 
 
 class MusicYT:
@@ -87,8 +87,8 @@ class MusicYT:
         try:
             results = self.ytmusic.search(query=query, limit=limit)
         except exceptions.YTMusicServerError as e:
-            logger.error(f"Something went wrong while searching YTMusic: {e}")
-            raise MusicYTException(f"Something went wrong while searching YTMusic: {e}")
+            logger.warning(f"Something went wrong while searching YTMusic: {e}")
+            return None
 
         for result in results:
             if self._is_relevant_result(artist, song, result):
@@ -181,9 +181,15 @@ class MusicYT:
             The extracted music information.
         """
         if result["resultType"] in ["song", "video"]:
-            return self._get_song(result)
+            try:
+                return self._get_song(result)
+            except InvalidResponseException:
+                return None
         else:
-            return self._get_album(result)
+            try:
+                return self._get_album(result)
+            except InvalidResponseException:
+                return None
 
     def _get_song(self, result: dict) -> MusicInfo:
         """
@@ -200,7 +206,9 @@ class MusicYT:
             The extracted music information.
         """
         title = result.get("title")
-        artist_names = ", ".join([artist.get("name") for artist in result.get("artists", [])])
+        artist_names = ", ".join(
+            [artist.get("name") for artist in result.get("artists", [])]
+        )
         video_id = result.get("videoId")
         song_url = f"https://music.youtube.com/watch?v={video_id}"
         lyrics_id = self.ytmusic.get_watch_playlist(video_id)

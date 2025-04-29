@@ -2,7 +2,6 @@ __all__ = [
     "AuthenticationException",
     "InvalidResponseException",
     "InvalidValueException",
-    "NetworkException",
     "YutipyException",
 ]
 
@@ -23,10 +22,6 @@ class InvalidResponseException(YutipyException):
 
 class InvalidValueException(YutipyException):
     """Exception raised for invalid values."""
-
-
-class NetworkException(YutipyException):
-    """Exception raised for network-related errors."""
 
 
 # Service Exceptions

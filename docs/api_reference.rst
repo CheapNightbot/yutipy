@@ -97,7 +97,7 @@ UserPlaying
 .. autoclass:: yutipy.models.UserPlaying
     :members:
     :noindex:
-    :exclude-members: album_art, album_art_source, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url, is_playing
+    :exclude-members: album_art, album_art_source, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url, timestamp, is_playing
 
 Exceptions
 =============

@@ -14,9 +14,7 @@ from dotenv import load_dotenv
 
 from yutipy.exceptions import (
     AuthenticationException,
-    InvalidResponseException,
     InvalidValueException,
-    NetworkException,
     SpotifyAuthException,
     SpotifyException,
 )
@@ -198,8 +196,8 @@ class Spotify:
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Network error during Spotify authentication: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.warning(f"Network error during Spotify authentication: {e}")
+            return None
 
         if response.status_code == 200:
             response_json = response.json()
@@ -212,19 +210,27 @@ class Spotify:
 
     def __refresh_access_token(self):
         """Refreshes the token if it has expired."""
-        if time() - self.__token_requested_at >= self.__token_expires_in:
-            token_info = self.__get_access_token()
+        try:
+            if time() - self.__token_requested_at >= self.__token_expires_in:
+                token_info = self.__get_access_token()
 
-            try:
-                self.save_access_token(token_info)
-            except NotImplementedError as e:
-                logger.warning(e)
+                try:
+                    self.save_access_token(token_info)
+                except NotImplementedError as e:
+                    logger.warning(e)
 
-            self.__access_token = token_info.get("access_token")
-            self.__token_expires_in = token_info.get("expires_in")
-            self.__token_requested_at = token_info.get("requested_at")
+                self.__access_token = token_info.get("access_token")
+                self.__token_expires_in = token_info.get("expires_in")
+                self.__token_requested_at = token_info.get("requested_at")
 
-        logger.info("The access token is still valid, no need to refresh.")
+            logger.info("The access token is still valid, no need to refresh.")
+        except TypeError:
+            logger.debug(
+                f"token requested at: {self.__token_requested_at} | token expires in: {self.__token_expires_in}"
+            )
+            logger.info(
+                "Something went wrong while trying to refresh the token. Set logging level to `DEBUG` to see the issue."
+            )
 
     def save_access_token(self, token_info: dict) -> None:
         """
@@ -335,7 +341,7 @@ class Spotify:
                 )
                 response.raise_for_status()
             except requests.RequestException as e:
-                raise NetworkException(f"Network error occurred: {e}")
+                return None
 
             if response.status_code != 200:
                 raise SpotifyException(f"Failed to search for music: {response.json()}")
@@ -402,7 +408,7 @@ class Spotify:
             )
             response.raise_for_status()
         except requests.RequestException as e:
-            raise NetworkException(f"Network error occurred: {e}")
+            return None
 
         if response.status_code != 200:
             raise SpotifyException(
@@ -435,7 +441,7 @@ class Spotify:
                 )
                 response.raise_for_status()
             except requests.RequestException as e:
-                raise NetworkException(f"Network error occurred: {e}")
+                return None
 
             if response.status_code != 200:
                 return None
@@ -814,15 +820,15 @@ class SpotifyAuth:
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Network error during Spotify authentication: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.warning(f"Network error during Spotify authentication: {e}")
+            return None
 
         if response.status_code == 200:
             response_json = response.json()
             response_json["requested_at"] = time()
             return response_json
         else:
-            raise InvalidResponseException(
+            raise AuthenticationException(
                 f"Invalid response received: {response.json()}"
             )
 
@@ -1050,11 +1056,11 @@ class SpotifyAuth:
             response = self.__session.get(query_url, headers=header, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Failed to fetch user profile: {e}")
+            logger.warning(f"Failed to fetch user profile: {e}")
             return None
 
         if response.status_code != 200:
-            logger.error(f"Unexpected response: {response.json()}")
+            logger.warning(f"Unexpected response: {response.json()}")
             return None
 
         response_json = response.json()
@@ -1099,16 +1105,16 @@ class SpotifyAuth:
             response = self.__session.get(query_url, headers=header, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
-            raise NetworkException(f"Network error occurred: {e}")
+            return None
 
         if response.status_code == 204:
             logger.info("Requested user is currently not listening to any music.")
             return None
         if response.status_code != 200:
             try:
-                logger.error(f"Unexpected response: {response.json()}")
+                logger.warning(f"Unexpected response: {response.json()}")
             except requests.exceptions.JSONDecodeError:
-                logger.error(
+                logger.warning(
                     f"Response Code: {response.status_code}, Reason: {response.reason}"
                 )
             return None
@@ -1122,6 +1128,8 @@ class SpotifyAuth:
                 guess,
                 use_translation=False,
             )
+            # Spotify returns timestamp in milliseconds, so convert milliseconds to seconds:
+            timestamp = response_json.get("timestamp") / 1000.0
             return UserPlaying(
                 album_art=result.get("album", {}).get("images", [])[0].get("url"),
                 album_title=result.get("album", {}).get("name"),
@@ -1138,6 +1146,7 @@ class SpotifyAuth:
                 lyrics=None,
                 release_date=result.get("album", {}).get("release_date"),
                 tempo=None,
+                timestamp=timestamp,
                 title=result.get("name"),
                 type=result.get("type"),
                 upc=result.get("external_ids", {}).get("upc"),

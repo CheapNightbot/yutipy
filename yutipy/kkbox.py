@@ -12,10 +12,8 @@ from dotenv import load_dotenv
 
 from yutipy.exceptions import (
     AuthenticationException,
-    InvalidResponseException,
     InvalidValueException,
     KKBoxException,
-    NetworkException,
 )
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
@@ -187,15 +185,15 @@ class KKBox:
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Network error during KKBOX authentication: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.warning(f"Network error during KKBOX authentication: {e}")
+            return None
 
         if response.status_code == 200:
             response_json = response.json()
             response_json["requested_at"] = time()
             return response_json
         else:
-            raise InvalidResponseException(
+            raise AuthenticationException(
                 f"Invalid response received: {response.json()}"
             )
 
@@ -319,7 +317,7 @@ class KKBox:
             logger.debug(f"Parsing response JSON: {response.json()}")
             response.raise_for_status()
         except requests.RequestException as e:
-            raise NetworkException(f"Network error occurred: {e}")
+            return None
 
         if response.status_code != 200:
             raise KKBoxException(f"Failed to search for music: {response.json()}")

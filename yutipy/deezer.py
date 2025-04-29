@@ -9,11 +9,10 @@ from yutipy.exceptions import (
     DeezerException,
     InvalidResponseException,
     InvalidValueException,
-    NetworkException,
 )
+from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.logger import logger
 
 
 class Deezer:
@@ -97,17 +96,17 @@ class Deezer:
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.error(f"Network error while fetching music info: {e}")
-                raise NetworkException(f"Network error occurred: {e}")
+                logger.warning(f"Network error while fetching music info: {e}")
+                return None
             except Exception as e:
-                logger.exception(f"Unexpected error while searching Deezer: {e}")
+                logger.warning(f"Unexpected error while searching Deezer: {e}")
                 raise DeezerException(f"An error occurred while searching Deezer: {e}")
 
             try:
                 logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["data"]
             except (IndexError, KeyError, ValueError) as e:
-                logger.error(f"Invalid response structure from Deezer: {e}")
+                logger.warning(f"Invalid response structure from Deezer: {e}")
                 raise InvalidResponseException(f"Invalid response received: {e}")
 
             music_info = self._parse_results(artist, song, result)
@@ -164,17 +163,17 @@ class Deezer:
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Error fetching track info: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.warning(f"Error fetching track info: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Error fetching track info: {e}")
+            logger.warning(f"Error fetching track info: {e}")
             raise DeezerException(f"An error occurred while fetching track info: {e}")
 
         try:
             logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
-            logger.error(f"Invalid response received from Deezer: {e}")
+            logger.warning(f"Invalid response received from Deezer: {e}")
             raise InvalidResponseException(f"Invalid response received: {e}")
 
         return {
@@ -205,17 +204,17 @@ class Deezer:
             logger.info(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Error fetching album info: {e}")
-            raise NetworkException(f"Network error occurred: {e}")
+            logger.warning(f"Error fetching album info: {e}")
+            return None
         except Exception as e:
-            logger.error(f"Error fetching album info: {e}")
+            logger.warning(f"Error fetching album info: {e}")
             raise DeezerException(f"An error occurred while fetching album info: {e}")
 
         try:
             logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
-            logger.error(f"Invalid response received from Deezer: {e}")
+            logger.warning(f"Invalid response received from Deezer: {e}")
             raise InvalidResponseException(f"Invalid response received: {e}")
 
         return {
@@ -323,6 +322,7 @@ class Deezer:
 
 if __name__ == "__main__":
     import logging
+
     from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
