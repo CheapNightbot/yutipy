@@ -73,6 +73,46 @@ class LastFm:
         """Checks if the session is closed."""
         return self._is_session_closed
 
+    def get_user_profile(self, username: str):
+        """
+        Fetches the user profile information for the provided username.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the user's profile information or error is username does not exist.
+        """
+        query = (
+            f"?method=user.getinfo&user={username}&api_key={self.api_key}&format=json"
+        )
+        query_url = self.__api_url + query
+
+        try:
+            response = self.__session.get(query_url, timeout=30)
+        except requests.RequestException as e:
+            logger.warning(f"Failed to fetch user profile: {e}")
+            return None
+
+        response_json = response.json()
+        result = response_json.get("user")
+        error = response_json.get("message")
+        if result:
+            images = [
+                {"size": image.get("size"), "url": image.get("#text")}
+                for image in result.get("image", [])
+            ]
+            return {
+                "name": result.get("realname"),
+                "username": result.get("name"),
+                "type": result.get("type"),
+                "url": result.get("url"),
+                "images": images,
+            }
+        elif error:
+            return {"error": error}
+        else:
+            return None
+
     def get_currently_playing(self, username: str) -> Optional[UserPlaying]:
         """
         Fetches information about the currently playing or most recent track for a user.
@@ -100,29 +140,33 @@ class LastFm:
 
         response_json = response.json()
         result = response_json.get("recenttracks", {}).get("track", [])[0]
-        album_art = [
-            img.get("#text")
-            for img in result.get("image", [])
-            if img.get("size") == "extralarge"
-        ]
-        return UserPlaying(
-            album_art="".join(album_art),
-            album_title=result.get("album", {}).get("#text"),
-            artists=", ".join(separate_artists(result.get("artist", {}).get("#text"))),
-            id=result.get("mbid"),
-            timestamp=result.get("date", {}).get("uts"),
-            title=result.get("name"),
-            url=result.get("url"),
-            is_playing=result.get("@attr", {}).get("nowplaying", False),
-        )
+        if result:
+            album_art = [
+                img.get("#text")
+                for img in result.get("image", [])
+                if img.get("size") == "extralarge"
+            ]
+            return UserPlaying(
+                album_art="".join(album_art),
+                album_title=result.get("album", {}).get("#text"),
+                artists=", ".join(
+                    separate_artists(result.get("artist", {}).get("#text"))
+                ),
+                id=result.get("mbid"),
+                timestamp=result.get("date", {}).get("uts"),
+                title=result.get("name"),
+                url=result.get("url"),
+                is_playing=result.get("@attr", {}).get("nowplaying", False),
+            )
+        return None
 
 
 if __name__ == "__main__":
     with LastFm() as lastfm:
         username = input("Enter Lasfm Username: ").strip()
-        result = lastfm.get_currently_playing(username=username, limit=5)
+        result = lastfm.get_user_profile(username=username)
 
         if result:
-            pprint(asdict(result))
+            pprint(result)
         else:
             print("No result was found. Make sure the username is correct!")
