@@ -9,8 +9,7 @@ import requests
 from yutipy.exceptions import (
     InvalidResponseException,
     InvalidValueException,
-    ItunesException,
-    NetworkException,
+    ItunesException
 )
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import (
@@ -100,8 +99,8 @@ class Itunes:
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.error(f"Network error while searching iTunes: {e}")
-                raise NetworkException(f"Network error occurred: {e}")
+                logger.warning(f"Network error while searching iTunes: {e}")
+                return None
             except Exception as e:
                 logger.exception(f"Unexpected error while searching iTunes: {e}")
                 raise ItunesException(f"An error occurred while searching iTunes: {e}")
@@ -110,7 +109,7 @@ class Itunes:
                 logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["results"]
             except (IndexError, KeyError, ValueError) as e:
-                logger.error(f"Invalid response structure from iTunes: {e}")
+                logger.warning(f"Invalid response structure from iTunes: {e}")
                 raise InvalidResponseException(f"Invalid response received: {e}")
 
             music_info = self._parse_result(artist, song, result)

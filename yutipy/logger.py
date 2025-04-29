@@ -2,7 +2,7 @@ import logging
 
 # Create a logger for the library
 logger = logging.getLogger("yutipy")
-logger.setLevel(logging.NOTSET)
+logger.setLevel(logging.CRITICAL)
 
 
 def enable_logging(level=logging.INFO, handler=None):

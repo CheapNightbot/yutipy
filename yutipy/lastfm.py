@@ -95,7 +95,7 @@ class LastFm:
             response = self.__session.get(query_url, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.error(f"Failed to fetch user profile: {e}")
+            logger.warning(f"Failed to fetch user profile: {e}")
             return None
 
         response_json = response.json()

@@ -129,7 +129,7 @@ class YutipyMusic:
                     result = future.result()
                     self._combine_results(result, service_name)
                 except Exception as e:
-                    logger.error(
+                    logger.warning(
                         f"Error occurred while searching with {service_name}: {e}"
                     )
 
