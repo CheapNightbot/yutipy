@@ -132,12 +132,6 @@ Generic Exceptions
     :noindex:
     :exclude-members: add_note, args, with_traceback
 
-.. autoclass:: yutipy.exceptions.NetworkException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
 Service Exceptions
 ------------------
 
