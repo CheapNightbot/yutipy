@@ -196,8 +196,9 @@ class Spotify:
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.warning(f"Network error during Spotify authentication: {e}")
-            return None
+            raise requests.RequestException(
+                f"Network error during Spotify authentication: {e}"
+            )
 
         if response.status_code == 200:
             response_json = response.json()
@@ -210,6 +211,9 @@ class Spotify:
 
     def __refresh_access_token(self):
         """Refreshes the token if it has expired."""
+        if not self.__access_token:
+            raise SpotifyAuthException("No access token was found.")
+
         try:
             if time() - self.__token_requested_at >= self.__token_expires_in:
                 token_info = self.__get_access_token()
@@ -224,12 +228,16 @@ class Spotify:
                 self.__token_requested_at = token_info.get("requested_at")
 
             logger.info("The access token is still valid, no need to refresh.")
+        except (AuthenticationException, requests.RequestException) as e:
+            logger.warning(
+                f"Failed to refresh the access toke due to following error: {e}"
+            )
         except TypeError:
             logger.debug(
                 f"token requested at: {self.__token_requested_at} | token expires in: {self.__token_expires_in}"
             )
             logger.info(
-                "Something went wrong while trying to refresh the token. Set logging level to `DEBUG` to see the issue."
+                "Something went wrong while trying to refresh the access token. Set logging level to `DEBUG` to see the issue."
             )
 
     def save_access_token(self, token_info: dict) -> None:
@@ -341,6 +349,7 @@ class Spotify:
                 )
                 response.raise_for_status()
             except requests.RequestException as e:
+                logger.warning(f"Network error during Spotify search: {e}")
                 return None
 
             if response.status_code != 200:
@@ -408,6 +417,7 @@ class Spotify:
             )
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.warning(f"Network error during Spotify search (advanced): {e}")
             return None
 
         if response.status_code != 200:
@@ -441,6 +451,7 @@ class Spotify:
                 )
                 response.raise_for_status()
             except requests.RequestException as e:
+                logger.warning(f"Network error during Spotify get artist ids: {e}")
                 return None
 
             if response.status_code != 200:
@@ -820,8 +831,9 @@ class SpotifyAuth:
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
-            logger.warning(f"Network error during Spotify authentication: {e}")
-            return None
+            raise requests.RequestException(
+                f"Network error during Spotify authentication: {e}"
+            )
 
         if response.status_code == 200:
             response_json = response.json()
@@ -837,20 +849,30 @@ class SpotifyAuth:
         if not self.__access_token:
             raise SpotifyAuthException("No access token was found.")
 
-        if time() - self.__token_requested_at >= self.__token_expires_in:
-            token_info = self.__get_access_token(refresh_token=self.__refresh_token)
+        try:
+            if time() - self.__token_requested_at >= self.__token_expires_in:
+                token_info = self.__get_access_token(refresh_token=self.__refresh_token)
 
-            try:
-                self.save_access_token(token_info)
-            except NotImplementedError as e:
-                logger.warning(e)
+                try:
+                    self.save_access_token(token_info)
+                except NotImplementedError as e:
+                    logger.warning(e)
 
-            self.__access_token = token_info.get("access_token")
-            self.__refresh_token = token_info.get("refresh_token")
-            self.__token_expires_in = token_info.get("expires_in")
-            self.__token_requested_at = token_info.get("requested_at")
+                self.__access_token = token_info.get("access_token")
+                self.__refresh_token = token_info.get("refresh_token")
+                self.__token_expires_in = token_info.get("expires_in")
+                self.__token_requested_at = token_info.get("requested_at")
 
-        logger.info("The access token is still valid, no need to refresh.")
+            logger.info("The access token is still valid, no need to refresh.")
+        except (AuthenticationException, requests.RequestException) as e:
+            logger.warning(f"Failed to refresh the access toke due to following error: {e}")
+        except TypeError:
+            logger.debug(
+                f"token requested at: {self.__token_requested_at} | token expires in: {self.__token_expires_in}"
+            )
+            logger.warning(
+                "Something went wrong while trying to refresh the access token. Set logging level to `DEBUG` to see the issue."
+            )
 
     @staticmethod
     def generate_state() -> str:
@@ -1028,7 +1050,7 @@ class SpotifyAuth:
         except NotImplementedError as e:
             logger.warning(e)
 
-    def get_user_profile(self):
+    def get_user_profile(self) -> Optional[dict]:
         """
         Fetches the user's display name and profile images.
 
@@ -1063,10 +1085,11 @@ class SpotifyAuth:
             logger.warning(f"Unexpected response: {response.json()}")
             return None
 
-        response_json = response.json()
+        result = response.json()
         return {
-            "display_name": response_json.get("display_name"),
-            "images": response_json.get("images", []),
+            "display_name": result.get("display_name"),
+            "images": result.get("images", []),
+            "url": result.get("external_urls", {}).get("spotify")
         }
 
     def get_currently_playing(self) -> Optional[UserPlaying]:
@@ -1105,6 +1128,7 @@ class SpotifyAuth:
             response = self.__session.get(query_url, headers=header, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.warning(f"Error while getting Spotify user activity: {e}")
             return None
 
         if response.status_code == 204:
