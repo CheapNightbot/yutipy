@@ -34,6 +34,7 @@ class MockResponseActivity(BaseResponse):
                             "#text": "Test Album",
                         },
                         "name": "Test Track",
+                        "@attr": {"nowplaying": True},
                         "url": "https://www.last.fm/music/test+track",
                     }
                 ]
@@ -88,7 +89,7 @@ def test_get_currently_playing(lastfm, mock_response_activity):
     assert currently_playing.title == "Test Track"
     assert currently_playing.album_title == "Test Album"
     assert "extralarge" in currently_playing.album_art
-    assert currently_playing.is_playing is False
+    assert currently_playing.is_playing is True
 
 
 def test_get_user_profile(lastfm, mock_response_profile):

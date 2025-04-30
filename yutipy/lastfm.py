@@ -2,6 +2,7 @@ __all__ = ["LastFm", "LastFmException"]
 
 import os
 from dataclasses import asdict
+from time import time
 from pprint import pprint
 from typing import Optional
 
@@ -140,7 +141,8 @@ class LastFm:
 
         response_json = response.json()
         result = response_json.get("recenttracks", {}).get("track", [])[0]
-        if result:
+        is_playing = result.get("@attr", {}).get("nowplaying", False)
+        if result and is_playing:
             album_art = [
                 img.get("#text")
                 for img in result.get("image", [])
@@ -153,10 +155,10 @@ class LastFm:
                     separate_artists(result.get("artist", {}).get("#text"))
                 ),
                 id=result.get("mbid"),
-                timestamp=result.get("date", {}).get("uts"),
+                timestamp=result.get("date", {}).get("uts") or time(),
                 title=result.get("name"),
                 url=result.get("url"),
-                is_playing=result.get("@attr", {}).get("nowplaying", False),
+                is_playing=is_playing,
             )
         return None
 
