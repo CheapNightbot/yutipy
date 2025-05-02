@@ -20,7 +20,7 @@ def kkbox():
         client_id="test_client_id", client_secret="test_client_secret", defer_load=True
     )
 
-    kkbox_instance._KKBox__get_access_token = mock_get_access_token
+    kkbox_instance._get_access_token = mock_get_access_token
     kkbox_instance.load_token_after_init()
     return kkbox_instance
 
@@ -62,7 +62,7 @@ def mock_response(kkbox, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponse()
 
-    monkeypatch.setattr(kkbox._KKBox__session, "get", mock_get)
+    monkeypatch.setattr(kkbox._session, "get", mock_get)
 
 
 def test_search(kkbox, mock_response):

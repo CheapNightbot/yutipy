@@ -1,20 +1,15 @@
 __all__ = ["KKBox", "KKBoxException"]
 
-import base64
 import os
 from dataclasses import asdict
 from pprint import pprint
-from time import time
-from typing import Optional, Union
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
 
-from yutipy.exceptions import (
-    AuthenticationException,
-    InvalidValueException,
-    KKBoxException,
-)
+from yutipy.base_clients import BaseClient
+from yutipy.exceptions import InvalidValueException, KKBoxException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
@@ -25,7 +20,7 @@ KKBOX_CLIENT_ID = os.getenv("KKBOX_CLIENT_ID")
 KKBOX_CLIENT_SECRET = os.getenv("KKBOX_CLIENT_SECRET")
 
 
-class KKBox:
+class KKBox(BaseClient):
     """
     A class to interact with KKBOX Open API.
 
@@ -61,207 +56,16 @@ class KKBox:
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        self.defer_load = defer_load
+        super().__init__(
+            service_name="KKBox",
+            access_token_url="https://account.kkbox.com/oauth2/token",
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            defer_load=defer_load,
+        )
 
-        self._is_session_closed = False
-        self._normalize_non_english = True
+        self.__api_url = "https://api.kkbox.com/v1.1"
         self._valid_territories = ["HK", "JP", "MY", "SG", "TW"]
-
-        self.api_url = "https://api.kkbox.com/v1.1"
-        self.__access_token = None
-        self.__token_expires_in = None
-        self.__token_requested_at = None
-        self.__session = requests.Session()
-        self.__translation_session = requests.Session()
-
-        if not defer_load:
-            # Attempt to load access token during initialization if not deferred
-            token_info = None
-            try:
-                token_info = self.load_access_token()
-            except NotImplementedError:
-                logger.warning(
-                    "`load_access_token` is not implemented. Falling back to in-memory storage and requesting new access token."
-                )
-            finally:
-                if not token_info:
-                    token_info = self.__get_access_token()
-                self.__access_token = token_info.get("access_token")
-                self.__token_expires_in = token_info.get("expires_in")
-                self.__token_requested_at = token_info.get("requested_at")
-
-                try:
-                    self.save_access_token(token_info)
-                except NotImplementedError:
-                    logger.warning(
-                        "`save_access_token` is not implemented, falling back to in-memory storage. Access token will not be saved."
-                    )
-        else:
-            logger.warning(
-                "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
-            )
-
-    def __enter__(self):
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session."""
-        if not self.is_session_closed:
-            self.__session.close()
-            self.__translation_session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
-
-    def load_token_after_init(self):
-        """
-        Explicitly load the access token after initialization.
-        This is useful when ``defer_load`` is set to ``True`` during initialization.
-        """
-        token_info = None
-        try:
-            token_info = self.load_access_token()
-        except NotImplementedError:
-            logger.warning(
-                "`load_access_token` is not implemented. Falling back to in-memory storage and requesting new access token."
-            )
-        finally:
-            if not token_info:
-                token_info = self.__get_access_token()
-            self.__access_token = token_info.get("access_token")
-            self.__token_expires_in = token_info.get("expires_in")
-            self.__token_requested_at = token_info.get("requested_at")
-
-            try:
-                self.save_access_token(token_info)
-            except NotImplementedError:
-                logger.warning(
-                    "`save_access_token` is not implemented, falling back to in-memory storage. Access token will not be saved."
-                )
-
-    def __authorization_header(self) -> dict:
-        """
-        Generates the authorization header for Spotify API requests.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the Bearer token for authentication.
-        """
-        return {"Authorization": f"Bearer {self.__access_token}"}
-
-    def __get_access_token(self) -> dict:
-        """
-        Gets the KKBOX Open API access token information.
-
-        Returns
-        -------
-        str
-            The KKBOX Open API access token, with additional information such as expires in, etc.
-        """
-        auth_string = f"{self.client_id}:{self.client_secret}"
-        auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
-
-        url = " https://account.kkbox.com/oauth2/token"
-        headers = {
-            "Authorization": f"Basic {auth_base64}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        data = {"grant_type": "client_credentials"}
-
-        try:
-            logger.info("Authenticating with KKBOX Open API")
-            response = self.__session.post(
-                url=url, headers=headers, data=data, timeout=30
-            )
-            logger.debug(f"Authentication response status code: {response.status_code}")
-            response.raise_for_status()
-        except requests.RequestException as e:
-            logger.warning(f"Network error during KKBOX authentication: {e}")
-            return None
-
-        if response.status_code == 200:
-            response_json = response.json()
-            response_json["requested_at"] = time()
-            return response_json
-        else:
-            raise AuthenticationException(
-                f"Invalid response received: {response.json()}"
-            )
-
-    def __refresh_access_token(self):
-        """Refreshes the token if it has expired."""
-        if time() - self.__token_requested_at >= self.__token_expires_in:
-            token_info = self.__get_access_token()
-
-            try:
-                self.save_access_token(token_info)
-            except NotImplementedError as e:
-                logger.warning(e)
-
-            self.__access_token = token_info.get("access_token")
-            self.__token_expires_in = token_info.get("expires_in")
-            self.__token_requested_at = token_info.get("requested_at")
-
-        logger.info("The access token is still valid, no need to refresh.")
-
-    def save_access_token(self, token_info: dict) -> None:
-        """
-        Saves the access token and related information.
-
-        This method must be overridden in a subclass to persist the access token and other
-        related information (e.g., expiration time). If not implemented,
-        the access token will not be saved, and it will be requested each time the
-        application restarts.
-
-        Parameters
-        ----------
-        token_info : dict
-            A dictionary containing the access token and related information, such as
-            refresh token, expiration time, etc.
-
-        Raises
-        ------
-        NotImplementedError
-            If the method is not overridden in a subclass.
-        """
-        raise NotImplementedError(
-            "The `save_access_token` method must be overridden in a subclass to save the access token and related information. "
-            "If not implemented, access token information will not be persisted, and users will need to re-authenticate after application restarts."
-        )
-
-    def load_access_token(self) -> Union[dict, None]:
-        """
-        Loads the access token and related information.
-
-        This method must be overridden in a subclass to retrieve the access token and other
-        related information (e.g., expiration time) from persistent storage.
-        If not implemented, the access token will not be loaded, and it will be requested
-        each time the application restarts.
-
-        Returns
-        -------
-        dict | None
-            A dictionary containing the access token and related information, such as
-            refresh token, expiration time, etc., or None if no token is found.
-
-        Raises
-        ------
-        NotImplementedError
-            If the method is not overridden in a subclass.
-        """
-        raise NotImplementedError(
-            "The `load_access_token` method must be overridden in a subclass to load access token and related information. "
-            "If not implemented, access token information will not be loaded, and users will need to re-authenticate after application restarts."
-        )
 
     def search(
         self,
@@ -299,28 +103,24 @@ class KKBox:
             )
 
         self._normalize_non_english = normalize_non_english
-
-        self.__refresh_access_token()
+        self._refresh_access_token()
 
         query = (
             f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
         )
-        query_url = f"{self.api_url}/search{query}"
+        query_url = f"{self.__api_url}/search{query}"
 
         logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
         logger.debug(f"Query URL: {query_url}")
 
         try:
-            response = self.__session.get(
-                query_url, headers=self.__authorization_header(), timeout=30
+            response = self._session.get(
+                query_url, headers=self._authorization_header(), timeout=30
             )
-            logger.debug(f"Parsing response JSON: {response.json()}")
             response.raise_for_status()
         except requests.RequestException as e:
+            logger.warning(f"Unexpected error while searching KKBox: {e}")
             return None
-
-        if response.status_code != 200:
-            raise KKBoxException(f"Failed to search for music: {response.json()}")
 
         return self._find_music_info(artist, song, response.json())
 
@@ -439,7 +239,7 @@ class KKBox:
             track["name"],
             song,
             use_translation=self._normalize_non_english,
-            translation_session=self.__translation_session,
+            translation_session=self._translation_session,
         ):
             return None
 
@@ -450,7 +250,7 @@ class KKBox:
                 artists_name,
                 artist,
                 use_translation=self._normalize_non_english,
-                translation_session=self.__translation_session,
+                translation_session=self._translation_session,
             )
             else None
         )
@@ -497,7 +297,7 @@ class KKBox:
             album["name"],
             song,
             use_translation=self._normalize_non_english,
-            translation_session=self.__translation_session,
+            translation_session=self._translation_session,
         ):
             return None
 
@@ -508,7 +308,7 @@ class KKBox:
                 artists_name,
                 artist,
                 use_translation=self._normalize_non_english,
-                translation_session=self.__translation_session,
+                translation_session=self._translation_session,
             )
             else None
         )
@@ -540,7 +340,7 @@ if __name__ == "__main__":
     from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
-    kkbox = KKBox(KKBOX_CLIENT_ID, KKBOX_CLIENT_SECRET)
+    kkbox = KKBox()
 
     try:
         artist_name = input("Artist Name: ")

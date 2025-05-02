@@ -15,10 +15,12 @@ def spotify():
         }
 
     spotify_instance = Spotify(
-        client_id="test_client_id", client_secret="test_client_secret", defer_load=True
+        client_id="test_client_id",
+        client_secret="test_client_secret",
+        defer_load=True
     )
 
-    spotify_instance._Spotify__get_access_token = mock_get_access_token
+    spotify_instance._get_access_token = mock_get_access_token
     spotify_instance.load_token_after_init()
     return spotify_instance
 
@@ -38,9 +40,11 @@ def spotify_auth():
         client_secret="test_client_secret",
         redirect_uri="http://localhost/callback",
         scopes=["user-read-email", "user-read-private"],
+        defer_load=True
     )
 
-    spotify_instance._SpotifyAuth__get_access_token = mock_get_access_token
+    spotify_instance._get_access_token = mock_get_access_token
+    spotify_instance.load_token_after_init()
     return spotify_instance
 
 
@@ -111,7 +115,7 @@ def mock_response(spotify, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponse()
 
-    monkeypatch.setattr(spotify._Spotify__session, "get", mock_get)
+    monkeypatch.setattr(spotify._session, "get", mock_get)
 
 
 def test_search(spotify, mock_response):
@@ -168,16 +172,13 @@ def test_get_authorization_url(spotify_auth):
 
 def test_callback_handler(spotify_auth, monkeypatch):
     spotify_auth.callback_handler("test_code", "test_state", "test_state")
-    assert spotify_auth._SpotifyAuth__access_token == "test_access_token"
-    assert spotify_auth._SpotifyAuth__refresh_token == "test_refresh_token"
-    assert spotify_auth._SpotifyAuth__token_expires_in == 3600
-    assert spotify_auth._SpotifyAuth__token_requested_at == 1234567890
+    assert spotify_auth._access_token == "test_access_token"
+    assert spotify_auth._refresh_token == "test_refresh_token"
+    assert spotify_auth._token_expires_in == 3600
+    assert spotify_auth._token_requested_at == 1234567890
 
 
 def test_get_currently_playing(spotify_auth, monkeypatch):
-    def mock_authorization_header():
-        return {"Authorization": "Bearer test_token"}
-
     def mock_get(*args, **kwargs):
         class MockResponse(BaseResponse):
             @staticmethod
@@ -214,10 +215,7 @@ def test_get_currently_playing(spotify_auth, monkeypatch):
 
         return MockResponse()
 
-    monkeypatch.setattr(
-        spotify_auth, "_SpotifyAuth__authorization_header", mock_authorization_header
-    )
-    monkeypatch.setattr(spotify_auth._SpotifyAuth__session, "get", mock_get)
+    monkeypatch.setattr(spotify_auth._session, "get", mock_get)
 
     currently_playing = spotify_auth.get_currently_playing()
     assert currently_playing is not None
@@ -228,9 +226,6 @@ def test_get_currently_playing(spotify_auth, monkeypatch):
 
 
 def test_get_user_profile(spotify_auth, monkeypatch):
-    def mock_authorization_header():
-        return {"Authorization": "Bearer test_token"}
-
     def mock_get(*args, **kwargs):
         class MockResponse(BaseResponse):
             @staticmethod
@@ -248,10 +243,7 @@ def test_get_user_profile(spotify_auth, monkeypatch):
 
         return MockResponse()
 
-    monkeypatch.setattr(
-        spotify_auth, "_SpotifyAuth__authorization_header", mock_authorization_header
-    )
-    monkeypatch.setattr(spotify_auth._SpotifyAuth__session, "get", mock_get)
+    monkeypatch.setattr(spotify_auth._session, "get", mock_get)
 
     user_profile = spotify_auth.get_user_profile()
     assert user_profile is not None
