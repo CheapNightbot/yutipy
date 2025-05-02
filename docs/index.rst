@@ -12,11 +12,11 @@ This documentation will help you get started with yutipy and provide detailed in
    <a href="https://github.com/CheapNightbot/yutipy/actions/workflows/tests.yml">
    <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/cheapnightbot/yutipy/pytest-unit-testing.yml?style=for-the-badge&label=Pytest">
    </a>
-   <a href="https://pypi.org/project/yutipy/">
-   <img src="https://img.shields.io/pypi/v/yutipy?style=for-the-badge" alt="PyPI" />
-   </a>
    <a href="https://yutipy.readthedocs.io/en/latest/">
    <img src="https://img.shields.io/readthedocs/yutipy?style=for-the-badge" alt="Documentation Status" />
+   </a>
+   <a href="https://pypi.org/project/yutipy/">
+   <img src="https://img.shields.io/pypi/v/yutipy?style=for-the-badge" alt="PyPI" />
    </a>
    <a href="https://github.com/CheapNightbot/yutipy/blob/master/LICENSE">
    <img src="https://img.shields.io/github/license/CheapNightbot/yutipy?style=for-the-badge" alt="License" />
