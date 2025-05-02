@@ -2,22 +2,14 @@ __all__ = ["Itunes", "ItunesException"]
 
 from datetime import datetime
 from pprint import pprint
-from typing import Dict, Optional
+from typing import Optional
 
 import requests
 
-from yutipy.exceptions import (
-    InvalidResponseException,
-    InvalidValueException,
-    ItunesException
-)
-from yutipy.models import MusicInfo
-from yutipy.utils.helpers import (
-    are_strings_similar,
-    guess_album_type,
-    is_valid_string,
-)
+from yutipy.exceptions import InvalidValueException, ItunesException
 from yutipy.logger import logger
+from yutipy.models import MusicInfo
+from yutipy.utils.helpers import are_strings_similar, guess_album_type, is_valid_string
 
 
 class Itunes:
@@ -25,13 +17,13 @@ class Itunes:
 
     def __init__(self) -> None:
         """Initializes the iTunes class and sets up the session."""
-        self.__session = requests.Session()
         self.api_url = "https://itunes.apple.com"
-        self._is_session_closed = False
         self.normalize_non_english = True
+        self._is_session_closed = False
+        self.__session = requests.Session()
         self.__translation_session = requests.Session()
 
-    def __enter__(self) -> "Itunes":
+    def __enter__(self):
         """Enters the runtime context related to this object."""
         return self
 
@@ -99,18 +91,15 @@ class Itunes:
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.warning(f"Network error while searching iTunes: {e}")
+                logger.warning(f"Unexpected error while searching iTunes: {e}")
                 return None
-            except Exception as e:
-                logger.exception(f"Unexpected error while searching iTunes: {e}")
-                raise ItunesException(f"An error occurred while searching iTunes: {e}")
 
             try:
                 logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["results"]
             except (IndexError, KeyError, ValueError) as e:
                 logger.warning(f"Invalid response structure from iTunes: {e}")
-                raise InvalidResponseException(f"Invalid response received: {e}")
+                return None
 
             music_info = self._parse_result(artist, song, result)
             if music_info:
@@ -227,6 +216,7 @@ class Itunes:
 
 if __name__ == "__main__":
     import logging
+
     from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)

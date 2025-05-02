@@ -5,11 +5,7 @@ from typing import Dict, List, Optional
 
 import requests
 
-from yutipy.exceptions import (
-    DeezerException,
-    InvalidResponseException,
-    InvalidValueException,
-)
+from yutipy.exceptions import DeezerException, InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
@@ -26,7 +22,7 @@ class Deezer:
         self.__session = requests.Session()
         self._translation_session = requests.Session()
 
-    def __enter__(self) -> "Deezer":
+    def __enter__(self):
         """Enters the runtime context related to this object."""
         return self
 
@@ -81,7 +77,6 @@ class Deezer:
         self.normalize_non_english = normalize_non_english
 
         search_types = ["track", "album"]
-
         for search_type in search_types:
             endpoint = f"{self.api_url}/search/{search_type}"
             query = f'?q=artist:"{artist}" {search_type}:"{song}"&limit={limit}'
@@ -96,18 +91,15 @@ class Deezer:
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.warning(f"Network error while fetching music info: {e}")
-                return None
-            except Exception as e:
                 logger.warning(f"Unexpected error while searching Deezer: {e}")
-                raise DeezerException(f"An error occurred while searching Deezer: {e}")
+                return None
 
             try:
                 logger.debug(f"Parsing response JSON: {response.json()}")
                 result = response.json()["data"]
             except (IndexError, KeyError, ValueError) as e:
                 logger.warning(f"Invalid response structure from Deezer: {e}")
-                raise InvalidResponseException(f"Invalid response received: {e}")
+                return None
 
             music_info = self._parse_results(artist, song, result)
             if music_info:
@@ -139,7 +131,7 @@ class Deezer:
         elif music_type == "album":
             return self._get_album_info(music_id)
         else:
-            raise DeezerException(f"Invalid music type: {music_type}")
+            raise InvalidValueException(f"Invalid music type: {music_type}")
 
     def _get_track_info(self, track_id: int) -> Optional[Dict]:
         """
@@ -165,16 +157,13 @@ class Deezer:
         except requests.RequestException as e:
             logger.warning(f"Error fetching track info: {e}")
             return None
-        except Exception as e:
-            logger.warning(f"Error fetching track info: {e}")
-            raise DeezerException(f"An error occurred while fetching track info: {e}")
 
         try:
             logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
             logger.warning(f"Invalid response received from Deezer: {e}")
-            raise InvalidResponseException(f"Invalid response received: {e}")
+            return None
 
         return {
             "isrc": result.get("isrc"),
@@ -206,16 +195,13 @@ class Deezer:
         except requests.RequestException as e:
             logger.warning(f"Error fetching album info: {e}")
             return None
-        except Exception as e:
-            logger.warning(f"Error fetching album info: {e}")
-            raise DeezerException(f"An error occurred while fetching album info: {e}")
 
         try:
             logger.debug(f"Response JSON: {response.json()}")
             result = response.json()
         except ValueError as e:
             logger.warning(f"Invalid response received from Deezer: {e}")
-            raise InvalidResponseException(f"Invalid response received: {e}")
+            return None
 
         return {
             "genre": (

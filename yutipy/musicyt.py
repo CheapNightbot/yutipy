@@ -79,12 +79,10 @@ class MusicYT:
         self.normalize_non_english = normalize_non_english
 
         query = f"{artist} - {song}"
-
-        logger.info(
-            f"Searching YouTube Music for `artist='{artist}'` and `song='{song}'`"
-        )
-
         try:
+            logger.info(
+                f"Searching YouTube Music for `artist='{artist}'` and `song='{song}'`"
+            )
             results = self.ytmusic.search(query=query, limit=limit)
         except exceptions.YTMusicServerError as e:
             logger.warning(f"Something went wrong while searching YTMusic: {e}")

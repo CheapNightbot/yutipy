@@ -1,7 +1,6 @@
 __all__ = ["LastFm", "LastFmException"]
 
 import os
-from dataclasses import asdict
 from time import time
 from pprint import pprint
 from typing import Optional
