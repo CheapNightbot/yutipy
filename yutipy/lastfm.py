@@ -142,6 +142,7 @@ class LastFm:
         response_json = response.json()
         result = response_json.get("recenttracks", {}).get("track", [])[0]
         is_playing = result.get("@attr", {}).get("nowplaying", False)
+        is_playing = True if isinstance(is_playing, str) and is_playing == "true" else False
         if result and is_playing:
             album_art = [
                 img.get("#text")

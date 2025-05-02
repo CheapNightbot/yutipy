@@ -34,7 +34,7 @@ class MockResponseActivity(BaseResponse):
                             "#text": "Test Album",
                         },
                         "name": "Test Track",
-                        "@attr": {"nowplaying": True},
+                        "@attr": {"nowplaying": "true"},
                         "url": "https://www.last.fm/music/test+track",
                     }
                 ]
