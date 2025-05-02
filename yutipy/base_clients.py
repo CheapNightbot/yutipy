@@ -129,7 +129,6 @@ class BaseClient:
         dict
             The API access token, with additional information such as expires in, etc.
         """
-        print(self._client_id, self._client_secret)
         auth_string = f"{self._client_id}:{self._client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
 
