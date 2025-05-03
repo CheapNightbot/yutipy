@@ -325,7 +325,7 @@ class BaseAuthClient:
                 "`load_access_token` is not implemented. Falling back to in-memory storage."
             )
         finally:
-            if token_info or not token_info.get("access_token"):
+            if token_info and token_info.get("access_token"):
                 self._access_token = token_info.get("access_token")
                 self._refresh_token = token_info.get("refresh_token")
                 self._token_expires_in = token_info.get("expires_in")
