@@ -3,7 +3,7 @@
    :target: https://github.com/CheapNightbot/yutipy
    :align: center
 
-**yutipy** is a Python package for searching and retrieving music information from various music platforms (see list of :doc:`available muisc platforms <available_platforms>`).
+**yutipy** is a Python package to interact and retrieving music information from various music platforms (see list of :doc:`available muisc platforms <available_platforms>`).
 This documentation will help you get started with yutipy and provide detailed information about its features and usage.
 
 .. raw:: html

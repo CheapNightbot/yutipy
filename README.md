@@ -23,7 +23,7 @@
 </a>
 </p>
 
-A _**simple**_ Python package for searching and retrieving music information from various music platforms APIs, including Deezer, iTunes, Spotify, and YouTube Music.
+A _**simple**_ Python package to interact with various music platforms APIs.
 
 ## Table of Contents
 
