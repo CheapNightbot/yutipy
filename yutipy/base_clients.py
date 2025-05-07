@@ -87,7 +87,7 @@ class BaseClient:
         token_info = None
         try:
             token_info = self.load_access_token()
-            if not isinstance(token_info, dict):
+            if token_info and not isinstance(token_info, dict):
                 raise InvalidValueException(
                     "`load_access_token()` should return a dict."
                 )
@@ -316,7 +316,7 @@ class BaseAuthClient:
         token_info = None
         try:
             token_info = self.load_access_token()
-            if not isinstance(token_info, dict):
+            if token_info and not isinstance(token_info, dict):
                 raise InvalidValueException(
                     "`load_access_token()` should return a dict."
                 )
