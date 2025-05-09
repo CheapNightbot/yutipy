@@ -82,7 +82,6 @@ def are_strings_similar(
     Returns:
         bool: True if the strings are similar, otherwise False.
     """
-    global TRANSLATION_CACHE
 
     """
     note for myself so that it make sense later ~ _(:з)∠)_
@@ -207,8 +206,3 @@ def guess_album_type(total_tracks: int):
         return "ep"
     if total_tracks >= 7:
         return "album"
-
-
-if __name__ == "__main__":
-    result = are_strings_similar("ポーター", "Porter")
-    print(result)
