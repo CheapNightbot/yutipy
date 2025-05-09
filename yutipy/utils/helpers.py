@@ -5,6 +5,13 @@ from rapidfuzz.utils import default_process
 
 kakasi = pykakasi.kakasi()
 
+TRANSLATION_CACHE = {}
+
+
+def similarity(str1: str, str2: str, threshold: int = 80):
+    similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
+    return similarity_score > threshold
+
 
 def translate_text(
     text: str,
@@ -76,30 +83,90 @@ def are_strings_similar(
         bool: True if the strings are similar, otherwise False.
     """
 
+    """
+    note for myself so that it make sense later ~ _(:з)∠)_
+    0. Check cached strings for comparision
+        a. if found and same, return True.
+    1. normalize original strings.
+        a. if both same, return True.
+    2. translate original string.
+        a. if both same, return True.
+    3. translate normalized string.
+        a. if both same, return True.
+    4. return False.
+    """
+
+    # ### Step 0 ####
+    cached_str1 = TRANSLATION_CACHE.get(str1, str1)
+    cached_str2 = TRANSLATION_CACHE.get(str2, str2)
+    similar = similarity(cached_str1, cached_str2, threshold=threshold)
+    if similar:
+        return True
+    # ###############
+
+    # ### Step 1 ####
+    # Transliterate / Normalize Strings
+    normalized_str1 = (
+        TRANSLATION_CACHE.get(str1)
+        or "".join(item["hepburn"] for item in kakasi.convert(str1))
+        or str1
+    )
+    normalized_str2 = (
+        TRANSLATION_CACHE.get(str2)
+        or "".join(item["hepburn"] for item in kakasi.convert(str2))
+        or str2
+    )
+    similar = similarity(normalized_str1, normalized_str2, threshold=threshold)
+    if similar:
+        TRANSLATION_CACHE[str1] = normalized_str1
+        TRANSLATION_CACHE[str2] = normalized_str2
+        return True
+    # ###############
+
     if use_translation:
-        translated_str1 = (
-            translate_text(str1, session=translation_session)["destination-text"]
+        # ### Step 2 ####
+        original_translated_str1 = (
+            TRANSLATION_CACHE.get(str1)
+            or translate_text(str1, session=translation_session)["destination-text"]
             if translation_session
             else translate_text(str1)["destination-text"]
         )
-        translated_str2 = (
-            translate_text(str2, session=translation_session)["destination-text"]
+        original_translated_str2 = (
+            TRANSLATION_CACHE.get(str2)
+            or translate_text(str2, session=translation_session)["destination-text"]
             if translation_session
             else translate_text(str2)["destination-text"]
         )
-
-        similarity_score = fuzz.WRatio(
-            translated_str1, translated_str2, processor=default_process
+        similar = similarity(
+            original_translated_str1, original_translated_str2, threshold=threshold
         )
-        if similarity_score > threshold:
+        if similar:
+            TRANSLATION_CACHE[str1] = original_translated_str1
+            TRANSLATION_CACHE[str2] = original_translated_str2
+            return True
+        # ###############
+
+        normalized_translated_str1 = (
+            TRANSLATION_CACHE.get(str1)
+            or translate_text(str1, session=translation_session)["destination-text"]
+            if translation_session
+            else translation_session(str1)["destination-text"]
+        )
+        normalized_translated_str2 = (
+            TRANSLATION_CACHE.get(str2)
+            or translate_text(str2, session=translation_session)["destination-text"]
+            if translation_session
+            else translate_text(str2)["destination-text"]
+        )
+        similar = similarity(
+            normalized_translated_str1, normalized_translated_str2, threshold=threshold
+        )
+        if similar:
+            TRANSLATION_CACHE[str1] = normalized_translated_str1
+            TRANSLATION_CACHE[str2] = normalized_translated_str2
             return True
 
-    # Use transliterated strings for comparison
-    str1 = "".join(item["hepburn"] for item in kakasi.convert(str1)) or str1
-    str2 = "".join(item["hepburn"] for item in kakasi.convert(str2)) or str2
-
-    similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
-    return similarity_score > threshold
+    return False
 
 
 def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
