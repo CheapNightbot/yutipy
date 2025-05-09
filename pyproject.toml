@@ -36,11 +36,6 @@ classifiers = [
   "Operating System :: OS Independent",
 ]
 
-[project.optional-dependencies]
-dev =  [
-    "pytest",
-]
-
 [project.urls]
 Homepage = "https://github.com/CheapNightbot/yutipy"
 Documentation = "https://yutipy.readthedocs.io/"
