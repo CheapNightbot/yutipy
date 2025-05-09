@@ -172,7 +172,7 @@ class BaseClient:
                 self._token_expires_in = token_info.get("expires_in")
                 self._token_requested_at = token_info.get("requested_at")
             else:
-                logger.info("The access token is still valid, no need to refresh.")
+                logger.debug("The access token is still valid, no need to refresh.")
         except TypeError:
             logger.debug(
                 f"token requested at: {self._token_requested_at} | token expires in: {self._token_expires_in}"
@@ -419,7 +419,7 @@ class BaseAuthClient:
                 self._token_requested_at = token_info.get("requested_at")
 
             else:
-                logger.info("The access token is still valid, no need to refresh.")
+                logger.debug("The access token is still valid, no need to refresh.")
         except TypeError:
             logger.debug(
                 f"token requested at: {self._token_requested_at} | token expires in: {self._token_expires_in}"
