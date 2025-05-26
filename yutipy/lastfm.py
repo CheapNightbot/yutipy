@@ -154,7 +154,7 @@ class LastFm:
                 artists=", ".join(
                     separate_artists(result.get("artist", {}).get("#text"))
                 ),
-                id=result.get("mbid"),
+                id=result.get("mbid") if result.get("mbid") else None,
                 timestamp=result.get("date", {}).get("uts") or time(),
                 title=result.get("name"),
                 url=result.get("url"),
