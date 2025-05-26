@@ -183,17 +183,14 @@ class Itunes:
         tuple
             The extracted album title and type.
         """
-        try:
-            album_title, album_type = result["collectionName"].split("-")
-            return album_title.strip(), album_type.strip()
-        except ValueError:
-            guess = guess_album_type(result.get("trackCount", 1))
-            guessed_right = are_strings_similar(
-                result.get("wrapperType", "x"), guess, use_translation=False
-            )
-            return result["collectionName"], (
-                result["wrapperType"] if guessed_right else guess
-            )
+
+        guess = guess_album_type(result.get("trackCount", 1))
+        guessed_right = are_strings_similar(
+            result.get("wrapperType", "x"), guess, use_translation=False
+        )
+        return result["collectionName"], (
+            result["wrapperType"] if guessed_right else guess
+        )
 
     def _format_release_date(self, release_date: str) -> str:
         """
