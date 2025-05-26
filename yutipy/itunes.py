@@ -9,7 +9,7 @@ import requests
 from yutipy.exceptions import InvalidValueException, ItunesException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
-from yutipy.utils.helpers import are_strings_similar, guess_album_type, is_valid_string
+from yutipy.utils.helpers import are_strings_similar, guess_album_type, is_valid_string, separate_artists
 
 
 class Itunes:
@@ -149,12 +149,13 @@ class Itunes:
 
             album_title, album_type = self._extract_album_info(result)
             release_date = self._format_release_date(result["releaseDate"])
+            artists = separate_artists(result["artistName"])
 
             return MusicInfo(
                 album_art=result["artworkUrl100"],
                 album_title=album_title,
                 album_type=album_type.lower(),
-                artists=result["artistName"],
+                artists=", ".join(artists),
                 genre=result["primaryGenreName"],
                 id=result.get("trackId", result["collectionId"]),
                 isrc=None,
