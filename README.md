@@ -23,6 +23,9 @@
 </a>
 </p>
 
+> **Looking for an easy-to-use API or GUI to search for music, instead of using the CLI or building your own integration?**
+> Check out [yutify](https://yutify.cheapnightbot.me) — it’s powered by yutipy!
+
 A _**simple**_ Python package to interact with various music platforms APIs.
 
 ## Table of Contents
