@@ -44,6 +44,8 @@ class LrcLib:
                 self.app_version = f"v{version('yutipy')}"
             except PackageNotFoundError:
                 self.app_version = "N/A"
+        else:
+            self.app_version = app_version
 
         self._is_session_closed = False
         self.__session = requests.Session()
