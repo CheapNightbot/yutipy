@@ -95,7 +95,7 @@ class Itunes:
                 return None
 
             try:
-                logger.debug(f"Parsing response JSON.")
+                logger.debug("Parsing response JSON.")
                 result = response.json()["results"]
             except (IndexError, KeyError, ValueError) as e:
                 logger.warning(f"Invalid response structure from iTunes: {e}")
