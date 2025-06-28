@@ -6,6 +6,9 @@
 **yutipy** is a Python package to interact and retrieving music information from various music platforms (see list of :doc:`available muisc platforms <available_platforms>`).
 This documentation will help you get started with yutipy and provide detailed information about its features and usage.
 
+   **Looking for an easy-to-use API or GUI to search for music, instead of using the CLI or building your own integration?**
+   Check out `yutify <https://yutify.cheapnightbot.me>`_ — it’s powered by yutipy!
+
 .. raw:: html
 
    <p align="center">

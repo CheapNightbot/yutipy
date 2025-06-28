@@ -95,7 +95,7 @@ class Deezer:
                 return None
 
             try:
-                logger.debug(f"Parsing response JSON.")
+                logger.debug("Parsing response JSON.")
                 result = response.json()["data"]
             except (IndexError, KeyError, ValueError) as e:
                 logger.warning(f"Invalid response structure from Deezer: {e}")
@@ -159,7 +159,7 @@ class Deezer:
             return None
 
         try:
-            logger.debug(f"Parsing Response JSON.")
+            logger.debug("Parsing Response JSON.")
             result = response.json()
         except ValueError as e:
             logger.warning(f"Invalid response received from Deezer: {e}")
