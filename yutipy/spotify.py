@@ -135,7 +135,7 @@ class Spotify(BaseClient):
                 )
                 response.raise_for_status()
             except requests.RequestException as e:
-                logger.warning(f"Failed to search for music: {response.json()}")
+                logger.warning(f"Failed to search for music: {e}")
                 return None
 
             artist_ids = artist_ids if artist_ids else self._get_artists_ids(artist)
@@ -200,7 +200,7 @@ class Spotify(BaseClient):
             response.raise_for_status()
         except requests.RequestException as e:
             raise logger.warning(
-                f"Failed to search music with ISRC/UPC: {response.json()}"
+                f"Failed to search music with ISRC/UPC: {e}"
             )
             return None
 
