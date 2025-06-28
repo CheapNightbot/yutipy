@@ -502,6 +502,7 @@ class SpotifyAuth(BaseAuthClient):
         dict
             A dictionary containing the user's display name and profile images.
         """
+        self._refresh_access_token()
         query_url = self.__api_url
         header = self._authorization_header()
 
@@ -545,6 +546,7 @@ class SpotifyAuth(BaseAuthClient):
 
         """
         query_url = f"{self.__api_url}/player/currently-playing"
+        self._refresh_access_token()
         header = self._authorization_header()
 
         try:
