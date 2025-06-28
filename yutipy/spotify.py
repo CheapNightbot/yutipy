@@ -22,6 +22,7 @@ from yutipy.utils.helpers import (
     is_valid_string,
     separate_artists,
 )
+from yutipy.lrclib import LrcLib
 
 load_dotenv()
 
@@ -199,9 +200,7 @@ class Spotify(BaseClient):
             )
             response.raise_for_status()
         except requests.RequestException as e:
-            raise logger.warning(
-                f"Failed to search music with ISRC/UPC: {e}"
-            )
+            raise logger.warning(f"Failed to search music with ISRC/UPC: {e}")
             return None
 
         artist_ids = self._get_artists_ids(artist)
@@ -328,7 +327,7 @@ class Spotify(BaseClient):
         ]
 
         if matching_artists:
-            return MusicInfo(
+            music_info = MusicInfo(
                 album_art=track["album"]["images"][0]["url"],
                 album_title=track["album"]["name"],
                 album_type=track["album"]["album_type"],
@@ -345,6 +344,13 @@ class Spotify(BaseClient):
                 url=track["external_urls"]["spotify"],
             )
 
+            with LrcLib() as lrc_lib:
+                lyrics = lrc_lib.get_lyrics(
+                    artist=music_info.artists, song=music_info.title
+                )
+            if lyrics:
+                music_info.lyrics = lyrics.get("plainLyrics")
+            return music_info
         return None
 
     def _find_album(
@@ -571,7 +577,7 @@ class SpotifyAuth(BaseAuthClient):
             )
             # Spotify returns timestamp in milliseconds, so convert milliseconds to seconds:
             timestamp = response_json.get("timestamp") / 1000.0
-            return UserPlaying(
+            user_playing = UserPlaying(
                 album_art=result.get("album", {}).get("images", [])[0].get("url"),
                 album_title=result.get("album", {}).get("name"),
                 album_type=(
@@ -594,6 +600,13 @@ class SpotifyAuth(BaseAuthClient):
                 url=result.get("external_urls", {}).get("spotify"),
             )
 
+            with LrcLib() as lrc_lib:
+                lyrics = lrc_lib.get_lyrics(
+                    artist=user_playing.artists, song=user_playing.title
+                )
+            if lyrics:
+                user_playing.lyrics = lyrics.get("plainLyrics")
+            return user_playing
         return None
 
 

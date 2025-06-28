@@ -14,6 +14,7 @@ from yutipy.exceptions import (
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
+from yutipy.lrclib import LrcLib
 
 
 class MusicYT:
@@ -224,12 +225,13 @@ class MusicYT:
 
         try:
             lyrics = self.ytmusic.get_lyrics(lyrics_id.get("lyrics"))
+            lyrics = lyrics.get("lyrics")
         except exceptions.YTMusicUserError:
-            lyrics = {}
+            lyrics = None
 
         album_art = result.get("thumbnails", [{}])[-1].get("url", None)
 
-        return MusicInfo(
+        music_info = MusicInfo(
             album_art=album_art,
             album_title=None,
             album_type="single",
@@ -237,7 +239,7 @@ class MusicYT:
             genre=None,
             id=video_id,
             isrc=None,
-            lyrics=lyrics.get("lyrics"),
+            lyrics=lyrics,
             release_date=release_date,
             tempo=None,
             title=title,
@@ -245,6 +247,16 @@ class MusicYT:
             upc=None,
             url=song_url,
         )
+
+        if not music_info.lyrics:
+            with LrcLib() as lrc_lib:
+                lyrics = lrc_lib.get_lyrics(
+                    artist=music_info.artists, song=music_info.title
+                )
+            if lyrics:
+                music_info.lyrics = lyrics.get("plainLyrics")
+
+        return music_info
 
     def _get_album(self, result: dict) -> MusicInfo:
         """

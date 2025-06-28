@@ -9,6 +9,7 @@ from yutipy.exceptions import DeezerException, InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
+from yutipy.lrclib import LrcLib
 
 
 class Deezer:
@@ -302,6 +303,13 @@ class Deezer:
             music_info.upc = album_info.get("upc")
             music_info.release_date = album_info.get("release_date")
             music_info.genre = album_info.get("genre")
+
+        with LrcLib() as lrc_lib:
+            lyrics = lrc_lib.get_lyrics(
+                artist=music_info.artists, song=music_info.title
+            )
+        if lyrics:
+            music_info.lyrics = lyrics.get("plainLyrics")
 
         return music_info
 
