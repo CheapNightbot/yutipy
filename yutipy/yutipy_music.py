@@ -23,10 +23,10 @@ class YutipyMusic:
     """
 
     def __init__(
-    self,
-    custom_kkbox_class = KKBox,
-    custom_spotify_class = Spotify,
-) -> None:
+        self,
+        custom_kkbox_class=KKBox,
+        custom_spotify_class=Spotify,
+    ) -> None:
         """
         Initializes the YutipyMusic class.
 
@@ -201,11 +201,13 @@ if __name__ == "__main__":
     import logging
     from yutipy.logger import enable_logging
 
+    from dataclasses import asdict
+
     enable_logging(level=logging.DEBUG)
     yutipy_music = YutipyMusic()
 
     artist_name = input("Artist Name: ")
     song_name = input("Song Name: ")
 
-    pprint(yutipy_music.search(artist_name, song_name))
+    pprint(asdict(yutipy_music.search(artist_name, song_name)))
     yutipy_music.close_sessions()

@@ -10,6 +10,7 @@ from yutipy.exceptions import InvalidValueException, ItunesException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, guess_album_type, is_valid_string, separate_artists
+from yutipy.lrclib import LrcLib
 
 
 class Itunes:
@@ -151,7 +152,7 @@ class Itunes:
             release_date = self._format_release_date(result["releaseDate"])
             artists = separate_artists(result["artistName"])
 
-            return MusicInfo(
+            music_info = MusicInfo(
                 album_art=result["artworkUrl100"],
                 album_title=album_title,
                 album_type=album_type.lower(),
@@ -168,6 +169,14 @@ class Itunes:
                 url=result.get("trackViewUrl", result["collectionViewUrl"]),
             )
 
+            with LrcLib() as lrc_lib:
+                lyrics = lrc_lib.get_lyrics(
+                    artist=music_info.artists, song=music_info.title
+                )
+            if lyrics:
+                music_info.lyrics = lyrics.get("plainLyrics")
+
+            return music_info
         return None
 
     def _extract_album_info(self, result: dict) -> tuple:
