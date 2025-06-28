@@ -41,7 +41,7 @@ class LrcLib:
         self.app_url = app_url
         if not app_version:
             try:
-                self.app_version = f"v{version("yutipy")}"
+                self.app_version = f"v{version('yutipy')}"
             except PackageNotFoundError:
                 self.app_version = "N/A"
 
