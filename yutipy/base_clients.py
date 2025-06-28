@@ -384,6 +384,11 @@ class BaseAuthClient:
                 "refresh_token": self._refresh_token,
             }
 
+        if not data:
+            raise AuthenticationException(
+                "Either `authorization_code` or `refresh_token` must be provided to get access token."
+            )
+
         try:
             logger.info(
                 f"Authenticating with {self.SERVICE_NAME} API using Authorization Code grant type."
@@ -404,6 +409,17 @@ class BaseAuthClient:
 
     def _refresh_access_token(self):
         """Refreshes the token if it has expired."""
+        try:
+            self.load_token_after_init()
+        except NotImplementedError as e:
+            logger.warning(e)
+
+        if not self._access_token or not self._refresh_token:
+            logger.warning(
+                "No access token or refresh token found. You must authenticate to obtain a new token."
+            )
+            return
+
         try:
             if time() - self._token_requested_at >= self._token_expires_in:
                 token_info = self._get_access_token(refresh_token=self._refresh_token)
