@@ -409,11 +409,6 @@ class BaseAuthClient:
 
     def _refresh_access_token(self):
         """Refreshes the token if it has expired."""
-        try:
-            self.load_token_after_init()
-        except NotImplementedError as e:
-            logger.warning(e)
-
         if not self._access_token or not self._refresh_token:
             logger.warning(
                 "No access token or refresh token found. You must authenticate to obtain a new token."
