@@ -49,7 +49,7 @@ class YutipyMusic:
         }
 
         try:
-            self.services["kkbox"] = custom_kkbox_class()
+            self.services["kkbox"] = custom_kkbox_class(defer_load=True)
         except KKBoxException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
@@ -59,7 +59,7 @@ class YutipyMusic:
             self.album_art_priority.insert(idx, "kkbox")
 
         try:
-            self.services["spotify"] = custom_spotify_class()
+            self.services["spotify"] = custom_spotify_class(defer_load=True)
         except SpotifyException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
