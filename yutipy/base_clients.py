@@ -404,6 +404,8 @@ class BaseAuthClient:
             )
 
         response_json = response.json()
+        if "refresh_token" not in response_json:
+            response_json["refresh_token"] = refresh_token
         response_json["requested_at"] = time()
         return response_json
 
