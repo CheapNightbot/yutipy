@@ -21,8 +21,7 @@ class LrcLib:
         app_version: str = None,
         app_url: str = "https://github.com/CheapNightbot/yutipy",
     ) -> None:
-        """Initializes the LrcLib with the API URL and application details.
-
+        """
         Parameters
         ----------
         app_name : str
@@ -135,14 +134,13 @@ class LrcLib:
                 use_translation=normalize_non_english,
                 translation_session=self._translation_session,
             ):
-                if album:
-                    if not are_strings_similar(
-                        result.get("albumName"),
-                        album,
-                        use_translation=normalize_non_english,
-                        translation_session=self._translation_session,
-                    ):
-                        continue
+                if album and not are_strings_similar(
+                    result.get("albumName"),
+                    album,
+                    use_translation=normalize_non_english,
+                    translation_session=self._translation_session,
+                ):
+                    continue
                 return result
         return None
 

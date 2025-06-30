@@ -8,11 +8,12 @@ from yutipy.deezer import Deezer
 from yutipy.exceptions import InvalidValueException, KKBoxException, SpotifyException
 from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
+from yutipy.logger import logger
+from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo, MusicInfos
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
 from yutipy.utils.helpers import is_valid_string
-from yutipy.logger import logger
 
 
 class YutipyMusic:
@@ -28,8 +29,6 @@ class YutipyMusic:
         custom_spotify_class=Spotify,
     ) -> None:
         """
-        Initializes the YutipyMusic class.
-
         Parameters
         ----------
         custom_kkbox_class : Optional[type], optional
@@ -43,13 +42,15 @@ class YutipyMusic:
         self.normalize_non_english = True
         self.album_art_priority = ["deezer", "ytmusic", "itunes"]
         self.services = {
-            "deezer": Deezer(),
-            "itunes": Itunes(),
-            "ytmusic": MusicYT(),
+            "deezer": Deezer(fetch_lyrics=False),
+            "itunes": Itunes(fetch_lyrics=False),
+            "ytmusic": MusicYT(fetch_lyrics=False),
         }
 
         try:
-            self.services["kkbox"] = custom_kkbox_class(defer_load=True)
+            self.services["kkbox"] = custom_kkbox_class(
+                defer_load=True, fetch_lyrics=False
+            )
         except KKBoxException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping KKBox due to KKBoxException: {e}"
@@ -59,7 +60,9 @@ class YutipyMusic:
             self.album_art_priority.insert(idx, "kkbox")
 
         try:
-            self.services["spotify"] = custom_spotify_class(defer_load=True)
+            self.services["spotify"] = custom_spotify_class(
+                defer_load=True, fetch_lyrics=False
+            )
         except SpotifyException as e:
             logger.warning(
                 f"{self.__class__.__name__}: Skipping Spotify due to SpotifyException: {e}"
@@ -134,10 +137,17 @@ class YutipyMusic:
                     )
 
         if len(self.music_info.url) == 0:
-            logger.warning(
+            logger.info(
                 f"No matching results found across all platforms for artist='{artist}' and song='{song}'"
             )
             return None
+
+        # Fetch lyrics only once using LrcLib if not already present
+        if not self.music_info.lyrics:
+            with LrcLib() as lrc_lib:
+                lyrics_result = lrc_lib.get_lyrics(artist, song)
+            if lyrics_result:
+                self.music_info.lyrics = lyrics_result.get("plainLyrics")
 
         return self.music_info
 
@@ -199,9 +209,9 @@ class YutipyMusic:
 
 if __name__ == "__main__":
     import logging
-    from yutipy.logger import enable_logging
-
     from dataclasses import asdict
+
+    from yutipy.logger import enable_logging
 
     enable_logging(level=logging.DEBUG)
     yutipy_music = YutipyMusic()

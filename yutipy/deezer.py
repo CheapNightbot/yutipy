@@ -15,11 +15,17 @@ from yutipy.lrclib import LrcLib
 class Deezer:
     """A class to interact with the Deezer API."""
 
-    def __init__(self) -> None:
-        """Initializes the Deezer class and sets up the session."""
+    def __init__(self, fetch_lyrics: bool = True) -> None:
+        """
+        Parameters
+        ----------
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
+        """
         self.api_url = "https://api.deezer.com"
         self._is_session_closed = False
         self.normalize_non_english = True
+        self.fetch_lyrics = fetch_lyrics
         self.__session = requests.Session()
         self._translation_session = requests.Session()
 
@@ -304,12 +310,13 @@ class Deezer:
             music_info.release_date = album_info.get("release_date")
             music_info.genre = album_info.get("genre")
 
-        with LrcLib() as lrc_lib:
-            lyrics = lrc_lib.get_lyrics(
-                artist=music_info.artists, song=music_info.title
-            )
-        if lyrics:
-            music_info.lyrics = lyrics.get("plainLyrics")
+        if self.fetch_lyrics:
+            with LrcLib() as lrc_lib:
+                lyrics = lrc_lib.get_lyrics(
+                    artist=music_info.artists, song=music_info.title
+                )
+            if lyrics:
+                music_info.lyrics = lyrics.get("plainLyrics")
 
         return music_info
 

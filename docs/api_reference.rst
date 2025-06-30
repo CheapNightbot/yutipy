@@ -30,7 +30,7 @@ KKBox
     :members:
     :inherited-members:
     :noindex:
-    :exclude-members: is_session_closed
+    :exclude-members: is_session_closed, SERVICE_NAME, ACCESS_TOKEN_URL
 
 Lastfm
 ------
@@ -57,13 +57,13 @@ Spotify
     :members:
     :inherited-members:
     :noindex:
-    :exclude-members: is_session_closed
+    :exclude-members: is_session_closed, SERVICE_NAME, ACCESS_TOKEN_URL
 
 .. autoclass:: yutipy.spotify.SpotifyAuth
     :members:
     :inherited-members:
     :noindex:
-    :exclude-members: is_session_closed
+    :exclude-members: is_session_closed, SERVICE_NAME, ACCESS_TOKEN_URL, USER_AUTH_URL
 
 YouTube Music
 -------------

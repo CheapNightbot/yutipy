@@ -15,6 +15,7 @@ from yutipy.exceptions import (
     SpotifyException,
 )
 from yutipy.logger import logger
+from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo, UserPlaying
 from yutipy.utils.helpers import (
     are_strings_similar,
@@ -22,7 +23,6 @@ from yutipy.utils.helpers import (
     is_valid_string,
     separate_artists,
 )
-from yutipy.lrclib import LrcLib
 
 load_dotenv()
 
@@ -40,11 +40,13 @@ class Spotify(BaseClient):
     """
 
     def __init__(
-        self, client_id: str = None, client_secret: str = None, defer_load: bool = False
+        self,
+        client_id: str = None,
+        client_secret: str = None,
+        defer_load: bool = False,
+        fetch_lyrics: bool = True,
     ) -> None:
         """
-        Initializes the Spotify class (using Client Credentials grant type/flow) and sets up the session.
-
         Parameters
         ----------
         client_id : str, optional
@@ -53,9 +55,12 @@ class Spotify(BaseClient):
             The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization, by default ``False``
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or SPOTIFY_CLIENT_ID
         self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
+        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise SpotifyException(
@@ -344,12 +349,13 @@ class Spotify(BaseClient):
                 url=track["external_urls"]["spotify"],
             )
 
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=music_info.artists, song=music_info.title
-                )
-            if lyrics:
-                music_info.lyrics = lyrics.get("plainLyrics")
+            if self.fetch_lyrics:
+                with LrcLib() as lrc_lib:
+                    lyrics = lrc_lib.get_lyrics(
+                        artist=music_info.artists, song=music_info.title
+                    )
+                if lyrics:
+                    music_info.lyrics = lyrics.get("plainLyrics")
             return music_info
         return None
 
@@ -438,10 +444,9 @@ class SpotifyAuth(BaseAuthClient):
         redirect_uri: str = None,
         scopes: list[str] = None,
         defer_load: bool = False,
+        fetch_lyrics: bool = True,
     ):
         """
-        Initializes the SpotifyAuth class (using Authorization Code grant type/flow) and sets up the session.
-
         Parameters
         ----------
         client_id : str, optional
@@ -454,11 +459,14 @@ class SpotifyAuth(BaseAuthClient):
             A list of scopes for the Spotify API. For example: `['user-read-email', 'user-read-private']`.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics using `LRCLIB <https://lrclib.net>`__ if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
         self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
         self.scopes = scopes
+        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise SpotifyAuthException(
@@ -600,12 +608,13 @@ class SpotifyAuth(BaseAuthClient):
                 url=result.get("external_urls", {}).get("spotify"),
             )
 
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=user_playing.artists, song=user_playing.title
-                )
-            if lyrics:
-                user_playing.lyrics = lyrics.get("plainLyrics")
+            if self.fetch_lyrics:
+                with LrcLib() as lrc_lib:
+                    lyrics = lrc_lib.get_lyrics(
+                        artist=user_playing.artists, song=user_playing.title
+                    )
+                if lyrics:
+                    user_playing.lyrics = lyrics.get("plainLyrics")
             return user_playing
         return None
 

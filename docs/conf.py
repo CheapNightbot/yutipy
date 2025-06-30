@@ -35,6 +35,7 @@ autodoc_default_options = {
     "inherited-members": True,
     "show-inheritance": True,
 }
+autoclass_content = "both"
 
 # sphinx-copybutton optional configurations
 copybutton_prompt_text = r">>> |\.\.\. "
