@@ -185,7 +185,7 @@ def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
     if custom_separator:
         pattern = re.escape(custom_separator)
     else:
-        pattern = r"\s*(?:ft\.?|feat\.?|with|and|[;/&])\s*"
+        pattern = r"\s(?:ft\.?|feat\.?|with|and|[;/&])\s"
 
     return [
         artist.strip()
