@@ -1,5 +1,5 @@
 pykakasi==2.3.0
-python-dotenv==1.1.0
+python-dotenv==1.1.1
 RapidFuzz==3.13.0
 requests==2.32.4
 ytmusicapi==1.10.3
