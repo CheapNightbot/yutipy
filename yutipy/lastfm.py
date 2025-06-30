@@ -1,8 +1,8 @@
 __all__ = ["LastFm", "LastFmException"]
 
 import os
-from time import time
 from pprint import pprint
+from time import time
 from typing import Optional
 
 import requests
@@ -28,12 +28,6 @@ class LastFm:
 
     def __init__(self, api_key: str = None):
         """
-        Initializes the LastFm class.
-
-        Args:
-            lastfm_api_key (str, optional): The Last.fm API key. If not provided,
-                it will be fetched from the environment variable `LASTFM_API_KEY`.
-
         Parameters
         ----------
         lastfm_api_key : str, optional
@@ -141,7 +135,9 @@ class LastFm:
         response_json = response.json()
         result = response_json.get("recenttracks", {}).get("track", [])[0]
         is_playing = result.get("@attr", {}).get("nowplaying", False)
-        is_playing = True if isinstance(is_playing, str) and is_playing == "true" else False
+        is_playing = (
+            True if isinstance(is_playing, str) and is_playing == "true" else False
+        )
         if result and is_playing:
             album_art = [
                 img.get("#text")

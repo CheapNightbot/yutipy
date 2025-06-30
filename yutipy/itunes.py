@@ -8,19 +8,30 @@ import requests
 
 from yutipy.exceptions import InvalidValueException, ItunesException
 from yutipy.logger import logger
-from yutipy.models import MusicInfo
-from yutipy.utils.helpers import are_strings_similar, guess_album_type, is_valid_string, separate_artists
 from yutipy.lrclib import LrcLib
+from yutipy.models import MusicInfo
+from yutipy.utils.helpers import (
+    are_strings_similar,
+    guess_album_type,
+    is_valid_string,
+    separate_artists,
+)
 
 
 class Itunes:
     """A class to interact with the iTunes API."""
 
-    def __init__(self) -> None:
-        """Initializes the iTunes class and sets up the session."""
+    def __init__(self, fetch_lyrics: bool = True) -> None:
+        """
+        Parameters
+        ----------
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
+        """
         self.api_url = "https://itunes.apple.com"
         self.normalize_non_english = True
         self._is_session_closed = False
+        self.fetch_lyrics = fetch_lyrics
         self.__session = requests.Session()
         self.__translation_session = requests.Session()
 
@@ -169,12 +180,13 @@ class Itunes:
                 url=result.get("trackViewUrl", result["collectionViewUrl"]),
             )
 
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=music_info.artists, song=music_info.title
-                )
-            if lyrics:
-                music_info.lyrics = lyrics.get("plainLyrics")
+            if self.fetch_lyrics:
+                with LrcLib() as lrc_lib:
+                    lyrics = lrc_lib.get_lyrics(
+                        artist=music_info.artists, song=music_info.title
+                    )
+                if lyrics:
+                    music_info.lyrics = lyrics.get("plainLyrics")
 
             return music_info
         return None

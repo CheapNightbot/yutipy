@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 from yutipy.base_clients import BaseClient
 from yutipy.exceptions import InvalidValueException, KKBoxException
 from yutipy.logger import logger
+from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.lrclib import LrcLib
 
 load_dotenv()
 
@@ -30,11 +30,13 @@ class KKBox(BaseClient):
     """
 
     def __init__(
-        self, client_id: str = None, client_secret: str = None, defer_load: bool = False
+        self,
+        client_id: str = None,
+        client_secret: str = None,
+        defer_load: bool = False,
+        fetch_lyrics: bool = True,
     ) -> None:
         """
-        Initializes the KKBox class and sets up the session.
-
         Parameters
         ----------
         client_id : str, optional
@@ -43,9 +45,12 @@ class KKBox(BaseClient):
             The Client secret for the KKBOX Open API. Defaults to ``KKBOX_CLIENT_SECRET`` from .env file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or KKBOX_CLIENT_ID
         self.client_secret = client_secret or KKBOX_CLIENT_SECRET
+        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise KKBoxException(
@@ -274,12 +279,13 @@ class KKBox(BaseClient):
                 url=track.get("url"),
             )
 
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=music_info.artists, song=music_info.title
-                )
-            if lyrics:
-                music_info.lyrics = lyrics.get("plainLyrics")
+            if self.fetch_lyrics:
+                with LrcLib() as lrc_lib:
+                    lyrics = lrc_lib.get_lyrics(
+                        artist=music_info.artists, song=music_info.title
+                    )
+                if lyrics:
+                    music_info.lyrics = lyrics.get("plainLyrics")
             return music_info
         return None
 

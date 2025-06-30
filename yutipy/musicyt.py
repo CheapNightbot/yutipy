@@ -20,12 +20,18 @@ from yutipy.lrclib import LrcLib
 class MusicYT:
     """A class to interact with the YouTube Music API."""
 
-    def __init__(self) -> None:
-        """Initializes the YouTube Music class and sets up the session."""
+    def __init__(self, fetch_lyrics: bool = True) -> None:
+        """
+        Parameters
+        ----------
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
+        """
         self.ytmusic = YTMusic()
         self._is_session_closed = False
         self.normalize_non_english = True
         self.__translation_session = requests.Session()
+        self.fetch_lyrics = fetch_lyrics
 
     def __enter__(self) -> "MusicYT":
         """Enters the runtime context related to this object."""
@@ -248,7 +254,7 @@ class MusicYT:
             url=song_url,
         )
 
-        if not music_info.lyrics:
+        if not music_info.lyrics and self.fetch_lyrics:
             with LrcLib() as lrc_lib:
                 lyrics = lrc_lib.get_lyrics(
                     artist=music_info.artists, song=music_info.title
