@@ -1,3 +1,5 @@
+import re
+
 import pykakasi
 import requests
 from rapidfuzz import fuzz
@@ -180,17 +182,17 @@ def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
     Returns:
         list[str]: List of individual artists.
     """
-    default_separators = [";", "/", "ft.", "ft", "feat", "feat.", "with", "&", "and"]
-
     if custom_separator:
-        separators = [custom_separator]
+        pattern = re.escape(custom_separator)
     else:
-        separators = default_separators
+        # Use word boundaries for word separators, and escape special chars
+        pattern = r"\b(?:ft\.?|feat\.?|with|and)\b|[;/&]"
 
-    for sep in separators:
-        artists = artists.replace(sep, ",")
-
-    return [artist.strip() for artist in artists.split(",") if artist.strip()]
+    return [
+        artist.strip()
+        for artist in re.split(pattern, artists, flags=re.IGNORECASE)
+        if artist.strip()
+    ]
 
 
 def is_valid_string(string: str) -> bool:
