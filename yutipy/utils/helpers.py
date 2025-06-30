@@ -176,7 +176,7 @@ def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
     Separate artist names of a song or album into a list.
 
     Args:
-        artists (str): Artists string (e.g., artistA & artistB, artistA ft. artistB).
+        artists (str): Artists string (e.g., artistA & artistB, artistA ft. ArtistB).
         custom_separator (str, optional): A specific separator to use. Defaults to None.
 
     Returns:
@@ -185,8 +185,7 @@ def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
     if custom_separator:
         pattern = re.escape(custom_separator)
     else:
-        # Use word boundaries for word separators, and escape special chars
-        pattern = r"\b(?:ft\.?|feat\.?|with|and)\b|[;/&]"
+        pattern = r"\s*(?:ft\.?|feat\.?|with|and|[;/&])\s*"
 
     return [
         artist.strip()
