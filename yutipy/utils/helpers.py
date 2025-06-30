@@ -1,3 +1,5 @@
+import re
+
 import pykakasi
 import requests
 from rapidfuzz import fuzz
@@ -174,23 +176,22 @@ def separate_artists(artists: str, custom_separator: str = None) -> list[str]:
     Separate artist names of a song or album into a list.
 
     Args:
-        artists (str): Artists string (e.g., artistA & artistB, artistA ft. artistB).
+        artists (str): Artists string (e.g., artistA & artistB, artistA ft. ArtistB).
         custom_separator (str, optional): A specific separator to use. Defaults to None.
 
     Returns:
         list[str]: List of individual artists.
     """
-    default_separators = [";", "/", "ft.", "ft", "feat", "feat.", "with", "&", "and"]
-
     if custom_separator:
-        separators = [custom_separator]
+        pattern = re.escape(custom_separator)
     else:
-        separators = default_separators
+        pattern = r"\s*(?:ft\.?|feat\.?|with|and|[;/&])\s*"
 
-    for sep in separators:
-        artists = artists.replace(sep, ",")
-
-    return [artist.strip() for artist in artists.split(",") if artist.strip()]
+    return [
+        artist.strip()
+        for artist in re.split(pattern, artists, flags=re.IGNORECASE)
+        if artist.strip()
+    ]
 
 
 def is_valid_string(string: str) -> bool:
