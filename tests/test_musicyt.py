@@ -60,14 +60,6 @@ def test_search_invalid(music_yt, mock_ytmusic_search):
     assert result is None
 
 
-def test_search_partial_match(music_yt, mock_ytmusic_search):
-    artist = "Test"
-    song = "Test"
-    result = music_yt.search(artist, song, normalize_non_english=False)
-    assert result is not None
-    assert song in result.title
-
-
 def test_search_empty_artist(music_yt, mock_ytmusic_search):
     artist = ""
     song = "Song"

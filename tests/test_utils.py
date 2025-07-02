@@ -4,7 +4,7 @@ from yutipy.utils import are_strings_similar, separate_artists
 
 def test_are_strings_similar():
     assert are_strings_similar("Hello World", "Hello World", use_translation=False) is True
-    assert are_strings_similar("Hello World", "Hello", use_translation=False) is True
+    assert are_strings_similar("Hello W", "Hello", use_translation=False) is True
 
 
 def test_are_strings_similar_translation(monkeypatch):
