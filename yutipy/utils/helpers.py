@@ -12,7 +12,7 @@ TRANSLATION_CACHE = {}
 
 def similarity(str1: str, str2: str, threshold: int = 80):
     similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
-    return similarity_score > threshold
+    return similarity_score >= threshold
 
 
 def translate_text(
@@ -66,7 +66,7 @@ def translate_text(
 def are_strings_similar(
     str1: str,
     str2: str,
-    threshold: int = 80,
+    threshold: int = 100,
     use_translation: bool = True,
     translation_session: requests.Session = None,
 ) -> bool:
