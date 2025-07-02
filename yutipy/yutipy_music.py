@@ -25,8 +25,8 @@ class YutipyMusic:
 
     def __init__(
         self,
-        custom_kkbox_class=KKBox,
-        custom_spotify_class=Spotify,
+        custom_kkbox_class=None,
+        custom_spotify_class=None,
     ) -> None:
         """
         Parameters
@@ -48,8 +48,10 @@ class YutipyMusic:
         }
 
         try:
-            self.services["kkbox"] = custom_kkbox_class(
-                defer_load=True, fetch_lyrics=False
+            self.services["kkbox"] = (
+                custom_kkbox_class(defer_load=True, fetch_lyrics=False)
+                if custom_kkbox_class
+                else KKBox(fetch_lyrics=False)
             )
         except KKBoxException as e:
             logger.warning(
@@ -60,8 +62,10 @@ class YutipyMusic:
             self.album_art_priority.insert(idx, "kkbox")
 
         try:
-            self.services["spotify"] = custom_spotify_class(
-                defer_load=True, fetch_lyrics=False
+            self.services["spotify"] = (
+                custom_spotify_class(defer_load=True, fetch_lyrics=False)
+                if custom_spotify_class
+                else Spotify(fetch_lyrics=False)
             )
         except SpotifyException as e:
             logger.warning(
@@ -179,12 +183,23 @@ class YutipyMusic:
             "upc",
         ]
 
-        for attr in attributes:
-            if getattr(result, attr) and (
-                not getattr(self.music_info, attr)
-                or (attr in ["genre", "album_type"] and service_name == "itunes")
-            ):
+        # Always overwrite with Spotify, else Deezer, else KKBox
+        highest_priority = None
+        for candidate in ["spotify", "deezer", "kkbox"]:
+            if candidate in self.services:
+                highest_priority = candidate
+                break
+
+        if service_name == highest_priority:
+            for attr in attributes:
                 setattr(self.music_info, attr, getattr(result, attr))
+        else:
+            for attr in attributes:
+                if getattr(result, attr) and (
+                    not getattr(self.music_info, attr)
+                    or (attr in ["genre", "album_type"] and service_name == "itunes")
+                ):
+                    setattr(self.music_info, attr, getattr(result, attr))
 
         if result.album_art:
             current_priority = self.album_art_priority.index(service_name)
@@ -193,7 +208,7 @@ class YutipyMusic:
                 if self.music_info.album_art_source
                 else len(self.album_art_priority)
             )
-            if current_priority < existing_priority:
+            if current_priority < existing_priority or service_name == highest_priority:
                 self.music_info.album_art = result.album_art
                 self.music_info.album_art_source = service_name
 
@@ -213,7 +228,7 @@ if __name__ == "__main__":
 
     from yutipy.logger import enable_logging
 
-    enable_logging(level=logging.DEBUG)
+    enable_logging(level=logging.INFO)
     yutipy_music = YutipyMusic()
 
     artist_name = input("Artist Name: ")
