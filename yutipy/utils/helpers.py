@@ -66,7 +66,7 @@ def translate_text(
 def are_strings_similar(
     str1: str,
     str2: str,
-    threshold: int = 90,
+    threshold: int = 95,
     use_translation: bool = True,
     translation_session: requests.Session = None,
 ) -> bool:
