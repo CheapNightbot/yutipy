@@ -76,7 +76,7 @@ def are_strings_similar(
     Args:
         str1 (str): First string to compare.
         str2 (str): Second string to compare.
-        threshold (int, optional): Similarity threshold. Defaults to 80.
+        threshold (int, optional): Similarity threshold. Defaults to 95.
         use_translation (bool, optional): Use translations to compare strings. Defaults to ``True``
         translation_session (requests.Session, optional): A `requests.Session` object to use for making the API request. If not provided, a new session will be created and closed within the function.
             Providing your own session can improve performance by reusing the same session for multiple requests. Don't forget to close the session afterwards.
