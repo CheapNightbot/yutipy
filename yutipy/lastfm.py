@@ -71,6 +71,11 @@ class LastFm:
         """
         Fetches the user profile information for the provided username.
 
+        Parameters
+        ----------
+        username : str
+            The Last.fm username to fetch profile information for.
+
         Returns
         -------
         dict
