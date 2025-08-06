@@ -1,6 +1,7 @@
 __all__ = ["ListenBrainz"]
 
 from typing import Optional
+from time import time
 
 import requests
 
@@ -76,6 +77,57 @@ class ListenBrainz:
                 username, user_name, threshold=100, use_translation=False
             ):
                 return user_name
+
+    def get_currently_playing(self, username: str) -> Optional[UserPlaying]:
+        """
+        Fetches information about the currently playing track for a user.
+
+        Parameters
+        ----------
+        username : str
+            The ListenBrainz username to fetch data for.
+
+        Returns
+        -------
+        Optional[UserPlaying_]
+            An instance of the ``UserPlaying`` model containing details about the currently
+            playing track if available, or ``None`` if the request fails or no data is available.
+        """
+        endpoint = f"/1/user/{username}/playing-now"
+        url = self.__api_url + endpoint
+
+        try:
+            response = self.__session.get(url=url, timeout=30)
+            response.raise_for_status()
+        except requests.RequestException as e:
+            logger.warning(f"Failed to retrieve listening activity: {e}")
+            return
+
+        response_json = response.json()
+        if not response_json:
+            logger.info(
+                f"It seems no activity found for `{username}`. Might be user does not exist or not no data available."
+            )
+            return
+
+        result = response_json.get("payload", {})
+        is_playing = result.get("playing_now", False)
+        user_id = result.get("user_id", "")
+
+        if username.lower() != user_id.lower():
+            return
+
+        if result and is_playing:
+            track_metadata = result.get("listens", [{}])[0].get("track_metadata", {})
+            return UserPlaying(
+                artists=track_metadata.get("artist_name"),
+                id=None,
+                timestamp=time(),
+                title=track_metadata.get("track_name"),
+                url=track_metadata.get("additional_info", {}).get("origin_url"),
+                is_playing=is_playing,
+            )
+        return None
 
 
 if __name__ == "__main__":
