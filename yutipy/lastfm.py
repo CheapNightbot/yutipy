@@ -114,7 +114,7 @@ class LastFm:
 
     def get_currently_playing(self, username: str) -> Optional[UserPlaying]:
         """
-        Fetches information about the currently playing or most recent track for a user.
+        Fetches information about the currently playing track for a user.
 
         Parameters
         ----------
