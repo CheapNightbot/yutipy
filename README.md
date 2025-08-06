@@ -58,6 +58,7 @@ Feel free to request any music platform you would like me to add by opening an i
 - `iTunes`: https://music.apple.com
 - `KKBOX`: https://www.kkbox.com
 - `Lastfm`: https://last.fm
+- `ListenBrainz`: https://listenbrainz.org
 - `Spotify`: https://spotify.com
 - `YouTube Music`: https://music.youtube.com
 

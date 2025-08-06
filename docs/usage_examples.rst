@@ -102,6 +102,19 @@ Alternatively, you can manually provide these values when creating an object of 
         result = lastfm.get_currently_playing(username="username")
         print(result)
 
+ListenBrainz
+------------
+
+.. code-block:: python
+
+    from dataclasses import asdict
+    from yutipy.listenbrainz import ListenBrainz
+
+    with ListenBrainz() as listenbrainz:
+        result = listenbrainz.get_currently_playing(username="username")
+        if result:
+            print(asdict(result))
+
 Spotify
 -------
 

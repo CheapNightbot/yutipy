@@ -41,6 +41,15 @@ Lastfm
     :noindex:
     :exclude-members: is_session_closed
 
+ListenBrainz
+------------
+
+.. autoclass:: yutipy.listenbrainz.ListenBrainz
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
 LRCLIB
 ------
 
