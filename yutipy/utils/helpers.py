@@ -10,6 +10,18 @@ kakasi = pykakasi.kakasi()
 TRANSLATION_CACHE = {}
 
 
+def clear_translation_cache(limit: int = 25):
+    """
+    Clear the translation cache if it reaches provided limit.
+
+    Args:
+        limit (int, optional): The maximum limit of items in translation cache. Default is `25`.
+    """
+    items = len(TRANSLATION_CACHE)
+    if items >= limit:
+        TRANSLATION_CACHE.clear()
+
+
 def similarity(str1: str, str2: str, threshold: int = 100):
     similarity_score = fuzz.WRatio(str1, str2, processor=default_process)
     return similarity_score >= threshold
@@ -97,6 +109,8 @@ def are_strings_similar(
         a. if both same, return True.
     4. return False.
     """
+    # Clear translation cache if limit reached
+    clear_translation_cache()
 
     # ### Step 0 ####
     cached_str1 = TRANSLATION_CACHE.get(str1, str1)
