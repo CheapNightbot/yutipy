@@ -10,9 +10,9 @@ dependencies = [
   "python-dotenv>=1.1.1",
   "rapidfuzz>=3.13.0",
   "requests>=2.32.5",
-  "ytmusicapi>=1.10.3",
+  "ytmusicapi>=1.11.3",
 ]
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 authors = [
   {name = "Cheap Nightbot"},
   {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"},
@@ -29,7 +29,6 @@ classifiers = [
   "Intended Audience :: Developers",
   "Topic :: Software Development :: Libraries",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
