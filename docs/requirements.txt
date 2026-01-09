@@ -2,3 +2,4 @@ furo
 sphinx-copybutton
 Sphinx
 sphinxext-opengraph
+urllib3>=2.6.3
