@@ -1,4 +1,4 @@
-__all__ = ["BaseClient", "BaseAuthClient"]
+__all__ = ["BaseClient", "BaseAuthClient", "BaseService"]
 
 import base64
 import secrets
@@ -11,53 +11,36 @@ from yutipy.exceptions import AuthenticationException, InvalidValueException
 from yutipy.logger import logger
 
 
-class BaseClient:
-    """Base class for Client Credentials grant type/flow."""
+class BaseService:
+    """Base class for services that do not require authentication."""
 
     SERVICE_NAME: str
-    ACCESS_TOKEN_URL: str
 
     def __init__(
         self,
         service_name: str,
-        access_token_url: str,
-        client_id: str = None,
-        client_secret: str = None,
-        defer_load: bool = False,
+        api_url: str,
+        session: bool = True,
+        translation_session: bool = True,
     ) -> None:
-        """Initializes client (using Client Credentials grant type/flow) and sets up the session.
+        """Initializes the service and sets up the session.
 
         Parameters
         ----------
         service_name : str
-            The service name class belongs to. For example, "Spotify".
-        access_token_url : str
-            The url endpoint to request access token.
+            The service name class belongs to. For example, "ExampleService".
+        api_url : str
+            The base API URL for the service.
+        session : bool, optional
+            Whether to create a requests session for API calls. Default is ``True``.
+        translation_session : bool, optional
+            Whether to create a separate requests session for translation API calls. Default is ``True``.
         """
-
         self.SERVICE_NAME = service_name
-        self.ACCESS_TOKEN_URL = access_token_url
-
-        self._client_id = client_id
-        self._client_secret = client_secret
-
-        self._defer_load = defer_load
+        self._api_url = api_url
+        self._session = requests.Session() if session else None
+        self._translation_session = requests.Session() if translation_session else None
         self._is_session_closed = False
-        self._normalize_non_english = True
-
-        self._access_token = None
-        self._token_expires_in = None
-        self._token_requested_at = None
-        self._session = requests.Session()
-        self._translation_session = requests.Session()
-
-        if not defer_load:
-            # Attempt to load access token during initialization if not deferred
-            self.load_token_after_init()
-        else:
-            logger.warning(
-                "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
-            )
 
     def __enter__(self):
         """Enters the runtime context related to this object."""
@@ -70,14 +53,61 @@ class BaseClient:
     def close_session(self) -> None:
         """Closes the current session(s)."""
         if not self.is_session_closed:
-            self._session.close()
-            self._translation_session.close()
+            if self._session:
+                self._session.close()
+            if self._translation_session:
+                self._translation_session.close()
             self._is_session_closed = True
 
     @property
     def is_session_closed(self) -> bool:
         """Checks if the session is closed."""
         return self._is_session_closed
+
+
+class BaseClient(BaseService):
+    """Base class for Client Credentials grant type/flow."""
+
+    def __init__(
+        self,
+        service_name: str,
+        api_url: str,
+        access_token_url: str,
+        client_id: str = None,
+        client_secret: str = None,
+        defer_load: bool = False,
+    ) -> None:
+        """Initializes client (using Client Credentials grant type/flow) and sets up the session.
+
+        Parameters
+        ----------
+        service_name : str
+            The service name class belongs to. For example, "Spotify".
+        api_url : str
+            The base API URL for the service.
+        access_token_url : str
+            The url endpoint to request access token.
+        """
+        super().__init__(
+            service_name=service_name,
+            api_url=api_url,
+        )
+
+        self._access_token = None
+        self._access_token_url = access_token_url
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._defer_load = defer_load
+        self._token_expires_in = None
+        self._token_requested_at = None
+
+        if not defer_load:
+            # Attempt to load access token during initialization if not deferred
+            self.load_token_after_init()
+        else:
+            logger.warning(
+                "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
+            )
 
     def load_token_after_init(self) -> None:
         """
@@ -232,16 +262,13 @@ class BaseClient:
         )
 
 
-class BaseAuthClient:
+class BaseAuthClient(BaseService):
     """Base class for Authorization Code grant type/flow."""
-
-    SERVICE_NAME: str
-    ACCESS_TOKEN_URL: str
-    USER_AUTH_URL: str
 
     def __init__(
         self,
         service_name: str,
+        api_url: str,
         access_token_url: str,
         user_auth_url: str,
         client_id: str,
@@ -262,24 +289,22 @@ class BaseAuthClient:
         user_auth_url : str
             The url endpoint for user authentication.
         """
-
-        self.SERVICE_NAME = service_name
-        self.ACCESS_TOKEN_URL = access_token_url
-        self.USER_AUTH_URL = user_auth_url
-
-        self._client_id = client_id
-        self._client_secret = client_secret
-        self._redirect_uri = redirect_uri
-        self._scopes = scopes
-
-        self._defer_load = defer_load
-        self._is_session_closed = False
+        super().__init__(
+            service_name=service_name,
+            api_url=api_url,
+        )
 
         self._access_token = None
         self._refresh_token = None
+        self._access_token_url = access_token_url
+        self._user_auth_url = user_auth_url
+        self._client_id = client_id
+        self._client_secret = client_secret
+        self._defer_load = defer_load
+        self._redirect_uri = redirect_uri
+        self._scopes = scopes
         self._token_expires_in = None
         self._token_requested_at = None
-        self._session = requests.Session()
 
         if not defer_load:
             # Attempt to load access token during initialization if not deferred
@@ -288,25 +313,6 @@ class BaseAuthClient:
             logger.warning(
                 "`defer_load` is set to `True`. Make sure to call `load_token_after_init()`."
             )
-
-    def __enter__(self):
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session(s)."""
-        if not self.is_session_closed:
-            self._session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
 
     def load_token_after_init(self):
         """
@@ -365,7 +371,7 @@ class BaseAuthClient:
         auth_string = f"{self.client_id}:{self.client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
 
-        url = self.ACCESS_TOKEN_URL
+        url = self._access_token_url
         headers = {
             "Authorization": f"Basic {auth_base64}",
             "Content-Type": "application/x-www-form-urlencoded",
@@ -498,7 +504,7 @@ class BaseAuthClient:
         if state:
             payload["state"] = state
 
-        return f"{self.USER_AUTH_URL}?{urlencode(payload)}"
+        return f"{self._user_auth_url}?{urlencode(payload)}"
 
     def save_access_token(self, token_info: dict) -> None:
         """

@@ -11,7 +11,6 @@ from dotenv import load_dotenv
 from yutipy.base_clients import BaseClient
 from yutipy.exceptions import InvalidValueException, KKBoxException
 from yutipy.logger import logger
-from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
 
@@ -34,7 +33,6 @@ class KKBox(BaseClient):
         client_id: str = None,
         client_secret: str = None,
         defer_load: bool = False,
-        fetch_lyrics: bool = True,
     ) -> None:
         """
         Parameters
@@ -45,12 +43,9 @@ class KKBox(BaseClient):
             The Client secret for the KKBOX Open API. Defaults to ``KKBOX_CLIENT_SECRET`` from .env file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or KKBOX_CLIENT_ID
         self.client_secret = client_secret or KKBOX_CLIENT_SECRET
-        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise KKBoxException(
@@ -64,13 +59,13 @@ class KKBox(BaseClient):
 
         super().__init__(
             service_name="KKBox",
+            api_url="https://api.kkbox.com/v1.1",
             access_token_url="https://account.kkbox.com/oauth2/token",
             client_id=self.client_id,
             client_secret=self.client_secret,
             defer_load=defer_load,
         )
 
-        self.__api_url = "https://api.kkbox.com/v1.1"
         self._valid_territories = ["HK", "JP", "MY", "SG", "TW"]
 
     def search(
@@ -108,13 +103,12 @@ class KKBox(BaseClient):
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self._normalize_non_english = normalize_non_english
         self._refresh_access_token()
 
         query = (
             f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
         )
-        query_url = f"{self.__api_url}/search{query}"
+        query_url = f"{self._api_url}/search{query}"
 
         logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
         logger.debug(f"Query URL: {query_url}")
@@ -128,7 +122,12 @@ class KKBox(BaseClient):
             logger.warning(f"Unexpected error while searching KKBox: {e}")
             return None
 
-        return self._find_music_info(artist, song, response.json())
+        return self._find_music_info(
+            artist,
+            song,
+            normalize_non_english,
+            response.json(),
+        )
 
     def get_html_widget(
         self,
@@ -183,7 +182,11 @@ class KKBox(BaseClient):
         return f"https://widget.kkbox.com/v1/?id={id}&type={content_type}&terr={territory}&lang={widget_lang}&autoplay={autoplay}&loop={loop}"
 
     def _find_music_info(
-        self, artist: str, song: str, response_json: dict
+        self,
+        artist: str,
+        song: str,
+        normalize_non_english: bool,
+        response_json: dict,
     ) -> Optional[MusicInfo]:
         """
         Finds the music information from the search results.
@@ -204,7 +207,12 @@ class KKBox(BaseClient):
         """
         try:
             for track in response_json["tracks"]["data"]:
-                music_info = self._find_track(song, artist, track)
+                music_info = self._find_track(
+                    song,
+                    artist,
+                    track,
+                    normalize_non_english,
+                )
                 if music_info:
                     return music_info
         except KeyError:
@@ -212,7 +220,12 @@ class KKBox(BaseClient):
 
         try:
             for album in response_json["albums"]["data"]:
-                music_info = self._find_album(song, artist, album)
+                music_info = self._find_album(
+                    song,
+                    artist,
+                    album,
+                    normalize_non_english,
+                )
                 if music_info:
                     return music_info
         except KeyError:
@@ -223,7 +236,13 @@ class KKBox(BaseClient):
         )
         return None
 
-    def _find_track(self, song: str, artist: str, track: dict) -> Optional[MusicInfo]:
+    def _find_track(
+        self,
+        song: str,
+        artist: str,
+        track: dict,
+        normalize_non_english: bool,
+    ) -> Optional[MusicInfo]:
         """
         Finds the track information from the search results.
 
@@ -244,7 +263,7 @@ class KKBox(BaseClient):
         if not are_strings_similar(
             track["name"],
             song,
-            use_translation=self._normalize_non_english,
+            use_translation=normalize_non_english,
             translation_session=self._translation_session,
         ):
             return None
@@ -255,7 +274,7 @@ class KKBox(BaseClient):
             if are_strings_similar(
                 artists_name,
                 artist,
-                use_translation=self._normalize_non_english,
+                use_translation=normalize_non_english,
                 translation_session=self._translation_session,
             )
             else None
@@ -270,7 +289,6 @@ class KKBox(BaseClient):
                 genre=None,
                 id=track.get("id"),
                 isrc=track.get("isrc"),
-                lyrics=None,
                 release_date=track.get("album", {}).get("release_date"),
                 tempo=None,
                 title=track.get("name"),
@@ -279,17 +297,16 @@ class KKBox(BaseClient):
                 url=track.get("url"),
             )
 
-            if self.fetch_lyrics:
-                with LrcLib() as lrc_lib:
-                    lyrics = lrc_lib.get_lyrics(
-                        artist=music_info.artists, song=music_info.title
-                    )
-                if lyrics:
-                    music_info.lyrics = lyrics.get("plainLyrics")
             return music_info
         return None
 
-    def _find_album(self, song: str, artist: str, album: dict) -> Optional[MusicInfo]:
+    def _find_album(
+        self,
+        song: str,
+        artist: str,
+        album: dict,
+        normalize_non_english: bool,
+    ) -> Optional[MusicInfo]:
         """
         Finds the album information from the search results.
 
@@ -310,7 +327,7 @@ class KKBox(BaseClient):
         if not are_strings_similar(
             album["name"],
             song,
-            use_translation=self._normalize_non_english,
+            use_translation=normalize_non_english,
             translation_session=self._translation_session,
         ):
             return None
@@ -321,7 +338,7 @@ class KKBox(BaseClient):
             if are_strings_similar(
                 artists_name,
                 artist,
-                use_translation=self._normalize_non_english,
+                use_translation=normalize_non_english,
                 translation_session=self._translation_session,
             )
             else None
@@ -336,7 +353,6 @@ class KKBox(BaseClient):
                 genre=None,
                 id=album.get("id"),
                 isrc=None,
-                lyrics=None,
                 release_date=album.get("release_date"),
                 tempo=None,
                 title=album.get("name"),

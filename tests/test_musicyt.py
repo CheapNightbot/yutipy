@@ -29,24 +29,14 @@ def mock_ytmusic_search(music_yt, monkeypatch):
             }
         ]
 
-    def mock_get_watch_playlist(*args, **kwargs):
-        return {"lyrics": "MPLYt_HNNclO0Ddoc-17"}
-
-    def mock_get_lyrics(*args, **kwargs):
-        return {"lyrics": "Never Gonna Give You Up!"}
-
     # Patch the `search` and other methods of the `YTMusic` class
     monkeypatch.setattr("ytmusicapi.YTMusic.search", mock_search)
-    monkeypatch.setattr(
-        "ytmusicapi.YTMusic.get_watch_playlist", mock_get_watch_playlist
-    )
-    monkeypatch.setattr("ytmusicapi.YTMusic.get_lyrics", mock_get_lyrics)
 
 
 def test_search_valid(music_yt, mock_ytmusic_search):
     artist = "Test Artist"
     song = "Test Song"
-    result = music_yt.search(artist, song, normalize_non_english=False)
+    result = music_yt.search(artist, song)
     assert result is not None
     assert isinstance(result, MusicInfo)
     assert artist in result.artists
@@ -65,7 +55,7 @@ def test_search_empty_artist(music_yt, mock_ytmusic_search):
     song = "Song"
 
     with raises(InvalidValueException):
-        music_yt.search(artist, song, normalize_non_english=False)
+        music_yt.search(artist, song)
 
 
 def test_search_empty_song(music_yt, mock_ytmusic_search):
@@ -73,7 +63,7 @@ def test_search_empty_song(music_yt, mock_ytmusic_search):
     song = ""
 
     with raises(InvalidValueException):
-        music_yt.search(artist, song, normalize_non_english=False)
+        music_yt.search(artist, song)
 
 
 def test_close_session(music_yt):

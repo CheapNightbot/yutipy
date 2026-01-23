@@ -41,13 +41,13 @@ def mock_response(itunes, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponse()
 
-    monkeypatch.setattr(itunes._Itunes__session, "get", mock_get)
+    monkeypatch.setattr(itunes._session, "get", mock_get)
 
 
 def test_search_valid(itunes, mock_response):
     artist = "Artist X"
     song = "Test Track"
-    result = itunes.search(artist, song, normalize_non_english=False)
+    result = itunes.search(artist, song)
     assert result is not None
     assert isinstance(result, MusicInfo)
     assert result.artists == artist
@@ -57,7 +57,7 @@ def test_search_valid(itunes, mock_response):
 def test_search_invalid(itunes, mock_response):
     artist = "Nonexistent Artist"
     song = "Nonexistent Song"
-    result = itunes.search(artist, song, normalize_non_english=False)
+    result = itunes.search(artist, song)
     assert result is None
 
 

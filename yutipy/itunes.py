@@ -6,9 +6,9 @@ from typing import Optional
 
 import requests
 
+from yutipy.base_clients import BaseService
 from yutipy.exceptions import InvalidValueException, ItunesException
 from yutipy.logger import logger
-from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import (
     are_strings_similar,
@@ -18,49 +18,21 @@ from yutipy.utils.helpers import (
 )
 
 
-class Itunes:
+class Itunes(BaseService):
     """A class to interact with the iTunes API."""
 
-    def __init__(self, fetch_lyrics: bool = True) -> None:
-        """
-        Parameters
-        ----------
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
-        """
-        self.api_url = "https://itunes.apple.com"
-        self.normalize_non_english = True
-        self._is_session_closed = False
-        self.fetch_lyrics = fetch_lyrics
-        self.__session = requests.Session()
-        self.__translation_session = requests.Session()
-
-    def __enter__(self):
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session."""
-        if not self.is_session_closed:
-            self.__session.close()
-            self.__translation_session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
+    def __init__(self) -> None:
+        super().__init__(
+            service_name="iTunes",
+            api_url="https://itunes.apple.com",
+        )
 
     def search(
         self,
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -74,7 +46,7 @@ class Itunes:
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
@@ -86,11 +58,9 @@ class Itunes:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
-
         entities = ["song", "album"]
         for entity in entities:
-            endpoint = f"{self.api_url}/search"
+            endpoint = f"{self._api_url}/search"
             query = f"?term={artist} - {song}&media=music&entity={entity}&limit={limit}"
             query_url = endpoint + query
 
@@ -99,7 +69,7 @@ class Itunes:
                     f'Searching iTunes for `artist="{artist}"` and `song="{song}"`'
                 )
                 logger.debug(f"Query URL: {query_url}")
-                response = self.__session.get(query_url, timeout=30)
+                response = self._session.get(query_url, timeout=30)
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
@@ -113,7 +83,12 @@ class Itunes:
                 logger.warning(f"Invalid response structure from iTunes: {e}")
                 return None
 
-            music_info = self._parse_result(artist, song, result)
+            music_info = self._parse_result(
+                artist,
+                song,
+                normalize_non_english,
+                result,
+            )
             if music_info:
                 return music_info
 
@@ -123,7 +98,11 @@ class Itunes:
         return None
 
     def _parse_result(
-        self, artist: str, song: str, results: list[dict]
+        self,
+        artist: str,
+        song: str,
+        normalize_non_english,
+        results: list[dict],
     ) -> Optional[MusicInfo]:
         """
         Parses the search results to find a matching song.
@@ -147,14 +126,14 @@ class Itunes:
                 are_strings_similar(
                     result.get("trackName", result["collectionName"]),
                     song,
-                    use_translation=self.normalize_non_english,
-                    translation_session=self.__translation_session,
+                    use_translation=normalize_non_english,
+                    translation_session=self._translation_session,
                 )
                 and are_strings_similar(
                     result["artistName"],
                     artist,
-                    use_translation=self.normalize_non_english,
-                    translation_session=self.__translation_session,
+                    use_translation=normalize_non_english,
+                    translation_session=self._translation_session,
                 )
             ):
                 continue
@@ -179,14 +158,6 @@ class Itunes:
                 upc=None,
                 url=result.get("trackViewUrl", result["collectionViewUrl"]),
             )
-
-            if self.fetch_lyrics:
-                with LrcLib() as lrc_lib:
-                    lyrics = lrc_lib.get_lyrics(
-                        artist=music_info.artists, song=music_info.title
-                    )
-                if lyrics:
-                    music_info.lyrics = lyrics.get("plainLyrics")
 
             return music_info
         return None

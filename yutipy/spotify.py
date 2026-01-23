@@ -15,7 +15,6 @@ from yutipy.exceptions import (
     SpotifyException,
 )
 from yutipy.logger import logger
-from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo, UserPlaying
 from yutipy.utils.helpers import (
     are_strings_similar,
@@ -44,7 +43,6 @@ class Spotify(BaseClient):
         client_id: str = None,
         client_secret: str = None,
         defer_load: bool = False,
-        fetch_lyrics: bool = True,
     ) -> None:
         """
         Parameters
@@ -55,12 +53,9 @@ class Spotify(BaseClient):
             The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization, by default ``False``
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or SPOTIFY_CLIENT_ID
         self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
-        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise SpotifyException(
@@ -74,13 +69,12 @@ class Spotify(BaseClient):
 
         super().__init__(
             service_name="Spotify",
+            api_url="https://api.spotify.com/v1",
             access_token_url="https://accounts.spotify.com/api/token",
             client_id=self.client_id,
             client_secret=self.client_secret,
             defer_load=defer_load,
         )
-
-        self.__api_url = "https://api.spotify.com/v1"
 
     def search(
         self,
@@ -113,8 +107,6 @@ class Spotify(BaseClient):
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self._normalize_non_english = normalize_non_english
-
         music_info = None
         artist_ids = None
         queries = [
@@ -128,7 +120,7 @@ class Spotify(BaseClient):
 
             self._refresh_access_token()
 
-            query_url = f"{self.__api_url}/search{query}"
+            query_url = f"{self._api_url}/search{query}"
 
             logger.info(
                 f"Searching Spotify for `artist='{artist}'` and `song='{song}'`"
@@ -146,7 +138,11 @@ class Spotify(BaseClient):
 
             artist_ids = artist_ids if artist_ids else self._get_artists_ids(artist)
             music_info = self._find_music_info(
-                artist, song, response.json(), artist_ids
+                artist,
+                song,
+                response.json(),
+                artist_ids,
+                normalize_non_english,
             )
 
         return music_info
@@ -198,7 +194,7 @@ class Spotify(BaseClient):
         else:
             raise InvalidValueException("ISRC or UPC must be provided.")
 
-        query_url = f"{self.__api_url}/search{query}"
+        query_url = f"{self._api_url}/search{query}"
         try:
             response = self._session.get(
                 query_url, headers=self._authorization_header(), timeout=30
@@ -206,10 +202,15 @@ class Spotify(BaseClient):
             response.raise_for_status()
         except requests.RequestException as e:
             raise logger.warning(f"Failed to search music with ISRC/UPC: {e}")
-            return None
 
         artist_ids = self._get_artists_ids(artist)
-        return self._find_music_info(artist, song, response.json(), artist_ids)
+        return self._find_music_info(
+            artist,
+            song,
+            response.json(),
+            artist_ids,
+            normalize_non_english,
+        )
 
     def _get_artists_ids(self, artist: str) -> Union[list, None]:
         """
@@ -227,7 +228,7 @@ class Spotify(BaseClient):
         """
         artist_ids = []
         for name in separate_artists(artist):
-            query_url = f"{self.__api_url}/search?q={name}&type=artist&limit=5"
+            query_url = f"{self._api_url}/search?q={name}&type=artist&limit=5"
             try:
                 response = self._session.get(
                     query_url, headers=self._authorization_header(), timeout=30
@@ -246,7 +247,12 @@ class Spotify(BaseClient):
         return artist_ids
 
     def _find_music_info(
-        self, artist: str, song: str, response_json: dict, artist_ids: list
+        self,
+        artist: str,
+        song: str,
+        response_json: dict,
+        artist_ids: list,
+        normalize_non_english: bool,
     ) -> Optional[MusicInfo]:
         """
         Finds the music information from the search results.
@@ -269,7 +275,13 @@ class Spotify(BaseClient):
         """
         try:
             for track in response_json["tracks"]["items"]:
-                music_info = self._find_track(song, artist, track, artist_ids)
+                music_info = self._find_track(
+                    song,
+                    artist,
+                    track,
+                    artist_ids,
+                    normalize_non_english,
+                )
                 if music_info:
                     return music_info
         except KeyError:
@@ -277,7 +289,13 @@ class Spotify(BaseClient):
 
         try:
             for album in response_json["albums"]["items"]:
-                music_info = self._find_album(song, artist, album, artist_ids)
+                music_info = self._find_album(
+                    song,
+                    artist,
+                    album,
+                    artist_ids,
+                    normalize_non_english,
+                )
                 if music_info:
                     return music_info
         except KeyError:
@@ -289,7 +307,12 @@ class Spotify(BaseClient):
         return None
 
     def _find_track(
-        self, song: str, artist: str, track: dict, artist_ids: list
+        self,
+        song: str,
+        artist: str,
+        track: dict,
+        artist_ids: list,
+        normalize_non_english: bool,
     ) -> Optional[MusicInfo]:
         """
         Finds the track information from the search results.
@@ -313,7 +336,7 @@ class Spotify(BaseClient):
         if not are_strings_similar(
             track["name"],
             song,
-            use_translation=self._normalize_non_english,
+            use_translation=normalize_non_english,
             translation_session=self._translation_session,
         ):
             return None
@@ -325,7 +348,7 @@ class Spotify(BaseClient):
             if are_strings_similar(
                 x["name"],
                 artist,
-                use_translation=self._normalize_non_english,
+                use_translation=normalize_non_english,
                 translation_session=self._translation_session,
             )
             or x["id"] in artist_ids
@@ -340,7 +363,6 @@ class Spotify(BaseClient):
                 genre=None,
                 id=track["id"],
                 isrc=track.get("external_ids").get("isrc"),
-                lyrics=None,
                 release_date=track["album"]["release_date"],
                 tempo=None,
                 title=track["name"],
@@ -349,18 +371,16 @@ class Spotify(BaseClient):
                 url=track["external_urls"]["spotify"],
             )
 
-            if self.fetch_lyrics:
-                with LrcLib() as lrc_lib:
-                    lyrics = lrc_lib.get_lyrics(
-                        artist=music_info.artists, song=music_info.title
-                    )
-                if lyrics:
-                    music_info.lyrics = lyrics.get("plainLyrics")
             return music_info
         return None
 
     def _find_album(
-        self, song: str, artist: str, album: dict, artist_ids: list
+        self,
+        song: str,
+        artist: str,
+        album: dict,
+        artist_ids: list,
+        normalize_non_english: bool,
     ) -> Optional[MusicInfo]:
         """
         Finds the album information from the search results.
@@ -384,7 +404,7 @@ class Spotify(BaseClient):
         if not are_strings_similar(
             album["name"],
             song,
-            use_translation=self._normalize_non_english,
+            use_translation=normalize_non_english,
             translation_session=self._translation_session,
         ):
             return None
@@ -396,7 +416,7 @@ class Spotify(BaseClient):
             if are_strings_similar(
                 x["name"],
                 artist,
-                use_translation=self._normalize_non_english,
+                use_translation=normalize_non_english,
                 translation_session=self._translation_session,
             )
             or x["id"] in artist_ids
@@ -416,7 +436,6 @@ class Spotify(BaseClient):
                 genre=None,
                 id=album["id"],
                 isrc=None,
-                lyrics=None,
                 release_date=album["release_date"],
                 tempo=None,
                 title=album["name"],
@@ -444,7 +463,6 @@ class SpotifyAuth(BaseAuthClient):
         redirect_uri: str = None,
         scopes: list[str] = None,
         defer_load: bool = False,
-        fetch_lyrics: bool = True,
     ):
         """
         Parameters
@@ -459,14 +477,11 @@ class SpotifyAuth(BaseAuthClient):
             A list of scopes for the Spotify API. For example: `['user-read-email', 'user-read-private']`.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics using `LRCLIB <https://lrclib.net>`__ if the music platform does not provide lyrics (default is True).
         """
         self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
         self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
         self.scopes = scopes
-        self.fetch_lyrics = fetch_lyrics
 
         if not self.client_id:
             raise SpotifyAuthException(
@@ -492,6 +507,7 @@ class SpotifyAuth(BaseAuthClient):
 
         super().__init__(
             service_name="Spotify",
+            api_url="https://api.spotify.com/v1/me",
             access_token_url="https://accounts.spotify.com/api/token",
             user_auth_url="https://accounts.spotify.com/authorize",
             client_id=self.client_id,
@@ -500,8 +516,6 @@ class SpotifyAuth(BaseAuthClient):
             scopes=self.scopes,
             defer_load=defer_load,
         )
-
-        self.__api_url = "https://api.spotify.com/v1/me"
 
     def get_user_profile(self) -> Optional[dict]:
         """
@@ -517,7 +531,7 @@ class SpotifyAuth(BaseAuthClient):
             A dictionary containing the user's display name and profile images.
         """
         self._refresh_access_token()
-        query_url = self.__api_url
+        query_url = self._api_url
         header = self._authorization_header()
 
         try:
@@ -559,7 +573,7 @@ class SpotifyAuth(BaseAuthClient):
         - If the API response does not contain the expected data, the method will return `None`.
 
         """
-        query_url = f"{self.__api_url}/player/currently-playing"
+        query_url = f"{self._api_url}/player/currently-playing"
         self._refresh_access_token()
         header = self._authorization_header()
 
@@ -598,7 +612,6 @@ class SpotifyAuth(BaseAuthClient):
                 id=result.get("id"),
                 isrc=result.get("external_ids", {}).get("isrc"),
                 is_playing=response_json.get("is_playing"),
-                lyrics=None,
                 release_date=result.get("album", {}).get("release_date"),
                 tempo=None,
                 timestamp=timestamp,
@@ -608,13 +621,6 @@ class SpotifyAuth(BaseAuthClient):
                 url=result.get("external_urls", {}).get("spotify"),
             )
 
-            if self.fetch_lyrics:
-                with LrcLib() as lrc_lib:
-                    lyrics = lrc_lib.get_lyrics(
-                        artist=user_playing.artists, song=user_playing.title
-                    )
-                if lyrics:
-                    user_playing.lyrics = lyrics.get("plainLyrics")
             return user_playing
         return None
 

@@ -1,39 +1,24 @@
 __all__ = ["ListenBrainz"]
 
-from typing import Optional
 from time import time
+from typing import Optional
 
 import requests
 
+from yutipy.base_clients import BaseService
 from yutipy.logger import logger
 from yutipy.models import UserPlaying
 from yutipy.utils.helpers import are_strings_similar
 
 
-class ListenBrainz:
+class ListenBrainz(BaseService):
     """A class to interact with the ListenBrainz API for fetching user music data."""
 
     def __init__(self):
-        self._is_session_closed = False
-        self.__api_url = "https://api.listenbrainz.org"
-        self.__session = requests.Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.close_session()
-
-    def close_session(self):
-        """Closes the current session(s)."""
-        if not self._is_session_closed:
-            self.__session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
+        super().__init__(
+            service_name="ListenBrainz",
+            api_url="https://api.listenbrainz.org",
+        )
 
     def find_user(self, username: str) -> Optional[str]:
         """
@@ -54,10 +39,10 @@ class ListenBrainz:
             or ``None`` if the user with provided username does not exist.
         """
         endpoint = "/1/search/users/"
-        url = self.__api_url + endpoint
+        url = self._api_url + endpoint
 
         try:
-            response = self.__session.get(
+            response = self._session.get(
                 url=url, params={"search_term": username}, timeout=30
             )
             response.raise_for_status()
@@ -94,10 +79,10 @@ class ListenBrainz:
             playing track if available, or ``None`` if the request fails or no data is available.
         """
         endpoint = f"/1/user/{username}/playing-now"
-        url = self.__api_url + endpoint
+        url = self._api_url + endpoint
 
         try:
-            response = self.__session.get(url=url, timeout=30)
+            response = self._session.get(url=url, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             logger.warning(f"Failed to retrieve listening activity: {e}")

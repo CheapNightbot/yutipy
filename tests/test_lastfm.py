@@ -70,7 +70,7 @@ def mock_response_activity(lastfm, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponseActivity()
 
-    monkeypatch.setattr(lastfm._LastFm__session, "get", mock_get)
+    monkeypatch.setattr(lastfm._session, "get", mock_get)
 
 
 @pytest.fixture
@@ -78,7 +78,7 @@ def mock_response_profile(lastfm, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponseProfile()
 
-    monkeypatch.setattr(lastfm._LastFm__session, "get", mock_get)
+    monkeypatch.setattr(lastfm._session, "get", mock_get)
 
 
 def test_get_currently_playing(lastfm, mock_response_activity):
@@ -110,7 +110,7 @@ def test_invalid_username(lastfm, monkeypatch):
 
         return MockResponse()
 
-    monkeypatch.setattr(lastfm._LastFm__session, "get", mock_get)
+    monkeypatch.setattr(lastfm._session, "get", mock_get)
 
     username = "alksdjfalsjdfweurppqoweiuwu"
     profile = lastfm.get_user_profile(username=username)

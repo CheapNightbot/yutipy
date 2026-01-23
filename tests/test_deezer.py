@@ -69,11 +69,11 @@ def mock_response(deezer, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockSearchResponse()
 
-    monkeypatch.setattr(deezer._Deezer__session, "get", mock_get)
+    monkeypatch.setattr(deezer._session, "get", mock_get)
 
 
 def test_search_valid(deezer, mock_response):
-    result = deezer.search("Artist X", "Test Track", normalize_non_english=False)
+    result = deezer.search("Artist X", "Test Track")
     assert result is not None
     assert isinstance(result, MusicInfo)
     assert result.title == "Test Track"
@@ -81,7 +81,7 @@ def test_search_valid(deezer, mock_response):
 
 def test_search_invalid(deezer, mock_response):
     result = deezer.search(
-        "Nonexistent Artist", "Nonexistent Song", normalize_non_english=False
+        "Nonexistent Artist", "Nonexistent Song"
     )
     assert result is None
 
@@ -90,7 +90,7 @@ def test_get_upc_isrc_track(deezer, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponse()
 
-    monkeypatch.setattr(deezer._Deezer__session, "get", mock_get)
+    monkeypatch.setattr(deezer._session, "get", mock_get)
 
     track_id = 1234567
     result = deezer._get_upc_isrc(track_id, "track")
@@ -104,7 +104,7 @@ def test_get_upc_isrc_album(deezer, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponse()
 
-    monkeypatch.setattr(deezer._Deezer__session, "get", mock_get)
+    monkeypatch.setattr(deezer._session, "get", mock_get)
 
     album_id = 1234567
     result = deezer._get_upc_isrc(album_id, "album")

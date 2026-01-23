@@ -8,6 +8,7 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
+from yutipy.base_clients import BaseService
 from yutipy.exceptions import LastFmException
 from yutipy.logger import logger
 from yutipy.models import UserPlaying
@@ -18,7 +19,7 @@ load_dotenv()
 LASTFM_API_KEY = os.getenv("LASTFM_API_KEY")
 
 
-class LastFm:
+class LastFm(BaseService):
     """
     A class to interact with the Last.fm API for fetching user music data.
 
@@ -37,35 +38,16 @@ class LastFm:
             LastFmException: If the API key is not provided or found in the environment.
         """
         self.api_key = api_key or LASTFM_API_KEY
-
         if not self.api_key:
             raise LastFmException(
                 "Lastfm API key was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        self._is_session_closed = False
-
-        self.__api_url = "https://ws.audioscrobbler.com/2.0"
-        self.__session = requests.Session()
-
-    def __enter__(self):
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session(s)."""
-        if not self._is_session_closed:
-            self.__session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
+        super().__init__(
+            service_name="Last.fm",
+            api_url="https://ws.audioscrobbler.com/2.0",
+            translation_session=False,
+        )
 
     def get_user_profile(self, username: str):
         """
@@ -84,10 +66,10 @@ class LastFm:
         query = (
             f"?method=user.getinfo&user={username}&api_key={self.api_key}&format=json"
         )
-        query_url = self.__api_url + query
+        query_url = self._api_url + query
 
         try:
-            response = self.__session.get(query_url, timeout=30)
+            response = self._session.get(query_url, timeout=30)
         except requests.RequestException as e:
             logger.warning(f"Failed to fetch user profile: {e}")
             return None
@@ -128,10 +110,10 @@ class LastFm:
             playing track if available, or ``None`` if the request fails or no data is available.
         """
         query = f"?method=user.getrecenttracks&user={username}&limit=1&api_key={self.api_key}&format=json"
-        query_url = self.__api_url + query
+        query_url = self._api_url + query
 
         try:
-            response = self.__session.get(query_url, timeout=30)
+            response = self._session.get(query_url, timeout=30)
             response.raise_for_status()
         except requests.RequestException as e:
             logger.warning(f"Failed to fetch user profile: {e}")

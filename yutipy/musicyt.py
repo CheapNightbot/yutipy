@@ -3,9 +3,9 @@ __all__ = ["MusicYT", "MusicYTException"]
 from pprint import pprint
 from typing import Optional
 
-import requests
 from ytmusicapi import YTMusic, exceptions
 
+from yutipy.base_clients import BaseService
 from yutipy.exceptions import (
     InvalidResponseException,
     InvalidValueException,
@@ -14,50 +14,26 @@ from yutipy.exceptions import (
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.lrclib import LrcLib
 
 
-class MusicYT:
+class MusicYT(BaseService):
     """A class to interact with the YouTube Music API."""
 
-    def __init__(self, fetch_lyrics: bool = True) -> None:
-        """
-        Parameters
-        ----------
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
-        """
+    def __init__(self) -> None:
         self.ytmusic = YTMusic()
-        self._is_session_closed = False
-        self.normalize_non_english = True
-        self.__translation_session = requests.Session()
-        self.fetch_lyrics = fetch_lyrics
-
-    def __enter__(self) -> "MusicYT":
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session(s)."""
-        if not self.is_session_closed:
-            self.__translation_session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
+        super().__init__(
+            service_name="YouTube Music",
+            api_url="",
+            session=False,
+            translation_session=True,
+        )
 
     def search(
         self,
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -83,8 +59,6 @@ class MusicYT:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
-
         query = f"{artist} - {song}"
         try:
             logger.info(
@@ -96,7 +70,12 @@ class MusicYT:
             return None
 
         for result in results:
-            if self._is_relevant_result(artist, song, result):
+            if self._is_relevant_result(
+                artist,
+                song,
+                normalize_non_english,
+                result,
+            ):
                 return self._process_result(result)
 
         logger.warning(
@@ -104,7 +83,13 @@ class MusicYT:
         )
         return None
 
-    def _is_relevant_result(self, artist: str, song: str, result: dict) -> bool:
+    def _is_relevant_result(
+        self,
+        artist: str,
+        song: str,
+        normalize_non_english: bool,
+        result: dict,
+    ) -> bool:
         """
         Determine if a search result is relevant.
 
@@ -129,14 +114,14 @@ class MusicYT:
             are_strings_similar(
                 result.get("title"),
                 song,
-                use_translation=self.normalize_non_english,
-                translation_session=self.__translation_session,
+                use_translation=normalize_non_english,
+                translation_session=self._translation_session,
             )
             and are_strings_similar(
                 _artist.get("name"),
                 artist,
-                use_translation=self.normalize_non_english,
-                translation_session=self.__translation_session,
+                use_translation=normalize_non_english,
+                translation_session=self._translation_session,
             )
             for _artist in result.get("artists", [])
         )
@@ -171,7 +156,7 @@ class MusicYT:
             or result.get("resultType", "").lower() in categories_skip
         )
 
-    def _process_result(self, result: dict) -> MusicInfo:
+    def _process_result(self, result: dict) -> Optional[MusicInfo]:
         """
         Process the search result and return relevant information as `MusicInfo`.
 
@@ -216,7 +201,6 @@ class MusicYT:
         )
         video_id = result.get("videoId")
         song_url = f"https://music.youtube.com/watch?v={video_id}"
-        lyrics_id = self.ytmusic.get_watch_playlist(video_id)
 
         try:
             song_data = self.ytmusic.get_song(video_id)
@@ -229,12 +213,6 @@ class MusicYT:
         except (exceptions.YTMusicServerError, exceptions.YTMusicError) as e:
             raise InvalidResponseException(f"Invalid response received: {e}")
 
-        try:
-            lyrics = self.ytmusic.get_lyrics(lyrics_id.get("lyrics"))
-            lyrics = lyrics.get("lyrics")
-        except exceptions.YTMusicUserError:
-            lyrics = None
-
         album_art = result.get("thumbnails", [{}])[-1].get("url", None)
 
         music_info = MusicInfo(
@@ -245,7 +223,6 @@ class MusicYT:
             genre=None,
             id=video_id,
             isrc=None,
-            lyrics=lyrics,
             release_date=release_date,
             tempo=None,
             title=title,
@@ -253,14 +230,6 @@ class MusicYT:
             upc=None,
             url=song_url,
         )
-
-        if not music_info.lyrics and self.fetch_lyrics:
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=music_info.artists, song=music_info.title
-                )
-            if lyrics:
-                music_info.lyrics = lyrics.get("plainLyrics")
 
         return music_info
 
@@ -289,12 +258,6 @@ class MusicYT:
         except (exceptions.YTMusicServerError, exceptions.YTMusicError) as e:
             raise InvalidResponseException(f"Invalid response received: {e}")
 
-        try:
-            lyrics_id = self.ytmusic.get_watch_playlist(browse_id)
-            lyrics = self.ytmusic.get_lyrics(lyrics_id.get("lyrics"))
-        except (exceptions.YTMusicServerError, exceptions.YTMusicUserError):
-            lyrics = {}
-
         album_art = result.get("thumbnails", [{}])[-1].get(
             "url", album_data.get("thumbnails", [{}])[-1].get("url", None)
         )
@@ -307,7 +270,6 @@ class MusicYT:
             genre=None,
             id=browse_id,
             isrc=None,
-            lyrics=lyrics.get("lyrics"),
             release_date=release_date,
             tempo=None,
             title=title,

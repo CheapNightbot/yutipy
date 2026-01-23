@@ -5,56 +5,28 @@ from typing import Dict, List, Optional
 
 import requests
 
+from yutipy.base_clients import BaseService
 from yutipy.exceptions import DeezerException, InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import MusicInfo
 from yutipy.utils.helpers import are_strings_similar, is_valid_string
-from yutipy.lrclib import LrcLib
 
 
-class Deezer:
+class Deezer(BaseService):
     """A class to interact with the Deezer API."""
 
-    def __init__(self, fetch_lyrics: bool = True) -> None:
-        """
-        Parameters
-        ----------
-        fetch_lyrics : bool, optional
-            Whether to fetch lyrics (using `LRCLIB <https://lrclib.net>`__) if the music platform does not provide lyrics (default is True).
-        """
-        self.api_url = "https://api.deezer.com"
-        self._is_session_closed = False
-        self.normalize_non_english = True
-        self.fetch_lyrics = fetch_lyrics
-        self.__session = requests.Session()
-        self._translation_session = requests.Session()
-
-    def __enter__(self):
-        """Enters the runtime context related to this object."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback) -> None:
-        """Exits the runtime context related to this object."""
-        self.close_session()
-
-    def close_session(self) -> None:
-        """Closes the current session."""
-        if not self.is_session_closed:
-            self.__session.close()
-            self._translation_session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        """Checks if the session is closed."""
-        return self._is_session_closed
+    def __init__(self) -> None:
+        super().__init__(
+            service_name="Deezer",
+            api_url="https://api.deezer.com",
+        )
 
     def search(
         self,
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -70,7 +42,6 @@ class Deezer:
         normalize_non_english : bool, optional
             Whether to normalize non-English characters for comparison. Default is ``True``.
 
-
         Returns
         -------
         Optional[MusicInfo_]
@@ -81,11 +52,9 @@ class Deezer:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self.normalize_non_english = normalize_non_english
-
         search_types = ["track", "album"]
         for search_type in search_types:
-            endpoint = f"{self.api_url}/search/{search_type}"
+            endpoint = f"{self._api_url}/search/{search_type}"
             query = f'?q=artist:"{artist}" {search_type}:"{song}"&limit={limit}'
             query_url = endpoint + query
 
@@ -94,7 +63,7 @@ class Deezer:
                     f'Searching music info for `artist="{artist}"` and `song="{song}"`'
                 )
                 logger.debug(f"Query URL: {query_url}")
-                response = self.__session.get(query_url, timeout=30)
+                response = self._session.get(query_url, timeout=30)
                 logger.debug(f"Response status code: {response.status_code}")
                 response.raise_for_status()
             except requests.RequestException as e:
@@ -108,7 +77,12 @@ class Deezer:
                 logger.warning(f"Invalid response structure from Deezer: {e}")
                 return None
 
-            music_info = self._parse_results(artist, song, result)
+            music_info = self._parse_results(
+                artist,
+                song,
+                normalize_non_english,
+                result,
+            )
             if music_info:
                 return music_info
 
@@ -154,11 +128,11 @@ class Deezer:
         Optional[Dict]
             A dictionary containing track information.
         """
-        query_url = f"{self.api_url}/track/{track_id}"
+        query_url = f"{self._api_url}/track/{track_id}"
         try:
             logger.info(f"Fetching track info for track_id: {track_id}")
             logger.debug(f"Query URL: {query_url}")
-            response = self.__session.get(query_url, timeout=30)
+            response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
@@ -192,11 +166,11 @@ class Deezer:
         Optional[Dict]
             A dictionary containing album information.
         """
-        query_url = f"{self.api_url}/album/{album_id}"
+        query_url = f"{self._api_url}/album/{album_id}"
         try:
             logger.info(f"Fetching album info for album_id: {album_id}")
             logger.debug(f"Query URL: {query_url}")
-            response = self.__session.get(query_url, timeout=30)
+            response = self._session.get(query_url, timeout=30)
             logger.info(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
@@ -221,7 +195,11 @@ class Deezer:
         }
 
     def _parse_results(
-        self, artist: str, song: str, results: List[Dict]
+        self,
+        artist: str,
+        song: str,
+        normalize_non_english,
+        results: List[Dict],
     ) -> Optional[MusicInfo]:
         """
         Parses the search results to find a matching song.
@@ -245,13 +223,13 @@ class Deezer:
                 are_strings_similar(
                     result["title"],
                     song,
-                    use_translation=self.normalize_non_english,
+                    use_translation=normalize_non_english,
                     translation_session=self._translation_session,
                 )
                 and are_strings_similar(
                     result["artist"]["name"],
                     artist,
-                    use_translation=self.normalize_non_english,
+                    use_translation=normalize_non_english,
                     translation_session=self._translation_session,
                 )
             ):
@@ -309,14 +287,6 @@ class Deezer:
             music_info.upc = album_info.get("upc")
             music_info.release_date = album_info.get("release_date")
             music_info.genre = album_info.get("genre")
-
-        if self.fetch_lyrics:
-            with LrcLib() as lrc_lib:
-                lyrics = lrc_lib.get_lyrics(
-                    artist=music_info.artists, song=music_info.title
-                )
-            if lyrics:
-                music_info.lyrics = lyrics.get("plainLyrics")
 
         return music_info
 

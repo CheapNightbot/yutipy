@@ -5,12 +5,13 @@ from typing import Optional
 
 import requests
 
+from yutipy.base_clients import BaseService
 from yutipy.exceptions import InvalidValueException
 from yutipy.logger import logger
 from yutipy.utils import are_strings_similar, is_valid_string
 
 
-class LrcLib:
+class LrcLib(BaseService):
     """
     A class to interact with the `LRCLIB <lrclib.net>`_ API for fetching lyrics.
     """
@@ -35,7 +36,11 @@ class LrcLib:
         -----
         These are used to set the User-Agent header for requests made to the API as suggested by the API documentation of `LRCLIB <lrclib.net>`_.
         """
-        self.api_url = "https://lrclib.net/api"
+        super().__init__(
+            service_name="LRCLIB",
+            api_url="https://lrclib.net/api",
+        )
+
         self.app_name = app_name
         self.app_url = app_url
         if not app_version:
@@ -46,31 +51,9 @@ class LrcLib:
         else:
             self.app_version = app_version
 
-        self._is_session_closed = False
-        self.__session = requests.Session()
-        self.__session.headers.update(
+        self._session.headers.update(
             {"User-Agent": f"{self.app_name} {self.app_version} ({self.app_url})"}
         )
-        self._translation_session = requests.Session()
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close_session()
-
-    def close_session(self):
-        """
-        Closes the session if it is not already closed.
-        """
-        if not self._is_session_closed:
-            self.__session.close()
-            self._translation_session.close()
-            self._is_session_closed = True
-
-    @property
-    def is_session_closed(self) -> bool:
-        return self._is_session_closed
 
     def get_lyrics(
         self,
@@ -104,7 +87,7 @@ class LrcLib:
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        endpoint = f"{self.api_url}/search"
+        endpoint = f"{self._api_url}/search"
         query = f"?artist_name={artist}&track_name={song}"
         query += f"&album_name={album}" if album else ""
         query_url = endpoint + query
@@ -113,7 +96,7 @@ class LrcLib:
             logger.info(
                 f"Fetching lyrics for artist: {artist}, song: {song}, album: {album}"
             )
-            response = self.__session.get(query_url, timeout=30)
+            response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
         except requests.RequestException as e:
