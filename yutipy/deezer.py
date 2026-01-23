@@ -254,28 +254,25 @@ class Deezer(BaseService):
         MusicInfo
             The extracted music information.
         """
-        music_type = result["type"]
+        album = result.get("album", {})
+        music_type = result.get("type", "")
         music_info = MusicInfo(
             album_art=(
-                result["album"]["cover_xl"]
+                album.get("cover_xl")
                 if music_type == "track"
-                else result["cover_xl"]
+                else result.get("cover_xl")
             ),
             album_title=(
-                result["album"]["title"] if music_type == "track" else result["title"]
+                album.get("title") if music_type == "track" else result.get("title")
             ),
             album_type=result.get("record_type", music_type.replace("track", "single")),
-            artists=result["artist"]["name"],
-            genre=None,
-            id=result["id"],
-            isrc=None,
-            lyrics=None,
-            release_date=None,
-            tempo=None,
-            title=result["title"],
+            artists=result.get("artist", {}).get("name"),
+            explicit=result.get("explicit_lyrics"),
+            id=result.get("id"),
+            preview_url=result.get("preview"),
+            title=result.get("title"),
             type=music_type,
-            upc=None,
-            url=result["link"],
+            url=result.get("link"),
         )
 
         if music_type == "track":

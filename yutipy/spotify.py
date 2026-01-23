@@ -355,20 +355,25 @@ class Spotify(BaseClient):
         ]
 
         if matching_artists:
+            album = track.get("album", {})
             music_info = MusicInfo(
-                album_art=track["album"]["images"][0]["url"],
-                album_title=track["album"]["name"],
-                album_type=track["album"]["album_type"],
+                album_art=album.get("images", [{}])[0].get("url"),
+                album_title=album.get("name"),
+                album_type=album.get("album_type"),
                 artists=", ".join(artists_name),
+                explicit=track.get("explicit", False),
                 genre=None,
-                id=track["id"],
-                isrc=track.get("external_ids").get("isrc"),
-                release_date=track["album"]["release_date"],
+                id=track.get("id"),
+                isrc=track.get("external_ids", {}).get("isrc"),
+                preview_url=track.get("preview_url"),
+                release_date=album.get("release_date"),
                 tempo=None,
-                title=track["name"],
+                title=track.get("name"),
+                total_tracks=album.get("total_tracks"),
+                track_number=track.get("track_number"),
                 type="track",
                 upc=None,
-                url=track["external_urls"]["spotify"],
+                url=track.get("external_urls", {}).get("spotify"),
             )
 
             return music_info
@@ -429,19 +434,20 @@ class Spotify(BaseClient):
             )
 
             return MusicInfo(
-                album_art=album["images"][0]["url"],
-                album_title=album["name"],
+                album_art=album.get("images", [{}])[0].get("url"),
+                album_title=album.get("name"),
                 album_type=album.get("album_type") if guessed_right else guess,
                 artists=", ".join(artists_name),
                 genre=None,
-                id=album["id"],
+                id=album.get("id"),
                 isrc=None,
-                release_date=album["release_date"],
+                release_date=album.get("release_date"),
                 tempo=None,
-                title=album["name"],
+                title=album.get("name"),
+                total_tracks=album.get("total_tracks"),
                 type=album.get("type"),
                 upc=None,
-                url=album["external_urls"]["spotify"],
+                url=album.get("external_urls").get("spotify"),
             )
 
         return None
@@ -645,7 +651,10 @@ if __name__ == "__main__":
             artist_name = input("Artist Name: ")
             song_name = input("Song Name: ")
             result = spotify.search(artist_name, song_name)
-            pprint(asdict(result))
+            if result:
+                pprint(asdict(result))
+            else:
+                "No results found."
         finally:
             spotify.close_session()
 

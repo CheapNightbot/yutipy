@@ -17,6 +17,8 @@ class MusicInfo:
         Type of the album (e.g., album, single).
     artists : str
         Name(s) of the artist(s).
+    explicit : Optional[bool]
+        Whether the music contains explicit content/lyrics.
     genre : Optional[str]
         Genre of the music.
     id : Union[int, str, Dict[str, str]]
@@ -25,12 +27,18 @@ class MusicInfo:
         International Standard Recording Code.
     lyrics : Optional[str]
         Lyrics of the song.
+    preview_url : Optional[str]
+        URL to a preview of the music on respective platform.
     release_date : Optional[str]
         Release date of the music.
     tempo : Optional[float]
         Tempo of the music in BPM.
     title : str
         Title of the music.
+    total_tracks : Optional[int]
+        Total number of tracks in the album.
+    track_number : Optional[int]
+        Track number of the music in the album.
     type : Optional[str]
         Type of the music (e.g., track, album).
     upc : Optional[str]
@@ -43,13 +51,17 @@ class MusicInfo:
     album_title: Optional[str] = None
     album_type: Optional[str] = None
     artists: str = ""
+    explicit: Optional[bool] = False
     genre: Optional[str] = None
     id: Union[int, str, Dict[str, int]] = field(default_factory=dict)
     isrc: Optional[str] = None
     lyrics: Optional[str] = None
+    preview_url: Optional[str] = None
     release_date: Optional[str] = None
     tempo: Optional[float] = None
     title: str = ""
+    total_tracks: Optional[int] = None
+    track_number: Optional[int] = None
     type: Optional[str] = None
     upc: Optional[str] = None
     url: Union[str, Dict[str, str]] = field(default_factory=dict)

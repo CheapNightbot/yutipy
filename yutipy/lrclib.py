@@ -60,7 +60,7 @@ class LrcLib(BaseService):
         artist: str,
         song: str,
         album: str = None,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[dict]:
         """
         Fetches lyrics for a given artist and song.
@@ -74,7 +74,7 @@ class LrcLib(BaseService):
         album : str, optional
             The title of the album.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison (default is True).
+            Whether to normalize non-English characters for comparison (default is False).
 
         Returns
         -------
