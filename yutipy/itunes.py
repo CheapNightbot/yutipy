@@ -22,6 +22,7 @@ class Itunes(BaseService):
     """A class to interact with the iTunes API."""
 
     def __init__(self) -> None:
+        """"""
         super().__init__(
             service_name="iTunes",
             api_url="https://itunes.apple.com",
