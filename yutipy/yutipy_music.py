@@ -2,6 +2,7 @@ __all__ = ["YutipyMusic"]
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pprint import pprint
+from time import time
 from typing import Optional
 
 from yutipy.deezer import Deezer
@@ -39,19 +40,16 @@ class YutipyMusic:
             This class should implement ``load_access_token()`` and ``save_access_token()`` methods. Default is ``Spotify``.
         """
         self.music_info = MusicInfos()
-        self.normalize_non_english = True
         self.album_art_priority = ["deezer", "ytmusic", "itunes"]
         self.services = {
-            "deezer": Deezer(fetch_lyrics=False),
-            "itunes": Itunes(fetch_lyrics=False),
-            "ytmusic": MusicYT(fetch_lyrics=False),
+            "deezer": Deezer(),
+            "itunes": Itunes(),
+            "ytmusic": MusicYT(),
         }
 
         try:
             self.services["kkbox"] = (
-                custom_kkbox_class(defer_load=True, fetch_lyrics=False)
-                if custom_kkbox_class
-                else KKBox(fetch_lyrics=False)
+                custom_kkbox_class(defer_load=True) if custom_kkbox_class else KKBox()
             )
         except KKBoxException as e:
             logger.warning(
@@ -63,9 +61,9 @@ class YutipyMusic:
 
         try:
             self.services["spotify"] = (
-                custom_spotify_class(defer_load=True, fetch_lyrics=False)
+                custom_spotify_class(defer_load=True)
                 if custom_spotify_class
-                else Spotify(fetch_lyrics=False)
+                else Spotify()
             )
         except SpotifyException as e:
             logger.warning(
@@ -87,6 +85,7 @@ class YutipyMusic:
         song: str,
         limit: int = 5,
         normalize_non_english: bool = True,
+        fetch_lyrics: bool = True,
     ) -> Optional[MusicInfos]:
         """
         Searches for a song by artist and title.
@@ -101,6 +100,8 @@ class YutipyMusic:
             The number of items to retrieve from all APIs. ``limit >=1 and <= 50``. Default is ``5``.
         normalize_non_english : bool, optional
             Whether to normalize non-English characters for comparison. Default is ``True``.
+        fetch_lyrics : bool, optional
+            Whether to fetch lyrics using LrcLib if not found in any service. Default is ``True``.
 
         Returns
         -------
@@ -111,8 +112,6 @@ class YutipyMusic:
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
-
-        self.normalize_non_english = normalize_non_english
 
         logger.info(
             f"Searching all platforms for `artist='{artist}'` and `song='{song}'`"
@@ -125,7 +124,7 @@ class YutipyMusic:
                     artist=artist,
                     song=song,
                     limit=limit,
-                    normalize_non_english=self.normalize_non_english,
+                    normalize_non_english=normalize_non_english,
                 ): name
                 for name, service in self.services.items()
             }
@@ -147,7 +146,7 @@ class YutipyMusic:
             return None
 
         # Fetch lyrics only once using LrcLib if not already present
-        if not self.music_info.lyrics:
+        if fetch_lyrics:
             with LrcLib() as lrc_lib:
                 lyrics_result = lrc_lib.get_lyrics(artist, song)
             if lyrics_result:
@@ -155,7 +154,11 @@ class YutipyMusic:
 
         return self.music_info
 
-    def _combine_results(self, result: Optional[MusicInfo], service_name: str) -> None:
+    def _combine_results(
+        self,
+        result: Optional[MusicInfo],
+        service_name: str,
+    ) -> None:
         """
         Combines the results from different services.
 
@@ -175,7 +178,6 @@ class YutipyMusic:
             "artists",
             "genre",
             "isrc",
-            "lyrics",
             "release_date",
             "tempo",
             "title",
@@ -226,9 +228,11 @@ if __name__ == "__main__":
     import logging
     from dataclasses import asdict
 
-    from yutipy.logger import enable_logging
+    # from yutipy.logger import enable_logging
+    # enable_logging(level=logging.INFO)
 
-    enable_logging(level=logging.INFO)
+    start_time = time()
+
     yutipy_music = YutipyMusic()
 
     artist_name = input("Artist Name: ")
@@ -236,3 +240,7 @@ if __name__ == "__main__":
 
     pprint(asdict(yutipy_music.search(artist_name, song_name)))
     yutipy_music.close_sessions()
+
+    end_time = time()
+    print("\n================================================")
+    print(f"Execution Time: {end_time - start_time} seconds")  # this temp, trying to minimize time ~

@@ -60,7 +60,7 @@ def mock_response_users(listenbrainz, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponseUsers()
 
-    monkeypatch.setattr(listenbrainz._ListenBrainz__session, "get", mock_get)
+    monkeypatch.setattr(listenbrainz._session, "get", mock_get)
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def mock_response_activity(listenbrainz, monkeypatch):
     def mock_get(*args, **kwargs):
         return MockResponseActivity()
 
-    monkeypatch.setattr(listenbrainz._ListenBrainz__session, "get", mock_get)
+    monkeypatch.setattr(listenbrainz._session, "get", mock_get)
 
 
 def test_find_user(listenbrainz, mock_response_users):
