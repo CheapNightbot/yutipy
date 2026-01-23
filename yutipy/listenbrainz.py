@@ -15,6 +15,7 @@ class ListenBrainz(BaseService):
     """A class to interact with the ListenBrainz API for fetching user music data."""
 
     def __init__(self):
+        """"""
         super().__init__(
             service_name="ListenBrainz",
             api_url="https://api.listenbrainz.org",
