@@ -20,6 +20,7 @@ class MusicYT(BaseService):
     """A class to interact with the YouTube Music API."""
 
     def __init__(self) -> None:
+        """"""
         self.ytmusic = YTMusic()
         super().__init__(
             service_name="YouTube Music",
@@ -47,7 +48,7 @@ class MusicYT(BaseService):
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------

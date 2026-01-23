@@ -81,7 +81,7 @@ class Spotify(BaseClient):
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -95,7 +95,7 @@ class Spotify(BaseClient):
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
@@ -154,7 +154,7 @@ class Spotify(BaseClient):
         isrc: str = None,
         upc: str = None,
         limit: int = 1,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist, title, ISRC, or UPC.
@@ -172,7 +172,7 @@ class Spotify(BaseClient):
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``1``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------

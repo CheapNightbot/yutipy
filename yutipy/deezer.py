@@ -16,6 +16,7 @@ class Deezer(BaseService):
     """A class to interact with the Deezer API."""
 
     def __init__(self) -> None:
+        """"""
         super().__init__(
             service_name="Deezer",
             api_url="https://api.deezer.com",
@@ -40,7 +41,7 @@ class Deezer(BaseService):
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------

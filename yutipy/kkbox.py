@@ -74,7 +74,7 @@ class KKBox(BaseClient):
         song: str,
         territory: str = "TW",
         limit: int = 10,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfo]:
         """
         Searches for a song by artist and title.
@@ -91,7 +91,7 @@ class KKBox(BaseClient):
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
         normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``True``.
+            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
