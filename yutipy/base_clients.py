@@ -34,7 +34,7 @@ class BaseService:
         session : bool, optional
             Whether to create a requests session for API calls. Default is ``True``.
         translation_session : bool, optional
-            Whether to create a separate requests session for translation API calls. Default is ``True``.
+            Whether to create a requests session for translation API calls. Default is ``True``.
         """
         self.SERVICE_NAME = service_name
         self._api_url = api_url
