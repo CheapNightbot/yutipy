@@ -14,8 +14,6 @@ from yutipy.logger import logger
 class BaseService:
     """Base class for services that do not require authentication."""
 
-    SERVICE_NAME: str
-
     def __init__(
         self,
         service_name: str,
