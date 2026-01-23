@@ -10,7 +10,6 @@ from yutipy.exceptions import InvalidValueException, KKBoxException, SpotifyExce
 from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
 from yutipy.logger import logger
-from yutipy.lrclib import LrcLib
 from yutipy.models import MusicInfo, MusicInfos
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
@@ -84,8 +83,7 @@ class YutipyMusic:
         artist: str,
         song: str,
         limit: int = 5,
-        normalize_non_english: bool = True,
-        fetch_lyrics: bool = True,
+        normalize_non_english: bool = False,
     ) -> Optional[MusicInfos]:
         """
         Searches for a song by artist and title.
@@ -101,7 +99,7 @@ class YutipyMusic:
         normalize_non_english : bool, optional
             Whether to normalize non-English characters for comparison. Default is ``True``.
         fetch_lyrics : bool, optional
-            Whether to fetch lyrics using LrcLib if not found in any service. Default is ``True``.
+            Whether to fetch lyrics using LrcLib if not found in any service. Default is ``False``.
 
         Returns
         -------
@@ -145,13 +143,6 @@ class YutipyMusic:
             )
             return None
 
-        # Fetch lyrics only once using LrcLib if not already present
-        if fetch_lyrics:
-            with LrcLib() as lrc_lib:
-                lyrics_result = lrc_lib.get_lyrics(artist, song)
-            if lyrics_result:
-                self.music_info.lyrics = lyrics_result.get("plainLyrics")
-
         return self.music_info
 
     def _combine_results(
@@ -176,13 +167,19 @@ class YutipyMusic:
             "album_title",
             "album_type",
             "artists",
+            "explicit",
             "genre",
             "isrc",
+            "lyrics",
+            "preview_url",
             "release_date",
             "tempo",
             "title",
+            "total_tracks",
+            "track_number",
             "type",
             "upc",
+            "url",
         ]
 
         # Always overwrite with Spotify, else Deezer, else KKBox
@@ -228,19 +225,21 @@ if __name__ == "__main__":
     import logging
     from dataclasses import asdict
 
-    # from yutipy.logger import enable_logging
-    # enable_logging(level=logging.INFO)
+    from yutipy.logger import enable_logging
 
-    start_time = time()
+    enable_logging(level=logging.INFO)
 
     yutipy_music = YutipyMusic()
 
     artist_name = input("Artist Name: ")
     song_name = input("Song Name: ")
 
+    start_time = time()
     pprint(asdict(yutipy_music.search(artist_name, song_name)))
     yutipy_music.close_sessions()
 
     end_time = time()
     print("\n================================================")
-    print(f"Execution Time: {end_time - start_time} seconds")  # this temp, trying to minimize time ~
+    print(
+        f"Execution Time: {end_time - start_time} seconds"
+    )  # this temp, trying to minimize time ~

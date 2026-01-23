@@ -111,6 +111,12 @@ class MusicYT(BaseService):
         if self._skip_categories(result):
             return False
 
+        if result.get("category", "") == "Top result" and result.get("resultType") in [
+            "song",
+            "video",
+        ]:
+            return True
+
         return any(
             are_strings_similar(
                 result.get("title"),
@@ -153,9 +159,10 @@ class MusicYT(BaseService):
         ]
 
         return (
-            result.get("category", "").lower() in categories_skip
-            or result.get("resultType", "").lower() in categories_skip
-        )
+            result.get("category", "") or ""
+        ).lower() in categories_skip or result.get(
+            "resultType", ""
+        ).lower() in categories_skip
 
     def _process_result(self, result: dict) -> Optional[MusicInfo]:
         """

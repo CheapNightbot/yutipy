@@ -281,19 +281,22 @@ class KKBox(BaseClient):
         )
 
         if matching_artists:
+            album = track.get("album", {})
             music_info = MusicInfo(
-                album_art=track.get("album", {}).get("images", [])[2]["url"],
-                album_title=track.get("album", {}).get("name"),
-                album_type=None,
+                album_art=album.get("images", [{}, {}, {}])[2].get("url"),
+                album_title=album.get("name"),
                 artists=artists_name,
-                genre=None,
+                explicit=track.get("explicitness"),
                 id=track.get("id"),
                 isrc=track.get("isrc"),
-                release_date=track.get("album", {}).get("release_date"),
-                tempo=None,
+                preview_url=self.get_html_widget(
+                    id=track.get("id"),
+                    content_type="song",
+                ),
+                release_date=album.get("release_date"),
                 title=track.get("name"),
+                track_number=track.get("track_number"),
                 type="track",
-                upc=None,
                 url=track.get("url"),
             )
 
@@ -346,18 +349,18 @@ class KKBox(BaseClient):
 
         if matching_artists:
             return MusicInfo(
-                album_art=album.get("images", [])[2]["url"],
+                album_art=album.get("images", [{}, {}, {}])[2].get("url"),
                 album_title=album.get("name"),
-                album_type=None,
                 artists=artists_name,
-                genre=None,
+                explicit=album.get("explicitness"),
                 id=album.get("id"),
-                isrc=None,
+                preview_url=self.get_html_widget(
+                    id=album.get("id"),
+                    content_type="album",
+                ),
                 release_date=album.get("release_date"),
-                tempo=None,
                 title=album.get("name"),
                 type="album",
-                upc=None,
                 url=album.get("url"),
             )
 
@@ -376,6 +379,9 @@ if __name__ == "__main__":
         artist_name = input("Artist Name: ")
         song_name = input("Song Name: ")
         result = kkbox.search(artist_name, song_name)
-        pprint(asdict(result))
+        if result:
+            pprint(asdict(result))
+        else:
+            print("No results found.")
     finally:
         kkbox.close_session()

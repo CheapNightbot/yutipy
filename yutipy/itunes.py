@@ -144,20 +144,20 @@ class Itunes(BaseService):
             artists = separate_artists(result["artistName"])
 
             music_info = MusicInfo(
-                album_art=result["artworkUrl100"],
+                album_art=result.get("artworkUrl100"),
                 album_title=album_title,
                 album_type=album_type.lower(),
                 artists=", ".join(artists),
-                genre=result["primaryGenreName"],
-                id=result.get("trackId", result["collectionId"]),
-                isrc=None,
-                lyrics=None,
+                explicit=result.get("trackExplicitness", "") == "explicit",
+                genre=result.get("primaryGenreName"),
+                id=result.get("trackId", result.get("collectionId")),
+                preview_url=result.get("previewUrl"),
                 release_date=release_date,
-                tempo=None,
                 title=result.get("trackName", album_title),
-                type=result["wrapperType"],
-                upc=None,
-                url=result.get("trackViewUrl", result["collectionViewUrl"]),
+                total_tracks=result.get("trackCount"),
+                track_number=result.get("trackNumber"),
+                type=result.get("wrapperType"),
+                url=result.get("trackViewUrl", result.get("collectionViewUrl")),
             )
 
             return music_info

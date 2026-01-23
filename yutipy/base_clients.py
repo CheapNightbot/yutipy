@@ -160,7 +160,7 @@ class BaseClient(BaseService):
         auth_string = f"{self._client_id}:{self._client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
 
-        url = self.ACCESS_TOKEN_URL
+        url = self._access_token_url
         headers = {
             "Authorization": f"Basic {auth_base64}",
             "Content-Type": "application/x-www-form-urlencoded",
