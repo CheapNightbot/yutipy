@@ -84,7 +84,7 @@ class YutipyMusic:
         artist: str,
         song: str,
         limit: int = 5,
-        normalize_non_english: bool = True,
+        normalize_non_english: bool = False,
         fetch_lyrics: bool = True,
     ) -> Optional[MusicInfos]:
         """
@@ -101,7 +101,7 @@ class YutipyMusic:
         normalize_non_english : bool, optional
             Whether to normalize non-English characters for comparison. Default is ``True``.
         fetch_lyrics : bool, optional
-            Whether to fetch lyrics using LrcLib if not found in any service. Default is ``True``.
+            Whether to fetch lyrics using LrcLib if not found in any service. Default is ``False``.
 
         Returns
         -------
@@ -148,7 +148,10 @@ class YutipyMusic:
         # Fetch lyrics only once using LrcLib if not already present
         if fetch_lyrics:
             with LrcLib() as lrc_lib:
-                lyrics_result = lrc_lib.get_lyrics(artist, song)
+                lyrics_result = lrc_lib.get_lyrics(
+                    self.music_info.artists,
+                    self.music_info.title,
+                )
             if lyrics_result:
                 self.music_info.lyrics = lyrics_result.get("plainLyrics")
 
@@ -228,8 +231,9 @@ if __name__ == "__main__":
     import logging
     from dataclasses import asdict
 
-    # from yutipy.logger import enable_logging
-    # enable_logging(level=logging.INFO)
+    from yutipy.logger import enable_logging
+
+    enable_logging(level=logging.INFO)
 
     start_time = time()
 
@@ -243,4 +247,6 @@ if __name__ == "__main__":
 
     end_time = time()
     print("\n================================================")
-    print(f"Execution Time: {end_time - start_time} seconds")  # this temp, trying to minimize time ~
+    print(
+        f"Execution Time: {end_time - start_time} seconds"
+    )  # this temp, trying to minimize time ~
