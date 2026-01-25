@@ -1,7 +1,7 @@
 import pytest
 
-from yutipy.deezer import Deezer
 from tests import BaseResponse
+from yutipy.deezer import Deezer
 
 
 @pytest.fixture
@@ -161,3 +161,8 @@ def test_get_album(deezer, monkeypatch):
     assert result.title == "Test Album One"
     assert result.artists[0].name == "Test Artist"
     assert result.tracks[0].title == "Test Song Title"
+
+
+def test_close_session(deezer):
+    deezer.close_session()
+    assert deezer.is_session_closed
