@@ -16,9 +16,9 @@ class Deezer(BaseService):
 
     def __init__(self) -> None:
         """"""
-        self.service_url = "https://www.deezer.com"
         super().__init__(
             service_name="Deezer",
+            service_url="https://www.deezer.com",
             api_url="https://api.deezer.com",
         )
 
