@@ -1,8 +1,7 @@
 import pytest
 
-from tests import BaseResponse
 from yutipy.deezer import Deezer
-from yutipy.models import MusicInfo
+from tests import BaseResponse
 
 
 @pytest.fixture
@@ -10,114 +9,155 @@ def deezer():
     return Deezer()
 
 
-# Mock response only for the search endpoint
 class MockSearchResponse(BaseResponse):
     @staticmethod
     def json():
         return {
             "data": [
                 {
-                    "id": "1234567",
-                    "title": "Test Track",
-                    "link": "https://www.deezer.com/track/1234567",
-                    "type": "track",
-                    "artist": {"id": "1", "name": "Artist X"},
-                    "album": {
-                        "id": "110678",
-                        "title": "Test Album",
-                        "cover_xl": "https://example.com/image/1234567",
-                        "type": "album",
+                    "id": "123456",
+                    "title": "Test Song Title (Extended Version)",
+                    "link": "https://www.deezer.com/track/123456",
+                    "duration": "180",
+                    "explicit_lyrics": False,
+                    "preview": "https://cdns-preview-test.dzcdn.net/stream/test-preview-1.mp3",
+                    "artist": {
+                        "id": "1001",
+                        "name": "Test Artist",
+                        "picture_xl": "https://cdn-images.dzcdn.net/images/artist/abc123/1000x1000-000000-80-0-0.jpg",
+                        "link": "https://www.deezer.com/artist/1001",
                     },
+                    "album": {
+                        "id": "2001",
+                        "title": "Test Album One",
+                        "cover_xl": "https://cdn-images.dzcdn.net/images/cover/abc123def456/1000x1000-000000-80-0-0.jpg",
+                    },
+                    "type": "track",
                 },
                 {
-                    "id": "789253",
-                    "title": "Test Album",
-                    "link": "https://www.deezer.com/track/789253",
-                    "type": "album",
-                    "cover_xl": "https://example.com/image/789253",
-                    "record_type": "album",
-                    "artist": {"id": "2", "name": "Artist Y"},
+                    "id": "123457",
+                    "title": "Another Test Track",
+                    "link": "https://www.deezer.com/track/123457",
+                    "duration": "240",
+                    "explicit_lyrics": False,
+                    "preview": "https://cdns-preview-test.dzcdn.net/stream/test-preview-2.mp3",
+                    "artist": {
+                        "id": "1001",
+                        "name": "Test Artist",
+                        "picture_xl": "https://cdn-images.dzcdn.net/images/artist/abc123/1000x1000-000000-80-0-0.jpg",
+                        "link": "https://www.deezer.com/artist/1001",
+                    },
+                    "album": {
+                        "id": "2002",
+                        "title": "Test Album Two",
+                        "cover_xl": "https://cdn-images.dzcdn.net/images/cover/def789ghi012/1000x1000-000000-80-0-0.jpg",
+                    },
+                    "type": "track",
                 },
             ]
         }
 
 
-# Mock response for requesting individual track or album
-class MockResponse(BaseResponse):
+class MockTrackResponse(BaseResponse):
     @staticmethod
     def json():
         return {
-            "id": "1234567",
-            "isrc": "ISRC",
-            "upc": "UPC",
-            "release_date": "2001-03-12",
-            "bpm": 0,
-            "genres": {
+            "id": 123456,
+            "title": "Test Song Title",
+            "duration": 180,
+            "explicit_lyrics": False,
+            "preview": "https://cdns-preview-test.dzcdn.net/stream/test-preview-1.mp3",
+            "album": {
+                "id": 2001,
+                "title": "Test Album One",
+                "cover_xl": "https://cdn-images.dzcdn.net/images/cover/abc123def456/1000x1000-000000-80-0-0.jpg",
+                "release_date": "2020-01-01",
+                "record_type": "album",
+                "link": "https://www.deezer.com/album/2001",
+            },
+            "artist": {
+                "id": 1001,
+                "name": "Test Artist",
+                "picture_xl": "https://cdn-images.dzcdn.net/images/artist/abc123/1000x1000-000000-80-0-0.jpg",
+                "link": "https://www.deezer.com/artist/1001",
+            },
+            "bpm": 120,
+            "gain": None,
+            "isrc": "TESTISRC",
+            "release_date": "2020-01-01",
+            "track_position": 1,
+            "link": "https://www.deezer.com/track/123456",
+        }
+
+
+class MockAlbumResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "id": 2001,
+            "title": "Test Album One",
+            "cover_xl": "https://cdn-images.dzcdn.net/images/cover/abc123def456/1000x1000-000000-80-0-0.jpg",
+            "duration": 3600,
+            "explicit_lyrics": False,
+            "genres": {"data": [{"name": "Pop"}]},
+            "label": "Test Label",
+            "release_date": "2020-01-01",
+            "nb_tracks": 2,
+            "record_type": "album",
+            "upc": "TESTUPC",
+            "link": "https://www.deezer.com/album/2001",
+            "contributors": [
+                {
+                    "id": 1001,
+                    "name": "Test Artist",
+                    "picture_xl": "https://cdn-images.dzcdn.net/images/artist/abc123/1000x1000-000000-80-0-0.jpg",
+                    "role": "Main",
+                    "link": "https://www.deezer.com/artist/1001",
+                }
+            ],
+            "tracks": {
                 "data": [
                     {
-                        "id": 113,
-                        "name": "Dance",
-                        "type": "genre",
+                        "id": 123456,
+                        "title": "Test Song Title",
+                        "duration": 180,
+                        "explicit_lyrics": False,
+                        "preview": "https://cdns-preview-test.dzcdn.net/stream/test-preview-1.mp3",
+                        "artist": {
+                            "id": 1001,
+                            "name": "Test Artist",
+                        },
+                        "link": "https://www.deezer.com/track/123456",
                     }
                 ]
             },
         }
 
 
-@pytest.fixture
-def mock_response(deezer, monkeypatch):
-    def mock_get(*args, **kwargs):
-        return MockSearchResponse()
-
-    monkeypatch.setattr(deezer._session, "get", mock_get)
-
-
-def test_search_valid(deezer, mock_response):
-    result = deezer.search("Artist X", "Test Track")
+def test_search_valid(deezer, monkeypatch):
+    monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
+    result = deezer.search("Test Artist", "Test Song Title", limit=2)
     assert result is not None
-    assert isinstance(result, MusicInfo)
-    assert result.title == "Test Track"
+    assert len(result) == 2
+    assert result[0].title == "Test Song Title (Extended Version)"
+    assert result[1].title == "Another Test Track"
 
 
-def test_search_invalid(deezer, mock_response):
-    result = deezer.search(
-        "Nonexistent Artist", "Nonexistent Song"
-    )
-    assert result is None
-
-
-def test_get_upc_isrc_track(deezer, monkeypatch):
-    def mock_get(*args, **kwargs):
-        return MockResponse()
-
-    monkeypatch.setattr(deezer._session, "get", mock_get)
-
-    track_id = 1234567
-    result = deezer._get_upc_isrc(track_id, "track")
+def test_get_track(deezer, monkeypatch):
+    monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockTrackResponse())
+    result = deezer.get_track(123456)
     assert result is not None
-    assert "isrc" in result
-    assert "release_date" in result
+    assert result.id == 123456
+    assert result.title == "Test Song Title"
+    assert result.album.title == "Test Album One"
+    assert result.artists[0].name == "Test Artist"
 
 
-def test_get_upc_isrc_album(deezer, monkeypatch):
-
-    def mock_get(*args, **kwargs):
-        return MockResponse()
-
-    monkeypatch.setattr(deezer._session, "get", mock_get)
-
-    album_id = 1234567
-    result = deezer._get_upc_isrc(album_id, "album")
+def test_get_album(deezer, monkeypatch):
+    monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockAlbumResponse())
+    result = deezer.get_album(2001)
     assert result is not None
-    assert "upc" in result
-    assert "release_date" in result
-
-
-def test_search_no_results(deezer, mock_response):
-    result = deezer.search("Adele", "Nonexistent Song", normalize_non_english=False)
-    assert result is None
-
-
-def test_close_session(deezer):
-    deezer.close_session()
-    assert deezer.is_session_closed
+    assert result.id == 2001
+    assert result.title == "Test Album One"
+    assert result.artists[0].name == "Test Artist"
+    assert result.tracks[0].title == "Test Song Title"
