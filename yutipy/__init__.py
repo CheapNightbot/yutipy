@@ -8,7 +8,6 @@ from yutipy import (
     lrclib,
     musicyt,
     spotify,
-    yutipy_music,
 )
 
 __all__ = [
@@ -21,5 +20,4 @@ __all__ = [
     "lrclib",
     "musicyt",
     "spotify",
-    "yutipy_music",
 ]
