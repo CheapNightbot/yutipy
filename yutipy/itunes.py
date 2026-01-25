@@ -1,21 +1,15 @@
-__all__ = ["Itunes", "ItunesException"]
+__all__ = ["Itunes"]
 
 from datetime import datetime
-from pprint import pprint
 from typing import Optional
 
 import requests
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import InvalidValueException, ItunesException
+from yutipy.exceptions import InvalidResponseException, InvalidValueException
 from yutipy.logger import logger
-from yutipy.models import MusicInfo
-from yutipy.utils.helpers import (
-    are_strings_similar,
-    guess_album_type,
-    is_valid_string,
-    separate_artists,
-)
+from yutipy.models import Album, Artist, Track
+from yutipy.utils.helpers import guess_album_type, is_valid_string
 
 
 class Itunes(BaseService):
@@ -23,6 +17,7 @@ class Itunes(BaseService):
 
     def __init__(self) -> None:
         """"""
+        self.service_url = "https://music.apple.com"
         super().__init__(
             service_name="iTunes",
             api_url="https://itunes.apple.com",
@@ -33,8 +28,7 @@ class Itunes(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = False,
-    ) -> Optional[MusicInfo]:
+    ) -> Optional[list[Track | Album] | None]:
         """
         Searches for a song by artist and title.
 
@@ -46,145 +40,109 @@ class Itunes(BaseService):
             The title of the song.
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
-        normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
-        Optional[MusicInfo_]
-            The music information if found, otherwise None.
+        Optional[list[Track | Album] | None]
+            A list of Track or Album objects if found, otherwise None.
+
+        Raises
+        ------
+        InvalidValueException
+            If the artist or song name is invalid, or if the limit is out of range.
+        InvalidResponseException
+            If the API response cannot be parsed.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        entities = ["song", "album"]
-        for entity in entities:
-            endpoint = f"{self._api_url}/search"
-            query = f"?term={artist} - {song}&media=music&entity={entity}&limit={limit}"
-            query_url = endpoint + query
+        if limit < 1 or limit > 50:
+            raise InvalidValueException("Limit must be between 1 and 50.")
 
-            try:
-                logger.info(
-                    f'Searching iTunes for `artist="{artist}"` and `song="{song}"`'
-                )
-                logger.debug(f"Query URL: {query_url}")
-                response = self._session.get(query_url, timeout=30)
-                logger.debug(f"Response status code: {response.status_code}")
-                response.raise_for_status()
-            except requests.RequestException as e:
-                logger.warning(f"Unexpected error while searching iTunes: {e}")
-                return None
-
-            try:
-                logger.debug("Parsing response JSON.")
-                result = response.json()["results"]
-            except (IndexError, KeyError, ValueError) as e:
-                logger.warning(f"Invalid response structure from iTunes: {e}")
-                return None
-
-            music_info = self._parse_result(
-                artist,
-                song,
-                normalize_non_english,
-                result,
-            )
-            if music_info:
-                return music_info
-
-        logger.warning(
-            f"No matching results found for artist='{artist}' and song='{song}'"
+        query = (
+            f'?term="{song}" by "{artist}"&media=music&entity=song,album&limit={limit}'
         )
-        return None
+        query_url = f"{self._api_url}/search{query}"
 
-    def _parse_result(
-        self,
-        artist: str,
-        song: str,
-        normalize_non_english,
-        results: list[dict],
-    ) -> Optional[MusicInfo]:
-        """
-        Parses the search results to find a matching song.
-
-        Parameters
-        ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
-        results : list
-            The search results from the API.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if a match is found, otherwise None.
-        """
-        for result in results:
-            if not (
-                are_strings_similar(
-                    result.get("trackName", result["collectionName"]),
-                    song,
-                    use_translation=normalize_non_english,
-                    translation_session=self._translation_session,
-                )
-                and are_strings_similar(
-                    result["artistName"],
-                    artist,
-                    use_translation=normalize_non_english,
-                    translation_session=self._translation_session,
-                )
-            ):
-                continue
-
-            album_title, album_type = self._extract_album_info(result)
-            release_date = self._format_release_date(result["releaseDate"])
-            artists = separate_artists(result["artistName"])
-
-            music_info = MusicInfo(
-                album_art=result.get("artworkUrl100"),
-                album_title=album_title,
-                album_type=album_type.lower(),
-                artists=", ".join(artists),
-                explicit=result.get("trackExplicitness", "") == "explicit",
-                genre=result.get("primaryGenreName"),
-                id=result.get("trackId", result.get("collectionId")),
-                preview_url=result.get("previewUrl"),
-                release_date=release_date,
-                title=result.get("trackName", album_title),
-                total_tracks=result.get("trackCount"),
-                track_number=result.get("trackNumber"),
-                type=result.get("wrapperType"),
-                url=result.get("trackViewUrl", result.get("collectionViewUrl")),
+        try:
+            logger.info(f'Searching iTunes for `artist="{artist}"` and `song="{song}"`')
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing response JSON.")
+            result = response.json()
+        except requests.RequestException as e:
+            logger.warning(f"Unexpected error while searching iTunes: {e}")
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from iTunes: {e}"
             )
 
-            return music_info
-        return None
+        mapped_results: list[Track | Album] = []
+        for item in result.get("results", []):
+            kind = item.get("kind")
+            wrapper_type = item.get("wrapperType")
 
-    def _extract_album_info(self, result: dict) -> tuple:
-        """
-        Extracts album information from a search result.
+            if kind == "song" and wrapper_type == "track":
+                track = Track(
+                    album=Album(
+                        cover=item.get("artworkUrl100"),
+                        explicit=item.get("collectionExplicitness") == "explicit",
+                        id=item.get("collectionId"),
+                        title=item.get("collectionName"),
+                        total_tracks=item.get("trackCount"),
+                        type=guess_album_type(item.get("trackCount", 0)),
+                        url=item.get("collectionViewUrl"),
+                    ),
+                    artists=[
+                        Artist(
+                            id=item.get("artistId"),
+                            name=item.get("artistName"),
+                            url=item.get("artistViewUrl"),
+                        )
+                    ],
+                    duration=self._milis_to_seconds(item.get("trackTimeMillis")),
+                    explicit=item.get("trackExplicitness") == "explicit",
+                    genre=item.get("primaryGenreName"),
+                    id=item.get("trackId"),
+                    preview_url=item.get("previewUrl"),
+                    release_date=self._format_release_date(item.get("releaseDate", "")),
+                    title=item.get("trackName"),
+                    track_number=item.get("trackNumber"),
+                    url=item.get("trackViewUrl"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results.append(track)
 
-        Parameters
-        ----------
-        result : dict
-            A single search result from the API.
+            elif wrapper_type == "collection":
+                album = Album(
+                    artists=[
+                        Artist(
+                            id=item.get("artistId"),
+                            name=item.get("artistName"),
+                            url=item.get("artistViewUrl"),
+                        )
+                    ],
+                    cover=item.get("artworkUrl100"),
+                    explicit=item.get("collectionExplicitness") == "explicit",
+                    genres=[item.get("primaryGenreName")],
+                    id=item.get("collectionId"),
+                    release_date=self._format_release_date(item.get("releaseDate", "")),
+                    title=item.get("collectionName"),
+                    total_tracks=item.get("trackCount"),
+                    type=guess_album_type(item.get("trackCount", 0)),
+                    url=item.get("collectionViewUrl"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results.append(album)
 
-        Returns
-        -------
-        tuple
-            The extracted album title and type.
-        """
-
-        guess = guess_album_type(result.get("trackCount", 1))
-        guessed_right = are_strings_similar(
-            result.get("wrapperType", "x"), guess, use_translation=False
-        )
-        return result["collectionName"], (
-            result["wrapperType"] if guessed_right else guess
-        )
+        return mapped_results if mapped_results else None
 
     def _format_release_date(self, release_date: str) -> str:
         """
@@ -204,18 +162,20 @@ class Itunes(BaseService):
             "%Y-%m-%d"
         )
 
+    def _milis_to_seconds(self, millis: Optional[int]) -> Optional[int]:
+        """
+        Converts milliseconds to seconds.
 
-if __name__ == "__main__":
-    import logging
+        Parameters
+        ----------
+        millis : Optional[int]
+            The duration in milliseconds.
 
-    from yutipy.logger import enable_logging
-
-    enable_logging(level=logging.DEBUG)
-    itunes = Itunes()
-
-    try:
-        artist_name = input("Artist Name: ")
-        song_name = input("Song Name: ")
-        pprint(itunes.search(artist_name, song_name))
-    finally:
-        itunes.close_session()
+        Returns
+        -------
+        Optional[int]
+            The duration in seconds, or None if input is None.
+        """
+        if millis is None:
+            return None
+        return millis // 1000
