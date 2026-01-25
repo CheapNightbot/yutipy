@@ -17,9 +17,9 @@ class Itunes(BaseService):
 
     def __init__(self) -> None:
         """"""
-        self.service_url = "https://music.apple.com"
         super().__init__(
             service_name="iTunes",
+            service_url="https://music.apple.com",
             api_url="https://itunes.apple.com",
         )
 
@@ -105,7 +105,7 @@ class Itunes(BaseService):
                             url=item.get("artistViewUrl"),
                         )
                     ],
-                    duration=self._milis_to_seconds(item.get("trackTimeMillis")),
+                    duration=(item.get("trackTimeMillis", 1000) // 1000),
                     explicit=item.get("trackExplicitness") == "explicit",
                     genre=item.get("primaryGenreName"),
                     id=item.get("trackId"),
@@ -161,21 +161,3 @@ class Itunes(BaseService):
         return datetime.strptime(release_date, "%Y-%m-%dT%H:%M:%SZ").strftime(
             "%Y-%m-%d"
         )
-
-    def _milis_to_seconds(self, millis: Optional[int]) -> Optional[int]:
-        """
-        Converts milliseconds to seconds.
-
-        Parameters
-        ----------
-        millis : Optional[int]
-            The duration in milliseconds.
-
-        Returns
-        -------
-        Optional[int]
-            The duration in seconds, or None if input is None.
-        """
-        if millis is None:
-            return None
-        return millis // 1000
