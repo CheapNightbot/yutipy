@@ -16,6 +16,7 @@ class Deezer(BaseService):
 
     def __init__(self) -> None:
         """"""
+        self.service_url = "https://www.deezer.com"
         super().__init__(
             service_name="Deezer",
             api_url="https://api.deezer.com",
@@ -103,6 +104,8 @@ class Deezer(BaseService):
                     preview_url=item.get("preview"),
                     title=item.get("title"),
                     url=item.get("link"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
                 )
                 mapped_results.append(track)
             elif item.get("type") == "album":
@@ -122,6 +125,8 @@ class Deezer(BaseService):
                     total_tracks=item.get("nb_tracks"),
                     type=item.get("record_type"),
                     url=item.get("link"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
                 )
                 mapped_results.append(album)
 
@@ -198,6 +203,8 @@ class Deezer(BaseService):
             title=track.get("title"),
             track_number=track.get("track_position"),
             url=track.get("link"),
+            service_name=self.service_name,
+            service_url=self.service_url,
         )
 
     def get_album(self, album_id: int) -> Album | None:
@@ -285,4 +292,6 @@ class Deezer(BaseService):
             type=album.get("record_type"),
             upc=album.get("upc"),
             url=album.get("link"),
+            service_name=self.service_name,
+            service_url=self.service_url,
         )
