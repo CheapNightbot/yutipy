@@ -34,7 +34,7 @@ class BaseService:
         translation_session : bool, optional
             Whether to create a requests session for translation API calls. Default is ``True``.
         """
-        self.SERVICE_NAME = service_name
+        self.service_name = service_name
         self._api_url = api_url
         self._session = requests.Session() if session else None
         self._translation_session = requests.Session() if translation_session else None
@@ -169,7 +169,7 @@ class BaseClient(BaseService):
 
         try:
             logger.info(
-                f"Authenticating with {self.SERVICE_NAME} API using Client Credentials grant type."
+                f"Authenticating with {self.service_name} API using Client Credentials grant type."
             )
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
@@ -178,7 +178,7 @@ class BaseClient(BaseService):
             response.raise_for_status()
         except requests.RequestException as e:
             raise AuthenticationException(
-                f"Something went wrong authenticating with {self.SERVICE_NAME}: {e}"
+                f"Something went wrong authenticating with {self.service_name}: {e}"
             )
 
         response_json = response.json()
@@ -395,7 +395,7 @@ class BaseAuthClient(BaseService):
 
         try:
             logger.info(
-                f"Authenticating with {self.SERVICE_NAME} API using Authorization Code grant type."
+                f"Authenticating with {self.service_name} API using Authorization Code grant type."
             )
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
@@ -404,7 +404,7 @@ class BaseAuthClient(BaseService):
             response.raise_for_status()
         except requests.RequestException as e:
             raise AuthenticationException(
-                f"Something went wrong authenticating with {self.SERVICE_NAME}: {e}"
+                f"Something went wrong authenticating with {self.service_name}: {e}"
             )
 
         response_json = response.json()
