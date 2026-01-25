@@ -66,13 +66,3 @@ class Album:
     # Metadata about the music platform/service
     service_name: str | None = None
     service_url: str | None = None
-
-
-@dataclass
-class MusicInfo:
-    pass
-
-
-@dataclass
-class UserPlaying:
-    pass
