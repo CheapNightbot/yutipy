@@ -122,7 +122,7 @@ class KKBox(BaseClient):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f'?q="{song}" by "{artist}"&type=track,album&territory={territory}&limit={limit}'
+        query = f'?q="{artist}" - "{song}"&type=track,album&territory={territory}&limit={limit}'
         query_url = f"{self._api_url}/search{query}"
 
         self._refresh_access_token()

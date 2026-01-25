@@ -60,7 +60,7 @@ class Deezer(BaseService):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f'?q="{song}" artist:"{artist}"&limit={limit}'
+        query = f'?q=artist:"{artist}" {song}&limit={limit}'
         query_url = f"{self._api_url}/search/{query}"
 
         try:
