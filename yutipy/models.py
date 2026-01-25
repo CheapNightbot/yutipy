@@ -1,5 +1,15 @@
 from dataclasses import dataclass
 
+"""
+For the service metadata fields in each model,
+no need to add to each model individually.
+But make sure the most outer models in the response have them.
+
+Example:
+- Track(service_name="Example Music", service_url="https://example.com", Artist(...), ...)  # no need to add in Artist model.
+- Album(service_name="Example Music", service_url="https://example.com", Artist(...), Track(...), ...)  # no need to add in Artist and Track models.
+"""
+
 
 @dataclass
 class Artist:
@@ -8,6 +18,10 @@ class Artist:
     picture: str | None = None
     role: str | None = None
     url: str | None = None
+
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
 
 
 @dataclass
@@ -26,6 +40,10 @@ class Track:
     track_number: int | None = None
     url: str | None = None
 
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
+
 
 @dataclass
 class Album:
@@ -43,6 +61,10 @@ class Album:
     type: str | None = None
     upc: str | None = None
     url: str | None = None
+
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
 
 
 @dataclass
