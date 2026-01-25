@@ -31,6 +31,7 @@ class Track:
     bpm: float | None = None
     duration: int | None = None
     explicit: bool | None = None
+    genre: str | None = None
     gain: float | None = None
     id: int | None = None
     isrc: str | None = None
