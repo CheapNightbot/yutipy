@@ -20,7 +20,6 @@ class BaseService:
         service_url: str,
         api_url: str,
         session: bool = True,
-        translation_session: bool = True,
     ) -> None:
         """Initializes the service and sets up the session.
 
@@ -34,14 +33,11 @@ class BaseService:
             The base API URL for the service.
         session : bool, optional
             Whether to create a requests session for API calls. Default is ``True``.
-        translation_session : bool, optional
-            Whether to create a requests session for translation API calls. Default is ``True``.
         """
         self.service_name = service_name
         self.service_url = service_url
         self._api_url = api_url
         self._session = requests.Session() if session else None
-        self._translation_session = requests.Session() if translation_session else None
         self._is_session_closed = False
 
     def __enter__(self):
@@ -57,8 +53,6 @@ class BaseService:
         if not self.is_session_closed:
             if self._session:
                 self._session.close()
-            if self._translation_session:
-                self._translation_session.close()
             self._is_session_closed = True
 
     @property
