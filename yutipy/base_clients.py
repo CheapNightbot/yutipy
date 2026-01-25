@@ -17,6 +17,7 @@ class BaseService:
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         session: bool = True,
         translation_session: bool = True,
@@ -27,6 +28,8 @@ class BaseService:
         ----------
         service_name : str
             The service name class belongs to. For example, "ExampleService".
+        service_url : str
+            The service URL for the music service.
         api_url : str
             The base API URL for the service.
         session : bool, optional
@@ -35,6 +38,7 @@ class BaseService:
             Whether to create a requests session for translation API calls. Default is ``True``.
         """
         self.service_name = service_name
+        self.service_url = service_url
         self._api_url = api_url
         self._session = requests.Session() if session else None
         self._translation_session = requests.Session() if translation_session else None
@@ -69,6 +73,7 @@ class BaseClient(BaseService):
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         access_token_url: str,
         client_id: str = None,
@@ -81,13 +86,22 @@ class BaseClient(BaseService):
         ----------
         service_name : str
             The service name class belongs to. For example, "Spotify".
+        service_url : str
+            The service URL for the music service.
         api_url : str
             The base API URL for the service.
         access_token_url : str
             The url endpoint to request access token.
+        client_id : str
+            The client ID for the service.
+        client_secret : str
+            The client secret for the service.
+        defer_load : bool, optional
+            Whether to defer loading the access token until explicitly requested. Default is ``False``.
         """
         super().__init__(
             service_name=service_name,
+            service_url=service_url,
             api_url=api_url,
         )
 
@@ -266,6 +280,7 @@ class BaseAuthClient(BaseService):
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         access_token_url: str,
         user_auth_url: str,
@@ -282,13 +297,28 @@ class BaseAuthClient(BaseService):
         ----------
         service_name : str
             The service name class belongs to. For example, "Spotify".
+        service_url : str
+            The service URL for the music service.
+        api_url : str
+            The base API URL for the service.
         access_token_url : str
             The url endpoint to request access token.
         user_auth_url : str
             The url endpoint for user authentication.
+        client_id : str
+            The client ID for the service.
+        client_secret : str
+            The client secret for the service.
+        redirect_uri : str
+            The redirect URI for the service.
+        scopes : str, optional
+            The scopes for the service. Default is ``None``.
+        defer_load : bool, optional
+            Whether to defer loading the access token until explicitly requested. Default is ``False``.
         """
         super().__init__(
             service_name=service_name,
+            service_url=service_url,
             api_url=api_url,
         )
 
