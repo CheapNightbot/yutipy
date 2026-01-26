@@ -76,7 +76,7 @@ class MusicYT(BaseService):
                     explicit=result.get("isExplicit"),
                     id=result.get("videoId"),
                     title=result.get("title"),
-                    url=f"{self.service_url}/watch?v={result.get("videoId")}",
+                    url=f"{self.service_url}/watch?v={result.get('videoId')}",
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
@@ -95,7 +95,7 @@ class MusicYT(BaseService):
                     id=result.get("browseId"),
                     title=result.get("title"),
                     type=result.get("type", "").lower(),
-                    url=f"{self.service_url}/browse/{result.get("browseId")}",
+                    url=f"{self.service_url}/browse/{result.get('browseId')}",
                 )
                 mapped_results.append(album)
 
