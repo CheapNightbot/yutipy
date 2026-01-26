@@ -73,3 +73,15 @@ class Album(BaseModel):
     # Metadata about the music platform/service
     service_name: str | None = None
     service_url: str | None = None
+
+
+@dataclass
+class CurrentlyPlaying(Track):
+    timestamp: int | None = None
+    progress: int | None = None
+    is_playing: bool | None = None
+    currently_playing_type: str | None = None
+
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
