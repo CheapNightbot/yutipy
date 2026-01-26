@@ -18,6 +18,20 @@ class BaseModel:
 
 
 @dataclass
+class Artist(BaseModel):
+    genres: list[str] | None = None
+    id: int | None = None
+    name: str | None = None
+    picture: str | None = None
+    role: str | None = None
+    url: str | None = None
+
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
+
+
+@dataclass
 class Album(BaseModel):
     artists: list[Artist] | None = None
     cover: str | None = None
@@ -32,20 +46,6 @@ class Album(BaseModel):
     tracks: list[Track] | None = None
     type: str | None = None
     upc: str | None = None
-    url: str | None = None
-
-    # Metadata about the music platform/service
-    service_name: str | None = None
-    service_url: str | None = None
-
-
-@dataclass
-class Artist(BaseModel):
-    genres: list[str] | None = None
-    id: int | None = None
-    name: str | None = None
-    picture: str | None = None
-    role: str | None = None
     url: str | None = None
 
     # Metadata about the music platform/service
