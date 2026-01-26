@@ -44,7 +44,6 @@ class LastFm(BaseService):
             service_name="Last.fm",
             service_url="https://www.last.fm",
             api_url="https://ws.audioscrobbler.com/2.0",
-            translation_session=False,
         )
 
     def get_user_profile(self, username: str) -> dict | None:
