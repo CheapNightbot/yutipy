@@ -1,14 +1,4 @@
-from yutipy import (
-    deezer,
-    exceptions,
-    itunes,
-    kkbox,
-    lastfm,
-    logger,
-    lrclib,
-    musicyt,
-    spotify,
-)
+from yutipy import deezer, exceptions, itunes, kkbox, lastfm, logger, musicyt, spotify
 
 __all__ = [
     "deezer",
@@ -17,7 +7,6 @@ __all__ = [
     "kkbox",
     "lastfm",
     "logger",
-    "lrclib",
     "musicyt",
     "spotify",
 ]
