@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from json import dumps
 
 """
 For the service metadata fields in each model,
@@ -11,8 +12,13 @@ Example:
 """
 
 
+class BaseModel:
+    def __str__(self):
+        return dumps(asdict(self), indent=2, ensure_ascii=False)
+
+
 @dataclass
-class Artist:
+class Artist(BaseModel):
     id: int | None = None
     name: str | None = None
     picture: str | None = None
@@ -25,7 +31,7 @@ class Artist:
 
 
 @dataclass
-class Track:
+class Track(BaseModel):
     album: Album | None = None
     artists: list[Artist] | None = None
     bpm: float | None = None
@@ -47,7 +53,7 @@ class Track:
 
 
 @dataclass
-class Album:
+class Album(BaseModel):
     artists: list[Artist] | None = None
     cover: str | None = None
     duration: int | None = None
