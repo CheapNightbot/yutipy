@@ -1,7 +1,5 @@
 import argparse
-from dataclasses import asdict
 from importlib.metadata import PackageNotFoundError, version
-from pprint import pprint
 
 try:
     __version__ = version("yutipy")
@@ -26,16 +24,17 @@ def main():
     parser.add_argument("artist", type=str, help="The name of the artist.")
     parser.add_argument("song", type=str, help="The title of the song.")
     parser.add_argument(
-        "--limit",
-        type=int,
-        default=5,
-        help="The number of results to retrieve (default: 5).",
+        "--service",
+        type=str,
+        choices=["deezer", "itunes", "kkbox", "spotify", "ytmusic"],
+        help="Specify a single service to search (e.g., deezer, itunes, kkbox, spotify, ytmusic).",
+        required=True,
     )
     parser.add_argument(
-        "--normalize",
-        action="store_true",
-        help="Normalize non-English characters.",
-        default=False,
+        "--limit",
+        type=int,
+        default=1,
+        help="The number of results to retrieve (default: 1).",
     )
     parser.add_argument(
         "--verbose",
@@ -48,13 +47,6 @@ def main():
         action="version",
         version=f"yutipy v{__version__}",
         help="Show the version of the yutipy and exit.",
-    )
-    parser.add_argument(
-        "--service",
-        type=str,
-        choices=["deezer", "itunes", "kkbox", "spotify", "ytmusic"],
-        help="Specify a single service to search (e.g., deezer, itunes, kkbox, spotify, ytmusic).",
-        required=True,
     )
 
     # Parse the arguments
@@ -81,8 +73,11 @@ def main():
             )
 
         if result:
-            print("\nSEARCH RESULTS:\n")
-            pprint(asdict(result))
+            print("\nSEARCH RESULTS:")
+            print("=" * 14)
+            for item in result:
+                print(item)
+                print("-+-" * 20)
         else:
             print("No results found.")
     except Exception as e:
