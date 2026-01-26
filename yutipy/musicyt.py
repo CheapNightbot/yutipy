@@ -96,7 +96,7 @@ class MusicYT(BaseService):
                     explicit=result.get("isExplicit"),
                     id=result.get("browseId"),
                     title=result.get("title"),
-                    type=result.get("type", "").lower(),
+                    type=(result.get("type", "") or "").lower(),
                     url=f"{self.service_url}/browse/{result.get('browseId')}",
                 )
                 mapped_results.append(album)
@@ -154,6 +154,6 @@ class MusicYT(BaseService):
             "episodes",
         ]
 
-        category = result.get("category", "").lower()
-        result_type = result.get("resultType", "").lower()
+        category = (result.get("category", "") or "").lower()
+        result_type = (result.get("resultType", "") or "").lower()
         return category in categories_skip or result_type in categories_skip
