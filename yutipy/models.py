@@ -19,6 +19,7 @@ class BaseModel:
 
 @dataclass
 class Artist(BaseModel):
+    genres: list[str] | None = None
     id: int | None = None
     name: str | None = None
     picture: str | None = None
