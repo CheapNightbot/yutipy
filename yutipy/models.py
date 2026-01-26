@@ -19,7 +19,7 @@ class BaseModel:
 
 @dataclass
 class Album(BaseModel):
-    artists: list["Artist"] | None = None
+    artists: list[Artist] | None = None
     cover: str | None = None
     duration: int | None = None
     explicit: bool | None = None
@@ -29,7 +29,7 @@ class Album(BaseModel):
     release_date: str | None = None
     title: str | None = None
     total_tracks: int | None = None
-    tracks: list["Track"] | None = None
+    tracks: list[Track] | None = None
     type: str | None = None
     upc: str | None = None
     url: str | None = None
@@ -55,8 +55,8 @@ class Artist(BaseModel):
 
 @dataclass
 class Track(BaseModel):
-    album: "Album" | None = None
-    artists: list["Artist"] | None = None
+    album: Album | None = None
+    artists: list[Artist] | None = None
     bpm: float | None = None
     duration: int | None = None
     explicit: bool | None = None
