@@ -37,8 +37,6 @@ Features
 
 - Simple & Easy integration with popular music APIs.
 - Search for music by artist and song title across multiple platforms.
-- It uses ``RapidFuzz`` to compare & return the best match so that you can be sure you got what you asked for without having to worry and doing all that work by yourself.
-- Retrieve detailed music information, including album art, release dates, lyrics, ISRC, and UPC codes.
 - Authorize and access user resources easily.
 
 Get Started

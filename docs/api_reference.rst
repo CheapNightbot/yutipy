@@ -41,24 +41,6 @@ Lastfm
     :noindex:
     :exclude-members: is_session_closed
 
-ListenBrainz
-------------
-
-.. autoclass:: yutipy.listenbrainz.ListenBrainz
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: is_session_closed
-
-LRCLIB
-------
-
-.. autoclass:: yutipy.lrclib.LrcLib
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: is_session_closed
-
 Spotify
 -------
 
@@ -82,40 +64,37 @@ YouTube Music
     :inherited-members:
     :noindex:
 
-Yutipy Music
-------------
-
-.. autoclass:: yutipy.yutipy_music.YutipyMusic
-    :members:
-    :inherited-members:
-    :noindex:
 
 Data Classes
 =============
 
-MusicInfo
----------
+Album
+-----
 
-.. autoclass:: yutipy.models.MusicInfo
+.. autoclass:: yutipy.models.Album
     :members:
     :noindex:
-    :exclude-members: album_art, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url
 
-MusicInfos
-----------
+Artist
+------
 
-.. autoclass:: yutipy.models.MusicInfos
+.. autoclass:: yutipy.models.Artist
     :members:
     :noindex:
-    :exclude-members: album_art, album_art_source, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url
 
-UserPlaying
------------
+Track
+-----
 
-.. autoclass:: yutipy.models.UserPlaying
+.. autoclass:: yutipy.models.Track
     :members:
     :noindex:
-    :exclude-members: album_art, album_art_source, album_title, album_type, artists, genre, id, isrc, lyrics, release_date, tempo, title, type, upc, url, timestamp, is_playing
+
+CurrentlyPlaying
+----------------
+
+.. autoclass:: yutipy.models.CurrentlyPlaying
+    :members:
+    :noindex:
 
 Exceptions
 =============
@@ -145,51 +124,6 @@ Generic Exceptions
     :exclude-members: add_note, args, with_traceback
 
 .. autoclass:: yutipy.exceptions.InvalidValueException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-Service Exceptions
-------------------
-
-.. autoclass:: yutipy.exceptions.DeezerException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.ItunesException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.KKBoxException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.LastFmException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.MusicYTException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.SpotifyException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
-.. autoclass:: yutipy.exceptions.SpotifyAuthException
     :members:
     :inherited-members:
     :noindex:
