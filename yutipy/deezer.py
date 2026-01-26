@@ -1,6 +1,6 @@
 __all__ = ["Deezer"]
 
-from typing import Optional
+from typing import List, Optional, Union
 
 import requests
 
@@ -18,6 +18,7 @@ class Deezer(BaseService):
         """"""
         super().__init__(
             service_name="Deezer",
+            service_url="https://www.deezer.com",
             api_url="https://api.deezer.com",
         )
 
@@ -26,7 +27,7 @@ class Deezer(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> Optional[list[Track | Album] | None]:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -41,7 +42,7 @@ class Deezer(BaseService):
 
         Returns
         -------
-        Optional[list[Track | Album] | None]
+        list[Track | Album] | None
             A list of Track or Album objects containing search results, or None if an error occurs.
 
         Raises
@@ -59,7 +60,7 @@ class Deezer(BaseService):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f'?q="{song}" artist:"{artist}"&limit={limit}'
+        query = f'?q=artist:"{artist}" {song}&limit={limit}'
         query_url = f"{self._api_url}/search/{query}"
 
         try:
@@ -103,6 +104,8 @@ class Deezer(BaseService):
                     preview_url=item.get("preview"),
                     title=item.get("title"),
                     url=item.get("link"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
                 )
                 mapped_results.append(track)
             elif item.get("type") == "album":
@@ -122,12 +125,14 @@ class Deezer(BaseService):
                     total_tracks=item.get("nb_tracks"),
                     type=item.get("record_type"),
                     url=item.get("link"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
                 )
                 mapped_results.append(album)
 
         return mapped_results if mapped_results else None
 
-    def get_track(self, track_id: int) -> Track | None:
+    def get_track(self, track_id: int) -> Optional[Track]:
         """
         Retrieves track information for a given track ID. Use it if you already have the track ID from Deezer.
 
@@ -198,9 +203,11 @@ class Deezer(BaseService):
             title=track.get("title"),
             track_number=track.get("track_position"),
             url=track.get("link"),
+            service_name=self.service_name,
+            service_url=self.service_url,
         )
 
-    def get_album(self, album_id: int) -> Album | None:
+    def get_album(self, album_id: int) -> Optional[Album]:
         """
         Retrieves album information for a given album ID. Use it if you already have the album ID from Deezer.
 
@@ -285,4 +292,6 @@ class Deezer(BaseService):
             type=album.get("record_type"),
             upc=album.get("upc"),
             url=album.get("link"),
+            service_name=self.service_name,
+            service_url=self.service_url,
         )

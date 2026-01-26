@@ -1,18 +1,20 @@
-__all__ = ["KKBox", "KKBoxException"]
+__all__ = ["KKBox"]
 
 import os
-from dataclasses import asdict
-from pprint import pprint
-from typing import Optional
+from typing import List, Optional, Union
 
 import requests
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseClient
-from yutipy.exceptions import InvalidValueException, KKBoxException
+from yutipy.exceptions import (
+    AuthenticationException,
+    InvalidResponseException,
+    InvalidValueException,
+)
 from yutipy.logger import logger
-from yutipy.models import MusicInfo
-from yutipy.utils.helpers import are_strings_similar, is_valid_string
+from yutipy.models import Album, Artist, Track
+from yutipy.utils.helpers import is_valid_string
 
 load_dotenv()
 
@@ -43,22 +45,28 @@ class KKBox(BaseClient):
             The Client secret for the KKBOX Open API. Defaults to ``KKBOX_CLIENT_SECRET`` from .env file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
+
+        Raises
+        ------
+        AuthenticationException
+            If the Client ID or Client Secret is not provided.
         """
         self.client_id = client_id or KKBOX_CLIENT_ID
         self.client_secret = client_secret or KKBOX_CLIENT_SECRET
 
         if not self.client_id:
-            raise KKBoxException(
+            raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         if not self.client_secret:
-            raise KKBoxException(
+            raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         super().__init__(
             service_name="KKBox",
+            service_url="https://www.kkbox.com",
             api_url="https://api.kkbox.com/v1.1",
             access_token_url="https://account.kkbox.com/oauth2/token",
             client_id=self.client_id,
@@ -72,10 +80,9 @@ class KKBox(BaseClient):
         self,
         artist: str,
         song: str,
-        territory: str = "TW",
+        territory: str = "SG",
         limit: int = 10,
-        normalize_non_english: bool = False,
-    ) -> Optional[MusicInfo]:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -86,54 +93,366 @@ class KKBox(BaseClient):
         song : str
             The title of the song.
         territory : str
-            Two-letter country codes from ISO 3166-1 alpha-2.
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
             Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
-        normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
-        Optional[MusicInfo_]
-            The music information if found, otherwise None.
+        list[Track | Album] | None
+            A list of Track and Album objects matching the search criteria, or None if no results found.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from KKBox is invalid.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        self._refresh_access_token()
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
 
-        query = (
-            f"?q={artist} - {song}&type=track,album&territory={territory}&limit={limit}"
-        )
+        if limit < 1 or limit > 50:
+            raise InvalidValueException("Limit must be between 1 and 50.")
+
+        query = f'?q="{artist}" - "{song}"&type=track,album&territory={territory}&limit={limit}'
         query_url = f"{self._api_url}/search{query}"
 
-        logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
-        logger.debug(f"Query URL: {query_url}")
-
+        self._refresh_access_token()
         try:
+            logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
+            logger.debug(f"Query URL: {query_url}")
             response = self._session.get(
-                query_url, headers=self._authorization_header(), timeout=30
+                query_url,
+                headers=self._authorization_header(),
+                timeout=30,
             )
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
+            logger.debug("Parsing response JSON.")
+            results = response.json()
         except requests.RequestException as e:
             logger.warning(f"Unexpected error while searching KKBox: {e}")
             return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from KKBOX: {e}"
+            )
 
-        return self._find_music_info(
-            artist,
-            song,
-            normalize_non_english,
-            response.json(),
+        tracks = results.get("tracks", {}).get("data", [])
+        albums = results.get("albums", {}).get("data", [])
+        mapped_results: list[Track | Album] = []
+
+        for item in tracks:
+            album = item.get("album", {})
+            track = Track(
+                album=Album(
+                    cover=album.get("images", [{}])[-1].get("url"),
+                    explicit=album.get("explicitness"),
+                    title=album.get("name"),
+                    id=album.get("id"),
+                    release_date=album.get("release_date"),
+                    url=album.get("url"),
+                ),
+                artists=[
+                    Artist(
+                        id=album.get("artist", {}).get("id"),
+                        name=album.get("artist", {}).get("name"),
+                        picture=album.get("artist", {})
+                        .get("images", [{}])[-1]
+                        .get("url"),
+                        url=album.get("artist", {}).get("url"),
+                    )
+                ],
+                duration=(item.get("duration", 1000) // 1000),
+                explicit=item.get("explicitness"),
+                id=item.get("id"),
+                isrc=item.get("isrc"),
+                title=item.get("name"),
+                track_number=item.get("track_number"),
+                url=item.get("url"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results.append(track)
+
+        for item in albums:
+            album = Album(
+                artists=[
+                    Artist(
+                        id=item.get("artist", {}).get("id"),
+                        name=item.get("artist", {}).get("name"),
+                        picture=item.get("artist", {})
+                        .get("images", [{}])[-1]
+                        .get("url"),
+                        url=item.get("artist", {}).get("url"),
+                    )
+                ],
+                cover=item.get("images", [{}])[-1].get("url"),
+                explicit=item.get("explicitness"),
+                id=item.get("id"),
+                release_date=item.get("release_date"),
+                title=item.get("name"),
+                url=item.get("url"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results.append(album)
+
+        return mapped_results if mapped_results else None
+
+    def get_track(
+        self,
+        track_id: str,
+        territory: str = "SG",
+    ) -> Optional[Track]:
+        """
+        Retrieves track information for a given track ID. Use it if you already have the track ID from KKBox.
+
+        Parameters
+        ----------
+        track_id : int
+            The ID of the track.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
+
+        Returns
+        -------
+        Track | None
+            A Track object containing track information or None if not found.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from KKBox is invalid.
+        """
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/tracks/{track_id}?territory={territory}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching track info for track_id: {track_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            track = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching track info from KKBox: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from KKBOX: {e}"
+            )
+        else:
+            if track.get("error"):
+                logger.warning(
+                    f"Error response from KKBOX while fetching track info: {track.get('error')}"
+                )
+                return None
+
+        album = track.get("album", {})
+        artist = album.get("artist", {})
+        return Track(
+            album=Album(
+                cover=album.get("images", [{}])[-1].get("url"),
+                explicit=album.get("explicitness"),
+                id=album.get("id"),
+                release_date=album.get("release_date"),
+                title=album.get("name"),
+                url=album.get("url"),
+            ),
+            artists=[
+                Artist(
+                    id=artist.get("id"),
+                    name=artist.get("name"),
+                    picture=artist.get("images", [{}])[-1].get("url"),
+                    url=artist.get("url"),
+                )
+            ],
+            duration=(track.get("duration", 1000) // 1000),
+            explicit=track.get("explicitness"),
+            id=track.get("id"),
+            isrc=track.get("isrc"),
+            title=track.get("name"),
+            track_number=track.get("track_number"),
+            url=track.get("url"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+
+    def get_album(
+        self,
+        album_id: str,
+        territory: str = "SG",
+    ) -> Optional[Album]:
+        """
+        Retrieves album information for a given album ID. Use it if you already have the album ID from KKBox.
+
+        Parameters
+        ----------
+        album_id : int
+            The ID of the album.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
+
+        Returns
+        -------
+        Album | None
+            An Album object containing album information or None if not found.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from KKBox is invalid.
+        """
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/albums/{album_id}?territory={territory}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching album info for album_id: {album_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            album = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching album info from KKBox: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from KKBOX: {e}"
+            )
+        else:
+            if album.get("error"):
+                logger.warning(
+                    f"Error response from KKBOX while fetching album info: {album.get('error')}"
+                )
+                return None
+
+        artist = album.get("artist", {})
+        return Album(
+            artists=[
+                Artist(
+                    id=artist.get("id"),
+                    name=artist.get("name"),
+                    picture=artist.get("images", [{}])[-1].get("url"),
+                    url=artist.get("url"),
+                )
+            ],
+            cover=album.get("images", [{}])[-1].get("url"),
+            explicit=album.get("explicitness"),
+            id=album.get("id"),
+            release_date=album.get("release_date"),
+            title=album.get("name"),
+            url=album.get("url"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+
+    def get_artist(
+        self,
+        artist_id: str,
+        territory: str = "SG",
+    ) -> Optional[Artist]:
+        """
+        Retrieves artist information for a given artist ID. Use it if you already have the artist ID from KKBox.
+
+        Parameters
+        ----------
+        artist_id : str
+            The ID of the artist.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
+
+        Returns
+        -------
+        Artist | None
+            An Artist object containing artist information or None if not found.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from KKBox is invalid.
+        """
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/artists/{artist_id}?territory={territory}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching artist info for artist_id: {artist_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            artist = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching artist info from KKBox: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from KKBox: {e}"
+            )
+        else:
+            if artist.get("error"):
+                logger.warning(
+                    f"Error response from KKBox while fetching artist info: {artist.get('error')}"
+                )
+                return None
+
+        return Artist(
+            id=artist.get("id"),
+            name=artist.get("name"),
+            picture=artist.get("images", [{}])[-1].get("url"),
+            url=artist.get("url"),
+            service_name=self.service_name,
+            service_url=self.service_url,
         )
 
     def get_html_widget(
         self,
         id: str,
         content_type: str,
-        territory: str = "TW",
+        territory: str = "SG",
         widget_lang: str = "EN",
         autoplay: bool = False,
         loop: bool = False,
@@ -149,7 +468,7 @@ class KKBox(BaseClient):
         content_type : str
             Content type can be ``playlist``, ``album`` or ``song``.
         territory : str, optional
-            Territory code, i.e. "TW", "HK", "JP", "SG", "MY", by default "TW"
+            Territory code, i.e. "TW", "HK", "JP", "SG", "MY", by default "SG"
         widget_lang : str, optional
             The display language of the widget. Can be "TC", "SC", "JA", "EN", "MS", by default "EN"
         autoplay : bool, optional
@@ -180,208 +499,3 @@ class KKBox(BaseClient):
             )
 
         return f"https://widget.kkbox.com/v1/?id={id}&type={content_type}&terr={territory}&lang={widget_lang}&autoplay={autoplay}&loop={loop}"
-
-    def _find_music_info(
-        self,
-        artist: str,
-        song: str,
-        normalize_non_english: bool,
-        response_json: dict,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the music information from the search results.
-
-        Parameters
-        ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
-        response_json : dict
-            The JSON response from the API.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        try:
-            for track in response_json["tracks"]["data"]:
-                music_info = self._find_track(
-                    song,
-                    artist,
-                    track,
-                    normalize_non_english,
-                )
-                if music_info:
-                    return music_info
-        except KeyError:
-            pass
-
-        try:
-            for album in response_json["albums"]["data"]:
-                music_info = self._find_album(
-                    song,
-                    artist,
-                    album,
-                    normalize_non_english,
-                )
-                if music_info:
-                    return music_info
-        except KeyError:
-            pass
-
-        logger.warning(
-            f"No matching results found for artist='{artist}' and song='{song}'"
-        )
-        return None
-
-    def _find_track(
-        self,
-        song: str,
-        artist: str,
-        track: dict,
-        normalize_non_english: bool,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the track information from the search results.
-
-        Parameters
-        ----------
-        song : str
-            The title of the song.
-        artist : str
-            The name of the artist.
-        track : dict
-            A single track from the search results.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        if not are_strings_similar(
-            track["name"],
-            song,
-            use_translation=normalize_non_english,
-            translation_session=self._translation_session,
-        ):
-            return None
-
-        artists_name = track.get("album", {}).get("artist", {}).get("name")
-        matching_artists = (
-            artists_name
-            if are_strings_similar(
-                artists_name,
-                artist,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            else None
-        )
-
-        if matching_artists:
-            album = track.get("album", {})
-            music_info = MusicInfo(
-                album_art=album.get("images", [{}, {}, {}])[2].get("url"),
-                album_title=album.get("name"),
-                artists=artists_name,
-                explicit=track.get("explicitness"),
-                id=track.get("id"),
-                isrc=track.get("isrc"),
-                preview_url=self.get_html_widget(
-                    id=track.get("id"),
-                    content_type="song",
-                ),
-                release_date=album.get("release_date"),
-                title=track.get("name"),
-                track_number=track.get("track_number"),
-                type="track",
-                url=track.get("url"),
-            )
-
-            return music_info
-        return None
-
-    def _find_album(
-        self,
-        song: str,
-        artist: str,
-        album: dict,
-        normalize_non_english: bool,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the album information from the search results.
-
-        Parameters
-        ----------
-        song : str
-            The title of the song.
-        artist : str
-            The name of the artist.
-        album : dict
-            A single album from the search results.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        if not are_strings_similar(
-            album["name"],
-            song,
-            use_translation=normalize_non_english,
-            translation_session=self._translation_session,
-        ):
-            return None
-
-        artists_name = album.get("artist", {}).get("name")
-        matching_artists = (
-            artists_name
-            if are_strings_similar(
-                artists_name,
-                artist,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            else None
-        )
-
-        if matching_artists:
-            return MusicInfo(
-                album_art=album.get("images", [{}, {}, {}])[2].get("url"),
-                album_title=album.get("name"),
-                artists=artists_name,
-                explicit=album.get("explicitness"),
-                id=album.get("id"),
-                preview_url=self.get_html_widget(
-                    id=album.get("id"),
-                    content_type="album",
-                ),
-                release_date=album.get("release_date"),
-                title=album.get("name"),
-                type="album",
-                url=album.get("url"),
-            )
-
-        return None
-
-
-if __name__ == "__main__":
-    import logging
-
-    from yutipy.logger import enable_logging
-
-    enable_logging(level=logging.DEBUG)
-    kkbox = KKBox()
-
-    try:
-        artist_name = input("Artist Name: ")
-        song_name = input("Song Name: ")
-        result = kkbox.search(artist_name, song_name)
-        if result:
-            pprint(asdict(result))
-        else:
-            print("No results found.")
-    finally:
-        kkbox.close_session()

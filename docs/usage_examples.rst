@@ -21,7 +21,7 @@ You can use the CLI tool to search for music directly from the command line:
 
 .. code-block:: bash
 
-    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
 
 Deezer
 ------
@@ -101,19 +101,6 @@ Alternatively, you can manually provide these values when creating an object of 
     with LastFm() as lastfm:
         result = lastfm.get_currently_playing(username="username")
         print(result)
-
-ListenBrainz
-------------
-
-.. code-block:: python
-
-    from dataclasses import asdict
-    from yutipy.listenbrainz import ListenBrainz
-
-    with ListenBrainz() as listenbrainz:
-        result = listenbrainz.get_currently_playing(username="username")
-        if result:
-            print(asdict(result))
 
 Spotify
 -------
@@ -250,15 +237,4 @@ YouTube Music
 
     with MusicYT() as music_yt:
         result = music_yt.search("Artist Name", "Song Title")
-        print(result)
-
-Yutipy Music
-------------
-
-.. code-block:: python
-
-    from yutipy.yutify_music import YutipyMusic
-
-    with YutipyMusic() as yutipy_music:
-        result = yutify_music.search("Artist Name", "Song Title")
         print(result)

@@ -14,17 +14,17 @@ Search for music directly from the command line:
 
 .. code-block:: bash
 
-    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
 
 Options:
 ^^^^^^^^
 
 - **artist** (required): The name of the artist.
 - **song** (required): The title of the song.
-- **\-\-limit**: The number of results to retrieve (default: 5).
-- **\-\-normalize**: Normalize non-English characters for comparison.
+- **\-\-service** (required): Specify a single service to search (e.g., ``deezer``, ``spotify``, ``itunes``).
+- **\-\-limit**: The number of results to retrieve (default: 1).
 - **\-\-verbose**: Enable logging in the terminal.
-- **\-\-service**: Specify a single service to search (e.g., ``deezer``, ``spotify``, ``itunes``).
+- **\-\-version**: Show installed yutipy version and exit.
 
 yutipy-config
 -------------

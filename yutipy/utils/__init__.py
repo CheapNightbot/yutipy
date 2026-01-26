@@ -1,12 +1,6 @@
-from yutipy.utils.helpers import (
-    are_strings_similar,
-    guess_album_type,
-    is_valid_string,
-    separate_artists,
-)
+from yutipy.utils.helpers import guess_album_type, is_valid_string
+
 __all__ = [
-    "are_strings_similar",
     "guess_album_type",
     "is_valid_string",
-    "separate_artists",
 ]

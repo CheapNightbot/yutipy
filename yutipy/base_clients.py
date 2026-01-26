@@ -17,9 +17,9 @@ class BaseService:
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         session: bool = True,
-        translation_session: bool = True,
     ) -> None:
         """Initializes the service and sets up the session.
 
@@ -27,17 +27,17 @@ class BaseService:
         ----------
         service_name : str
             The service name class belongs to. For example, "ExampleService".
+        service_url : str
+            The service URL for the music service.
         api_url : str
             The base API URL for the service.
         session : bool, optional
             Whether to create a requests session for API calls. Default is ``True``.
-        translation_session : bool, optional
-            Whether to create a requests session for translation API calls. Default is ``True``.
         """
-        self.SERVICE_NAME = service_name
+        self.service_name = service_name
+        self.service_url = service_url
         self._api_url = api_url
         self._session = requests.Session() if session else None
-        self._translation_session = requests.Session() if translation_session else None
         self._is_session_closed = False
 
     def __enter__(self):
@@ -53,8 +53,6 @@ class BaseService:
         if not self.is_session_closed:
             if self._session:
                 self._session.close()
-            if self._translation_session:
-                self._translation_session.close()
             self._is_session_closed = True
 
     @property
@@ -69,6 +67,7 @@ class BaseClient(BaseService):
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         access_token_url: str,
         client_id: str = None,
@@ -81,13 +80,22 @@ class BaseClient(BaseService):
         ----------
         service_name : str
             The service name class belongs to. For example, "Spotify".
+        service_url : str
+            The service URL for the music service.
         api_url : str
             The base API URL for the service.
         access_token_url : str
             The url endpoint to request access token.
+        client_id : str
+            The client ID for the service.
+        client_secret : str
+            The client secret for the service.
+        defer_load : bool, optional
+            Whether to defer loading the access token until explicitly requested. Default is ``False``.
         """
         super().__init__(
             service_name=service_name,
+            service_url=service_url,
             api_url=api_url,
         )
 
@@ -169,7 +177,7 @@ class BaseClient(BaseService):
 
         try:
             logger.info(
-                f"Authenticating with {self.SERVICE_NAME} API using Client Credentials grant type."
+                f"Authenticating with {self.service_name} API using Client Credentials grant type."
             )
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
@@ -178,7 +186,7 @@ class BaseClient(BaseService):
             response.raise_for_status()
         except requests.RequestException as e:
             raise AuthenticationException(
-                f"Something went wrong authenticating with {self.SERVICE_NAME}: {e}"
+                f"Something went wrong authenticating with {self.service_name}: {e}"
             )
 
         response_json = response.json()
@@ -266,6 +274,7 @@ class BaseAuthClient(BaseService):
     def __init__(
         self,
         service_name: str,
+        service_url: str,
         api_url: str,
         access_token_url: str,
         user_auth_url: str,
@@ -282,13 +291,28 @@ class BaseAuthClient(BaseService):
         ----------
         service_name : str
             The service name class belongs to. For example, "Spotify".
+        service_url : str
+            The service URL for the music service.
+        api_url : str
+            The base API URL for the service.
         access_token_url : str
             The url endpoint to request access token.
         user_auth_url : str
             The url endpoint for user authentication.
+        client_id : str
+            The client ID for the service.
+        client_secret : str
+            The client secret for the service.
+        redirect_uri : str
+            The redirect URI for the service.
+        scopes : str, optional
+            The scopes for the service. Default is ``None``.
+        defer_load : bool, optional
+            Whether to defer loading the access token until explicitly requested. Default is ``False``.
         """
         super().__init__(
             service_name=service_name,
+            service_url=service_url,
             api_url=api_url,
         )
 
@@ -377,8 +401,8 @@ class BaseAuthClient(BaseService):
 
         if authorization_code:
             data = {
-                "grant_type": "authorization_code",
                 "code": authorization_code,
+                "grant_type": "authorization_code",
                 "redirect_uri": self.redirect_uri,
             }
 
@@ -395,7 +419,7 @@ class BaseAuthClient(BaseService):
 
         try:
             logger.info(
-                f"Authenticating with {self.SERVICE_NAME} API using Authorization Code grant type."
+                f"Authenticating with {self.service_name} API using Authorization Code grant type."
             )
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
@@ -404,7 +428,7 @@ class BaseAuthClient(BaseService):
             response.raise_for_status()
         except requests.RequestException as e:
             raise AuthenticationException(
-                f"Something went wrong authenticating with {self.SERVICE_NAME}: {e}"
+                f"Something went wrong authenticating with {self.service_name}: {e}"
             )
 
         response_json = response.json()

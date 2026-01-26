@@ -45,8 +45,6 @@ A _**simple**_ Python package to interact with various music platforms APIs.
 
 - Simple & Easy integration with popular music APIs.
 - Search for music by artist and song title across multiple platforms.
-- It uses `RapidFuzz` to compare & return the best match so that you can be sure you got what you asked for without having to worry and doing all that work by yourself.
-- Retrieve detailed music information, including album art, release dates, lyrics, ISRC, and UPC codes.
 - Authorize and access user resources easily.
 
 ### Available Music Platforms
@@ -58,7 +56,6 @@ Feel free to request any music platform you would like me to add by opening an i
 - `iTunes`: https://music.apple.com
 - `KKBOX`: https://www.kkbox.com
 - `Lastfm`: https://last.fm
-- `ListenBrainz`: https://listenbrainz.org
 - `Spotify`: https://spotify.com
 - `YouTube Music`: https://music.youtube.com
 
@@ -93,16 +90,16 @@ The `yutipy` package includes a CLI tool that allows you to search for music dir
 You can use the CLI tool to search for music across multiple platforms:
 
 ```bash
-yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
 ```
 
 #### Options:
 - `artist` (required): The name of the artist.
 - `song` (required): The title of the song.
+- `--service` (required): Specify a single service to search (e.g., `deezer`, `spotify`, `itunes`).
 - `--limit`: The number of results to retrieve (default: 5).
-- `--normalize`: Normalize non-English characters for comparison.
 - `--verbose`: Enable logging in the terminal.
-- `--service`: Specify a single service to search (e.g., `deezer`, `spotify`, `itunes`).
+- `--version`: Show installed yutipy version and exit.
 
 ### Configuration Wizard
 

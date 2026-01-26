@@ -1,32 +1,24 @@
-__all__ = ["MusicYT", "MusicYTException"]
-
-from pprint import pprint
-from typing import Optional
+from typing import List, Optional, Union
 
 from ytmusicapi import YTMusic, exceptions
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import (
-    InvalidResponseException,
-    InvalidValueException,
-    MusicYTException,
-)
+from yutipy.exceptions import InvalidValueException
 from yutipy.logger import logger
-from yutipy.models import MusicInfo
-from yutipy.utils.helpers import are_strings_similar, is_valid_string
+from yutipy.models import Album, Artist, Track
+from yutipy.utils.helpers import is_valid_string
 
 
 class MusicYT(BaseService):
     """A class to interact with the YouTube Music API."""
 
     def __init__(self) -> None:
-        """"""
         self.ytmusic = YTMusic()
         super().__init__(
             service_name="YouTube Music",
-            api_url="",
+            service_url="https://music.youtube.com",
+            api_url="N/A",
             session=False,
-            translation_session=True,
         )
 
     def search(
@@ -34,31 +26,26 @@ class MusicYT(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = False,
-    ) -> Optional[MusicInfo]:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
-        Parameters
-        ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
-        limit: int, optional
-            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
-        normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``False``.
-
         Returns
         -------
-        Optional[MusicInfo_]
-            The music information if found, otherwise None.
+        list[Track | Album] | None
+            A list of Track or Album objects if found, otherwise None.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
+        if limit < 1 or limit > 50:
+            raise InvalidValueException("Limit must be between 1 and 50.")
 
         query = f"{artist} - {song}"
         try:
@@ -70,25 +57,54 @@ class MusicYT(BaseService):
             logger.warning(f"Something went wrong while searching YTMusic: {e}")
             return None
 
+        mapped_results: list[Track | Album] = []
         for result in results:
-            if self._is_relevant_result(
-                artist,
-                song,
-                normalize_non_english,
-                result,
-            ):
-                return self._process_result(result)
+            if not self._is_relevant_result(result):
+                continue
+            if result.get("resultType") in ["song", "video"]:
+                track = Track(
+                    album=Album(
+                        cover=result.get("thumbnails", [{}])[-1].get("url"),
+                        title=result.get("album"),
+                    ),
+                    artists=[
+                        Artist(
+                            id=artist.get("id"),
+                            name=artist.get("name"),
+                        )
+                        for artist in result.get("artists", [{}])
+                    ],
+                    duration=result.get("duration_seconds"),
+                    explicit=result.get("isExplicit"),
+                    id=result.get("videoId"),
+                    title=result.get("title"),
+                    url=f"{self.service_url}/watch?v={result.get('videoId')}",
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results.append(track)
+            elif result.get("resultType") == "album":
+                album = Album(
+                    artists=[
+                        Artist(
+                            id=artist.get("id"),
+                            name=artist.get("name"),
+                        )
+                        for artist in result.get("artists", [{}])
+                    ],
+                    cover=result.get("thumbnails", [{}])[-1].get("url"),
+                    explicit=result.get("isExplicit"),
+                    id=result.get("browseId"),
+                    title=result.get("title"),
+                    type=(result.get("type", "") or "").lower(),
+                    url=f"{self.service_url}/browse/{result.get('browseId')}",
+                )
+                mapped_results.append(album)
 
-        logger.warning(
-            f"No matching results found for artist='{artist}' and song='{song}'"
-        )
-        return None
+        return mapped_results if mapped_results else None
 
     def _is_relevant_result(
         self,
-        artist: str,
-        song: str,
-        normalize_non_english: bool,
         result: dict,
     ) -> bool:
         """
@@ -96,10 +112,6 @@ class MusicYT(BaseService):
 
         Parameters
         ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
         result : dict
             The search result from the API.
 
@@ -111,27 +123,11 @@ class MusicYT(BaseService):
         if self._skip_categories(result):
             return False
 
-        if result.get("category", "") == "Top result" and result.get("resultType") in [
+        return result.get("category") == "Top result" and result.get("resultType") in {
             "song",
             "video",
-        ]:
-            return True
-
-        return any(
-            are_strings_similar(
-                result.get("title"),
-                song,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            and are_strings_similar(
-                _artist.get("name"),
-                artist,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            for _artist in result.get("artists", [])
-        )
+            "album",
+        }
 
     def _skip_categories(self, result: dict) -> bool:
         """
@@ -158,145 +154,6 @@ class MusicYT(BaseService):
             "episodes",
         ]
 
-        return (
-            result.get("category", "") or ""
-        ).lower() in categories_skip or result.get(
-            "resultType", ""
-        ).lower() in categories_skip
-
-    def _process_result(self, result: dict) -> Optional[MusicInfo]:
-        """
-        Process the search result and return relevant information as `MusicInfo`.
-
-        Parameters
-        ----------
-        result : dict
-            The search result from the API.
-
-        Returns
-        -------
-        MusicInfo
-            The extracted music information.
-        """
-        if result["resultType"] in ["song", "video"]:
-            try:
-                return self._get_song(result)
-            except InvalidResponseException:
-                return None
-        else:
-            try:
-                return self._get_album(result)
-            except InvalidResponseException:
-                return None
-
-    def _get_song(self, result: dict) -> MusicInfo:
-        """
-        Return song info as a `MusicInfo` object.
-
-        Parameters
-        ----------
-        result : dict
-            The search result from the API.
-
-        Returns
-        -------
-        MusicInfo
-            The extracted music information.
-        """
-        title = result.get("title")
-        artist_names = ", ".join(
-            [artist.get("name") for artist in result.get("artists", [])]
-        )
-        video_id = result.get("videoId")
-        song_url = f"https://music.youtube.com/watch?v={video_id}"
-
-        try:
-            song_data = self.ytmusic.get_song(video_id)
-            release_date = (
-                song_data.get("microformat", {})
-                .get("microformatDataRenderer", {})
-                .get("uploadDate", "")
-                .split("T")[0]
-            )
-        except (exceptions.YTMusicServerError, exceptions.YTMusicError) as e:
-            raise InvalidResponseException(f"Invalid response received: {e}")
-
-        album_art = result.get("thumbnails", [{}])[-1].get("url", None)
-
-        music_info = MusicInfo(
-            album_art=album_art,
-            album_title=None,
-            album_type="single",
-            artists=artist_names,
-            genre=None,
-            id=video_id,
-            isrc=None,
-            release_date=release_date,
-            tempo=None,
-            title=title,
-            type="song",
-            upc=None,
-            url=song_url,
-        )
-
-        return music_info
-
-    def _get_album(self, result: dict) -> MusicInfo:
-        """
-        Return album info as a `MusicInfo` object.
-
-        Parameters
-        ----------
-        result : dict
-            The search result from the API.
-
-        Returns
-        -------
-        MusicInfo
-            The extracted music information.
-        """
-        title = result["title"]
-        artist_names = ", ".join([artist["name"] for artist in result["artists"]])
-        browse_id = result["browseId"]
-        album_url = f"https://music.youtube.com/browse/{browse_id}"
-
-        try:
-            album_data = self.ytmusic.get_album(browse_id)
-            release_date = album_data["year"]
-        except (exceptions.YTMusicServerError, exceptions.YTMusicError) as e:
-            raise InvalidResponseException(f"Invalid response received: {e}")
-
-        album_art = result.get("thumbnails", [{}])[-1].get(
-            "url", album_data.get("thumbnails", [{}])[-1].get("url", None)
-        )
-
-        return MusicInfo(
-            album_art=album_art,
-            album_title=title,
-            album_type="Album",
-            artists=artist_names,
-            genre=None,
-            id=browse_id,
-            isrc=None,
-            release_date=release_date,
-            tempo=None,
-            title=title,
-            type="album",
-            upc=None,
-            url=album_url,
-        )
-
-
-if __name__ == "__main__":
-    import logging
-
-    from yutipy.logger import enable_logging
-
-    enable_logging(level=logging.DEBUG)
-    music_yt = MusicYT()
-    try:
-        artist_name = input("Artist Name: ")
-        song_name = input("Song Name: ")
-        pprint(music_yt.search(artist_name, song_name))
-    finally:
-        music_yt.close_session()
+        category = (result.get("category", "") or "").lower()
+        result_type = (result.get("resultType", "") or "").lower()
+        return category in categories_skip or result_type in categories_skip

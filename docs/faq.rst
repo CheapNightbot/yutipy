@@ -10,10 +10,7 @@ these libraries often come with complexities and additional steps that may not b
 In contrast, **yutipy** is designed to be simple and focuses primarily on search functionality [#]_.
 
 While there are several music platforms available for searching music, and potentially more in the future,
-**yutipy** aims to provide a straightforward experience. The key difference is that other libraries return
-results from music platforms' APIs as-is, whereas **yutipy** utilizes the ``RapidFuzz`` [#]_ library to compare each
-result returned by the APIs with your search query. This ensures that you receive the best match for your search
-without having to perform the comparison manually.
+**yutipy** aims to provide a straightforward experience.
 
 Why is it necessary to use the ``close_session()`` method? What happens if we don't call it?
 --------------------------------------------------------------------------------------------
@@ -28,17 +25,10 @@ the same session is used for making requests, and ``close_session()`` is automat
 If you forget to call ``close_session()`` after you no longer need to make requests, the session will remain open,
 potentially consuming resources. However, the session will eventually close when your application ends.
 
-Why doesn't the ``MusicYT`` class support initialization with the ``with`` keyword?
------------------------------------------------------------------------------------
-
-**yutipy** does not make direct requests to the "YouTube Music" APIs; instead, it relies on the ``ytmusicapi`` [#]_ library for searching and
-retrieving music information. Additionally, **yutipy** does not inherit from any classes in the ``ytmusicapi`` library,
-so you should not expect to have access to all functionalities available in that library.
-
 Why am I receiving a ``SpotifyException`` when trying to use the ``Spotify`` class?
 -----------------------------------------------------------------------------------
 
-Unfortunately, the Spotify API endpoints require authentication. You will need a ``Client ID`` and ``Client Secret``
+The Spotify API endpoints require authentication. You will need a ``Client ID`` and ``Client Secret``
 obtained from the Spotify for Developers website. To do this, follow these steps:
 
 1. Go to your dashboard at https://developer.spotify.com/dashboard.
@@ -67,7 +57,7 @@ After completing these steps, you should be able to use the ``Spotify`` class an
 Why am I receiving a ``KKBoxException`` when trying to use the ``KKBox`` class?
 -------------------------------------------------------------------------------
 
-Unfortunately, it's the same case as with Spotify. You will need a ``Client ID`` and ``Client Secret``
+It's the same case as with Spotify. You will need a ``Client ID`` and ``Client Secret``
 obtained from the KKBOX for Developers website. Please visit https://developer.kkbox.com/ for more information.
 
 How do I use the CLI tool to search for music?
@@ -77,7 +67,7 @@ You can use the CLI tool to search for music directly from the command line. For
 
 .. code-block:: bash
 
-    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --limit 3 --normalize
+    yutipy-cli "Artist Name" "Song Name" --service deezer
 
 For more details, see the :doc:`usage_examples`.
 
@@ -95,7 +85,5 @@ The wizard will guide you through obtaining and setting up API keys for supporte
 ----
 
 .. [#] There may be additional features in the future.
-.. [#] https://pypi.org/project/RapidFuzz/
 .. [#] https://requests.readthedocs.io/en/latest/api/#request-sessions
 .. [#] https://requests.readthedocs.io/en/latest/api/#requests.get
-.. [#] https://pypi.org/project/ytmusicapi/

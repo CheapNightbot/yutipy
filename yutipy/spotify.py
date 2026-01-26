@@ -1,27 +1,20 @@
-__all__ = ["Spotify", "SpotifyException", "SpotifyAuthException"]
+__all__ = ["Spotify"]
 
 import os
-import webbrowser
-from pprint import pprint
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 import requests
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseAuthClient, BaseClient
 from yutipy.exceptions import (
+    AuthenticationException,
+    InvalidResponseException,
     InvalidValueException,
-    SpotifyAuthException,
-    SpotifyException,
 )
 from yutipy.logger import logger
-from yutipy.models import MusicInfo, UserPlaying
-from yutipy.utils.helpers import (
-    are_strings_similar,
-    guess_album_type,
-    is_valid_string,
-    separate_artists,
-)
+from yutipy.models import Album, Artist, CurrentlyPlaying, Track
+from yutipy.utils.helpers import is_valid_string
 
 load_dotenv()
 
@@ -53,22 +46,28 @@ class Spotify(BaseClient):
             The Client secret for the Spotify API. Defaults to ``SPOTIFY_CLIENT_SECRET`` from environment variable or the ``.env`` file.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization, by default ``False``
+
+        Raises
+        ------
+        AuthenticationException
+            If the Client ID or Client Secret is not provided.
         """
         self.client_id = client_id or SPOTIFY_CLIENT_ID
         self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
 
         if not self.client_id:
-            raise SpotifyException(
+            raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         if not self.client_secret:
-            raise SpotifyException(
+            raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         super().__init__(
             service_name="Spotify",
+            service_url="https://open.spotify.com",
             api_url="https://api.spotify.com/v1",
             access_token_url="https://accounts.spotify.com/api/token",
             client_id=self.client_id,
@@ -81,8 +80,7 @@ class Spotify(BaseClient):
         artist: str,
         song: str,
         limit: int = 10,
-        normalize_non_english: bool = False,
-    ) -> Optional[MusicInfo]:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -94,363 +92,336 @@ class Spotify(BaseClient):
             The title of the song.
         limit: int, optional
             The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
-        normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``False``.
 
         Returns
         -------
-        Optional[MusicInfo_]
+        list[Track | Album] | None
             The music information if found, otherwise None.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from Spotify is invalid.
         """
         if not is_valid_string(artist) or not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )
 
-        music_info = None
-        artist_ids = None
-        queries = [
-            f"?q=artist:{artist} track:{song}&type=track&limit={limit}",
-            f"?q=artist:{artist} album:{song}&type=album&limit={limit}",
-        ]
+        if limit < 1 or limit > 50:
+            raise InvalidValueException("Limit must be between 1 and 50.")
 
-        for query in queries:
-            if music_info:
-                return music_info
+        query = f"?q=artist:{artist} - {song}&type=track,album&limit={limit}"
+        query_url = f"{self._api_url}/search{query}"
 
-            self._refresh_access_token()
-
-            query_url = f"{self._api_url}/search{query}"
-
+        self._refresh_access_token()
+        try:
             logger.info(
                 f"Searching Spotify for `artist='{artist}'` and `song='{song}'`"
             )
             logger.debug(f"Query URL: {query_url}")
-
-            try:
-                response = self._session.get(
-                    query_url, headers=self._authorization_header(), timeout=30
-                )
-                response.raise_for_status()
-            except requests.RequestException as e:
-                logger.warning(f"Failed to search for music: {e}")
-                return None
-
-            artist_ids = artist_ids if artist_ids else self._get_artists_ids(artist)
-            music_info = self._find_music_info(
-                artist,
-                song,
-                response.json(),
-                artist_ids,
-                normalize_non_english,
-            )
-
-        return music_info
-
-    def search_advanced(
-        self,
-        artist: str,
-        song: str,
-        isrc: str = None,
-        upc: str = None,
-        limit: int = 1,
-        normalize_non_english: bool = False,
-    ) -> Optional[MusicInfo]:
-        """
-        Searches for a song by artist, title, ISRC, or UPC.
-
-        Parameters
-        ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
-        isrc : str, optional
-            The ISRC of the track.
-        upc : str, optional
-            The UPC of the album.
-        limit: int, optional
-            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``1``.
-        normalize_non_english : bool, optional
-            Whether to normalize non-English characters for comparison. Default is ``False``.
-
-        Returns
-        -------
-        Optional[MusicInfo_]
-            The music information if found, otherwise None.
-        """
-        if not is_valid_string(artist) or not is_valid_string(song):
-            raise InvalidValueException(
-                "Artist and song names must be valid strings and can't be empty."
-            )
-
-        self._normalize_non_english = normalize_non_english
-        self._refresh_access_token()
-
-        if isrc:
-            query = f"?q={artist} {song} isrc:{isrc}&type=track&limit={limit}"
-        elif upc:
-            query = f"?q={artist} {song} upc:{upc}&type=album&limit={limit}"
-        else:
-            raise InvalidValueException("ISRC or UPC must be provided.")
-
-        query_url = f"{self._api_url}/search{query}"
-        try:
             response = self._session.get(
-                query_url, headers=self._authorization_header(), timeout=30
+                query_url,
+                headers=self._authorization_header(),
+                timeout=30,
             )
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
+            logger.debug("Parsing response JSON.")
+            results = response.json()
         except requests.RequestException as e:
-            raise logger.warning(f"Failed to search music with ISRC/UPC: {e}")
+            logger.warning(f"Unexpected error while searching Spotify: {e}")
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
 
-        artist_ids = self._get_artists_ids(artist)
-        return self._find_music_info(
-            artist,
-            song,
-            response.json(),
-            artist_ids,
-            normalize_non_english,
-        )
+        tracks = results.get("tracks", {}).get("items", [{}])
+        albums = results.get("albums", {}).get("items", [{}])
+        mapped_results: list[Track | Album] = []
 
-    def _get_artists_ids(self, artist: str) -> Union[list, None]:
+        for item in tracks:
+            album = item.get("album", {})
+            artists = item.get("artists", [{}])
+            track = Track(
+                album=Album(
+                    cover=album.get("images", [{}])[0].get("url"),
+                    id=album.get("id"),
+                    release_date=album.get("release_date"),
+                    title=album.get("name"),
+                    total_tracks=album.get("total_tracks"),
+                    type=album.get("album_type"),
+                    url=album.get("external_urls", {}).get("spotify"),
+                ),
+                artists=[
+                    Artist(
+                        id=artist.get("id"),
+                        name=artist.get("name"),
+                        url=artist.get("external_urls", {}).get("spotify"),
+                    )
+                    for artist in artists
+                ],
+                duration=item.get("duration_ms", 1000) // 1000,
+                explicit=item.get("explicit"),
+                id=item.get("id"),
+                isrc=item.get("external_ids", {}).get("isrc"),
+                title=item.get("name"),
+                track_number=item.get("track_number"),
+                url=item.get("external_urls", {}).get("spotify"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results.append(track)
+
+        for item in albums:
+            artists = item.get("artists", [{}])
+            album = Album(
+                artists=[
+                    Artist(
+                        id=artist.get("id"),
+                        name=artist.get("name"),
+                        url=artist.get("external_urls", {}).get("spotify"),
+                    )
+                    for artist in artists
+                ],
+                cover=item.get("images", [{}])[0].get("url"),
+                id=item.get("id"),
+                release_date=item.get("release_date"),
+                title=item.get("name"),
+                total_tracks=item.get("total_tracks"),
+                type=item.get("album_type"),
+                url=item.get("external_urls", {}).get("spotify"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results.append(album)
+
+        return mapped_results if mapped_results else None
+
+    def get_track(self, track_id: str) -> Optional[Track]:
         """
-        Retrieves the IDs of the artists.
+        Retrieves track information for a given track ID. Use it if you already have the track ID from Spotify.
 
         Parameters
         ----------
-        artist : str
-            The name of the artist.
+        track_id : str
+            The ID of the track.
 
         Returns
         -------
-        Union[list, None]
-            A list of artist IDs or None if not found.
+        Track | None
+            A Track object containing track information or None if not found.
+
+        Raises
+        ------
+        InvalidResponseException
+            If the response from Spotify is invalid.
         """
-        artist_ids = []
-        for name in separate_artists(artist):
-            query_url = f"{self._api_url}/search?q={name}&type=artist&limit=5"
-            try:
-                response = self._session.get(
-                    query_url, headers=self._authorization_header(), timeout=30
+        query_url = f"{self._api_url}/tracks/{track_id}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching track info for track_id: {track_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            track = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching track info from Spotify: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
+        else:
+            if track.get("error"):
+                logger.warning(
+                    f"Error response from Spotify while fetching track info: {track.get('error')}"
                 )
-                response.raise_for_status()
-            except requests.RequestException as e:
-                logger.warning(f"Network error during Spotify get artist ids: {e}")
                 return None
 
-            if response.status_code != 200:
-                return None
-
-            artist_ids.extend(
-                artist["id"] for artist in response.json()["artists"]["items"]
-            )
-        return artist_ids
-
-    def _find_music_info(
-        self,
-        artist: str,
-        song: str,
-        response_json: dict,
-        artist_ids: list,
-        normalize_non_english: bool,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the music information from the search results.
-
-        Parameters
-        ----------
-        artist : str
-            The name of the artist.
-        song : str
-            The title of the song.
-        response_json : dict
-            The JSON response from the API.
-        artist_ids : list
-            A list of artist IDs.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        try:
-            for track in response_json["tracks"]["items"]:
-                music_info = self._find_track(
-                    song,
-                    artist,
-                    track,
-                    artist_ids,
-                    normalize_non_english,
-                )
-                if music_info:
-                    return music_info
-        except KeyError:
-            pass
-
-        try:
-            for album in response_json["albums"]["items"]:
-                music_info = self._find_album(
-                    song,
-                    artist,
-                    album,
-                    artist_ids,
-                    normalize_non_english,
-                )
-                if music_info:
-                    return music_info
-        except KeyError:
-            pass
-
-        logger.warning(
-            f"No matching results found for artist='{artist}' and song='{song}'"
-        )
-        return None
-
-    def _find_track(
-        self,
-        song: str,
-        artist: str,
-        track: dict,
-        artist_ids: list,
-        normalize_non_english: bool,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the track information from the search results.
-
-        Parameters
-        ----------
-        song : str
-            The title of the song.
-        artist : str
-            The name of the artist.
-        track : dict
-            A single track from the search results.
-        artist_ids : list
-            A list of artist IDs.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        if not are_strings_similar(
-            track["name"],
-            song,
-            use_translation=normalize_non_english,
-            translation_session=self._translation_session,
-        ):
-            return None
-
-        artists_name = [x["name"] for x in track["artists"]]
-        matching_artists = [
-            x["name"]
-            for x in track["artists"]
-            if are_strings_similar(
-                x["name"],
-                artist,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            or x["id"] in artist_ids
-        ]
-
-        if matching_artists:
-            album = track.get("album", {})
-            music_info = MusicInfo(
-                album_art=album.get("images", [{}])[0].get("url"),
-                album_title=album.get("name"),
-                album_type=album.get("album_type"),
-                artists=", ".join(artists_name),
-                explicit=track.get("explicit", False),
-                genre=None,
-                id=track.get("id"),
-                isrc=track.get("external_ids", {}).get("isrc"),
-                preview_url=track.get("preview_url"),
-                release_date=album.get("release_date"),
-                tempo=None,
-                title=track.get("name"),
-                total_tracks=album.get("total_tracks"),
-                track_number=track.get("track_number"),
-                type="track",
-                upc=None,
-                url=track.get("external_urls", {}).get("spotify"),
-            )
-
-            return music_info
-        return None
-
-    def _find_album(
-        self,
-        song: str,
-        artist: str,
-        album: dict,
-        artist_ids: list,
-        normalize_non_english: bool,
-    ) -> Optional[MusicInfo]:
-        """
-        Finds the album information from the search results.
-
-        Parameters
-        ----------
-        song : str
-            The title of the song.
-        artist : str
-            The name of the artist.
-        album : dict
-            A single album from the search results.
-        artist_ids : list
-            A list of artist IDs.
-
-        Returns
-        -------
-        Optional[MusicInfo]
-            The music information if found, otherwise None.
-        """
-        if not are_strings_similar(
-            album["name"],
-            song,
-            use_translation=normalize_non_english,
-            translation_session=self._translation_session,
-        ):
-            return None
-
-        artists_name = [x["name"] for x in album["artists"]]
-        matching_artists = [
-            x["name"]
-            for x in album["artists"]
-            if are_strings_similar(
-                x["name"],
-                artist,
-                use_translation=normalize_non_english,
-                translation_session=self._translation_session,
-            )
-            or x["id"] in artist_ids
-        ]
-
-        if matching_artists:
-            guess = guess_album_type(album.get("total_tracks", 1))
-            guessed_right = are_strings_similar(
-                album.get("album_type", "x"), guess, use_translation=False
-            )
-
-            return MusicInfo(
-                album_art=album.get("images", [{}])[0].get("url"),
-                album_title=album.get("name"),
-                album_type=album.get("album_type") if guessed_right else guess,
-                artists=", ".join(artists_name),
-                genre=None,
+        album = track.get("album", {})
+        artists = album.get("artist", [{}])
+        return Track(
+            album=Album(
+                cover=album.get("images", [{}])[0].get("url"),
                 id=album.get("id"),
-                isrc=None,
                 release_date=album.get("release_date"),
-                tempo=None,
                 title=album.get("name"),
                 total_tracks=album.get("total_tracks"),
-                type=album.get("type"),
-                upc=None,
-                url=album.get("external_urls").get("spotify"),
-            )
+                type=album.get("album_type"),
+                url=album.get("external_urls", {}).get("spotify"),
+            ),
+            artists=[
+                Artist(
+                    id=artist.get("id"),
+                    name=artist.get("name"),
+                    url=artist.get("external_urls", {}).get("spotify"),
+                )
+                for artist in artists
+            ],
+            duration=(track.get("duration_ms", 1000) // 1000),
+            explicit=track.get("explicit"),
+            id=track.get("id"),
+            isrc=track.get("external_ids", {}).get("isrc"),
+            title=track.get("name"),
+            track_number=track.get("track_number"),
+            url=track.get("external_urls", {}).get("spotify"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
 
-        return None
+    def get_album(self, album_id: str) -> Optional[Album]:
+        """
+        Retrieves album information for a given album ID. Use it if you already have the album ID from Spotify.
+
+        Parameters
+        ----------
+        album_id : str
+            The ID of the album.
+
+        Returns
+        -------
+        Album | None
+            An Album object containing album information or None if not found.
+
+        Raises
+        ------
+        InvalidResponseException
+            If the response from Spotify is invalid.
+        """
+        query_url = f"{self._api_url}/albums/{album_id}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching album info for album_id: {album_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            album = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching album info from Spotify: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
+        else:
+            if album.get("error"):
+                logger.warning(
+                    f"Error response from Spotify while fetching album info: {album.get('error')}"
+                )
+                return None
+
+        artists = album.get("artist", [{}])
+        tracks = album.get("tracks", [{}])
+        return Album(
+            artists=[
+                Artist(
+                    id=artist.get("id"),
+                    name=artist.get("name"),
+                    url=artist.get("external_urls", {}).get("spotify"),
+                )
+                for artist in artists
+            ],
+            cover=album.get("images", [{}])[0].get("url"),
+            id=album.get("id"),
+            label=album.get("label"),
+            release_date=album.get("release_date"),
+            title=album.get("name"),
+            total_tracks=album.get("total_tracks"),
+            tracks=[
+                Track(
+                    artists=[
+                        Artist(
+                            id=artist.get("id"),
+                            name=artist.get("name"),
+                            url=artist.get("external_urls", {}).get("spotify"),
+                        )
+                        for artist in track.get("artists", [{}])
+                    ],
+                    duration=track.get("duration_ms", 1000) // 1000,
+                    explicit=track.get("explicit"),
+                    id=track.get("id"),
+                    title=track.get("name"),
+                    track_number=track.get("track_number"),
+                    url=track.get("external_urls", {}).get("spotify"),
+                )
+                for track in tracks
+            ],
+            type=album.get("album_type"),
+            upc=album.get("external_ids", {}).get("upc"),
+            url=album.get("external_urls", {}).get("spotify"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+
+    def get_artist(self, artist_id: str) -> Optional[Artist]:
+        """
+        Retrieves artist information for a given artist ID. Use it if you already have the artist ID from Spotify.
+
+        Parameters
+        ----------
+        artist_id : str
+            The ID of the artist.
+
+        Returns
+        -------
+        Artist | None
+            An Artist object containing artist information or None if not found.
+
+        Raises
+        ------
+        InvalidResponseException
+            If the response from Spotify is invalid.
+        """
+        query_url = f"{self._api_url}/artists/{artist_id}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching artist info for artist_id: {artist_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            artist = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching artist info from Spotify: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
+        else:
+            if artist.get("error"):
+                logger.warning(
+                    f"Error response from Spotify while fetching artist info: {artist.get('error')}"
+                )
+                return None
+
+        return Artist(
+            genres=artist.get("genres"),
+            id=artist.get("id"),
+            name=artist.get("name"),
+            picture=artist.get("images", [{}])[0].get("url"),
+            url=artist.get("external_urls", {}).get("spotify"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
 
 
 class SpotifyAuth(BaseAuthClient):
@@ -483,6 +454,11 @@ class SpotifyAuth(BaseAuthClient):
             A list of scopes for the Spotify API. For example: `['user-read-email', 'user-read-private']`.
         defer_load : bool, optional
             Whether to defer loading the access token during initialization. Default is ``False``.
+
+        Raises
+        ------
+        AuthenticationException
+            If the Client ID or Client Secret is not provided.
         """
         self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
         self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
@@ -490,17 +466,17 @@ class SpotifyAuth(BaseAuthClient):
         self.scopes = scopes
 
         if not self.client_id:
-            raise SpotifyAuthException(
+            raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         if not self.client_secret:
-            raise SpotifyAuthException(
+            raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         if not self.redirect_uri:
-            raise SpotifyAuthException(
+            raise AuthenticationException(
                 "No redirect URI was provided! Set it in environment variable or directly pass it when creating object."
             )
 
@@ -513,6 +489,7 @@ class SpotifyAuth(BaseAuthClient):
 
         super().__init__(
             service_name="Spotify",
+            service_url="https://open.spotify.com",
             api_url="https://api.spotify.com/v1/me",
             access_token_url="https://accounts.spotify.com/api/token",
             user_auth_url="https://accounts.spotify.com/authorize",
@@ -533,43 +510,54 @@ class SpotifyAuth(BaseAuthClient):
 
         Returns
         -------
-        dict
+        dict | None
             A dictionary containing the user's display name and profile images.
+
+        Raises
+        ------
+        InvalidResponseException
+            If the response from Spotify is invalid.
         """
         self._refresh_access_token()
         query_url = self._api_url
         header = self._authorization_header()
 
         try:
-            response = self._session.get(query_url, headers=header, timeout=30)
+            logger.info("Fetching user's Spotify profile information.")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(
+                query_url,
+                headers=header,
+                timeout=30,
+            )
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
+            logger.debug("Parsing response JSON.")
+            result = response.json()
         except requests.RequestException as e:
-            logger.warning(f"Failed to fetch user profile: {e}")
+            logger.warning(
+                f"Unexpected error while fetching user's Spotify profile: {e}"
+            )
             return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
 
-        if response.status_code != 200:
-            logger.warning(f"Unexpected response: {response.json()}")
-            return None
-
-        result = response.json()
         return {
             "display_name": result.get("display_name"),
             "images": result.get("images", []),
             "url": result.get("external_urls", {}).get("spotify"),
         }
 
-    def get_currently_playing(self) -> Optional[UserPlaying]:
+    def get_currently_playing(self) -> Optional[CurrentlyPlaying]:
         """
         Fetches information about the currently playing track for the authenticated user.
 
-        This method interacts with the Spotify API to retrieve details about the track
-        the user is currently listening to. It includes information such as the track's
-        title, album, artists, release date, and more.
-
         Returns
         -------
-        Optional[UserPlaying_]
-            An instance of the ``UserPlaying`` model containing details about the currently
+        CurrentlyPlaying | None
+            An instance of the ``CurrentlyPlaying`` model containing details about the currently
             playing track if available, or ``None`` if no track is currently playing or an
             error occurs.
 
@@ -579,107 +567,87 @@ class SpotifyAuth(BaseAuthClient):
         - If the API response does not contain the expected data, the method will return `None`.
 
         """
-        query_url = f"{self._api_url}/player/currently-playing"
         self._refresh_access_token()
+        query_url = f"{self._api_url}/player/currently-playing"
         header = self._authorization_header()
 
         try:
-            response = self._session.get(query_url, headers=header, timeout=30)
+            logger.info("Fetching user's Spotify listening activity.")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(
+                query_url,
+                headers=header,
+                timeout=30,
+            )
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
+            logger.debug("Parsing response JSON.")
+            result = response.json()
         except requests.RequestException as e:
-            logger.warning(f"Error while getting Spotify user activity: {e}")
+            logger.warning(
+                f"Unexpected error while getting user's Spotify activity: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from Spotify: {e}"
+            )
+        else:
+            if response.status_code == 204:  # no content
+                logger.info("Requested user is currently not listening to any music.")
+                return None
+
+        item = result.get("item")
+        if not item:
             return None
 
-        if response.status_code == 204:
-            logger.info("Requested user is currently not listening to any music.")
-            return None
-
-        response_json = response.json()
-        result = response_json.get("item")
-        if result:
-            guess = guess_album_type(result.get("album", {}).get("total_tracks", 1))
-            guessed_right = are_strings_similar(
-                result.get("album", {}).get("album_type", "x"),
-                guess,
-                use_translation=False,
+        album = item.get("album", {})
+        artists = item.get("artists", [])
+        track_artists = [
+            Artist(
+                id=artist.get("id"),
+                name=artist.get("name"),
+                url=artist.get("external_urls", {}).get("spotify"),
             )
-            # Spotify returns timestamp in milliseconds, so convert milliseconds to seconds:
-            timestamp = response_json.get("timestamp") / 1000.0
-            user_playing = UserPlaying(
-                album_art=result.get("album", {}).get("images", [])[0].get("url"),
-                album_title=result.get("album", {}).get("name"),
-                album_type=(
-                    result.get("album", {}).get("album_type")
-                    if guessed_right
-                    else guess
-                ),
-                artists=", ".join([x["name"] for x in result.get("artists", [])]),
-                genre=None,
-                id=result.get("id"),
-                isrc=result.get("external_ids", {}).get("isrc"),
-                is_playing=response_json.get("is_playing"),
-                release_date=result.get("album", {}).get("release_date"),
-                tempo=None,
-                timestamp=timestamp,
-                title=result.get("name"),
-                type=result.get("type"),
-                upc=result.get("external_ids", {}).get("upc"),
-                url=result.get("external_urls", {}).get("spotify"),
+            for artist in artists
+        ]
+        album_artists = [
+            Artist(
+                id=artist.get("id"),
+                name=artist.get("name"),
+                url=artist.get("external_urls", {}).get("spotify"),
             )
+            for artist in album.get("artists", [])
+        ]
+        track_album = Album(
+            artists=album_artists,
+            cover=(
+                album.get("images", [{}])[0].get("url") if album.get("images") else None
+            ),
+            id=album.get("id"),
+            release_date=album.get("release_date"),
+            title=album.get("name"),
+            total_tracks=album.get("total_tracks"),
+            type=album.get("album_type"),
+            url=album.get("external_urls", {}).get("spotify"),
+        )
 
-            return user_playing
-        return None
-
-
-if __name__ == "__main__":
-    import logging
-    from dataclasses import asdict
-
-    from yutipy.logger import enable_logging
-
-    enable_logging(level=logging.DEBUG)
-
-    print("\nChoose Spotify Grant Type/Flow:")
-    print("1. Client Credentials (Spotify)")
-    print("2. Authorization Code (SpotifyAuth)")
-    choice = input("\nEnter your choice (1 or 2): ")
-
-    if choice == "1":
-        spotify = Spotify()
-
-        try:
-            artist_name = input("Artist Name: ")
-            song_name = input("Song Name: ")
-            result = spotify.search(artist_name, song_name)
-            if result:
-                pprint(asdict(result))
-            else:
-                "No results found."
-        finally:
-            spotify.close_session()
-
-    elif choice == "2":
-        redirect_uri = input("Enter Redirect URI: ")
-        scopes = ["user-read-email", "user-read-private"]
-
-        spotify_auth = SpotifyAuth(scopes=scopes)
-
-        try:
-            state = spotify_auth.generate_state()
-            auth_url = spotify_auth.get_authorization_url(state=state)
-            print(f"Opening the following URL in your browser: {auth_url}")
-            webbrowser.open(auth_url)
-
-            code = input("Enter the authorization code: ")
-            spotify_auth.callback_handler(code, state, state)
-
-            user_profile = spotify_auth.get_user_profile()
-            if user_profile:
-                print(f"Successfully authenticated \"{user_profile['display_name']}\".")
-            else:
-                print("Authentication successful, but failed to fetch user profile.")
-        finally:
-            spotify_auth.close_session()
-
-    else:
-        print("Invalid choice. Exiting.")
+        return CurrentlyPlaying(
+            album=track_album,
+            artists=track_artists,
+            duration=item.get("duration_ms", 1000) // 1000,
+            explicit=item.get("explicit"),
+            id=item.get("id"),
+            isrc=item.get("external_ids", {}).get("isrc"),
+            preview_url=item.get("preview_url"),
+            release_date=album.get("release_date"),
+            title=item.get("name"),
+            track_number=item.get("track_number"),
+            url=item.get("external_urls", {}).get("spotify"),
+            timestamp=result.get("timestamp"),
+            progress=result.get("progress_ms", 1000) // 1000,
+            is_playing=result.get("is_playing"),
+            currently_playing_type=result.get("currently_playing_type"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )

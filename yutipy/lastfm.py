@@ -1,18 +1,14 @@
-__all__ = ["LastFm", "LastFmException"]
+__all__ = ["LastFm"]
 
 import os
-from pprint import pprint
-from time import time
 from typing import Optional
 
 import requests
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import LastFmException
+from yutipy.exceptions import AuthenticationException, InvalidResponseException
 from yutipy.logger import logger
-from yutipy.models import UserPlaying
-from yutipy.utils.helpers import separate_artists
 
 load_dotenv()
 
@@ -34,22 +30,24 @@ class LastFm(BaseService):
         lastfm_api_key : str, optional
             The Lastfm API Key (<https://www.last.fm/api>). Defaults to ``LASTFM_API_KEY`` from environment variable or the ``.env`` file.
 
-        Raises:
-            LastFmException: If the API key is not provided or found in the environment.
+        Raises
+        ------
+        AuthenticationException
+            If the Lastfm API key is not provided or found in environment variables.
         """
         self.api_key = api_key or LASTFM_API_KEY
         if not self.api_key:
-            raise LastFmException(
+            raise AuthenticationException(
                 "Lastfm API key was not found. Set it in environment variable or directly pass it when creating object."
             )
 
         super().__init__(
             service_name="Last.fm",
+            service_url="https://www.last.fm",
             api_url="https://ws.audioscrobbler.com/2.0",
-            translation_session=False,
         )
 
-    def get_user_profile(self, username: str):
+    def get_user_profile(self, username: str) -> Optional[dict]:
         """
         Fetches the user profile information for the provided username.
 
@@ -60,8 +58,8 @@ class LastFm(BaseService):
 
         Returns
         -------
-        dict
-            A dictionary containing the user's profile information or error is username does not exist.
+        dict | None
+            A dictionary containing the user's profile information or ``None`` if username does not exist.
         """
         query = (
             f"?method=user.getinfo&user={username}&api_key={self.api_key}&format=json"
@@ -69,32 +67,30 @@ class LastFm(BaseService):
         query_url = self._api_url + query
 
         try:
+            logger.info(f"Fetching profile for Last.fm user: {username}")
             response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing response JSON")
+            result = response.json()
         except requests.RequestException as e:
             logger.warning(f"Failed to fetch user profile: {e}")
             return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Invalid response received from Last.fm API: {e}"
+            )
 
-        response_json = response.json()
-        result = response_json.get("user")
-        error = response_json.get("message")
-        if result:
-            images = [
-                {"size": image.get("size"), "url": image.get("#text")}
-                for image in result.get("image", [])
-            ]
-            return {
-                "name": result.get("realname"),
-                "username": result.get("name"),
-                "type": result.get("type"),
-                "url": result.get("url"),
-                "images": images,
-            }
-        elif error:
-            return {"error": error}
-        else:
-            return None
+        user = result.get("user", {})
+        return {
+            "account_type": user.get("type"),
+            "avatar": user.get("image", [{}])[-1].get("#text"),
+            "name": user.get("realname"),
+            "username": user.get("name"),
+            "url": user.get("url"),
+        }
 
-    def get_currently_playing(self, username: str) -> Optional[UserPlaying]:
+    def get_currently_playing(self, username: str) -> Optional[dict]:
         """
         Fetches information about the currently playing track for a user.
 
@@ -105,53 +101,57 @@ class LastFm(BaseService):
 
         Returns
         -------
-        Optional[UserPlaying_]
-            An instance of the ``UserPlaying`` model containing details about the currently
+        dict | None
+            A dictionary containing details about the currently
             playing track if available, or ``None`` if the request fails or no data is available.
         """
         query = f"?method=user.getrecenttracks&user={username}&limit=1&api_key={self.api_key}&format=json"
         query_url = self._api_url + query
 
         try:
+            logger.info(
+                f"Fetching currently playing music for Last.fm user: {username}"
+            )
             response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
+            logger.debug("Parsing response JSON")
+            result = response.json()
         except requests.RequestException as e:
             logger.warning(f"Failed to fetch user profile: {e}")
             return None
-
-        response_json = response.json()
-        result = response_json.get("recenttracks", {}).get("track", [])[0]
-        is_playing = result.get("@attr", {}).get("nowplaying", False)
-        is_playing = (
-            True if isinstance(is_playing, str) and is_playing == "true" else False
-        )
-        if result and is_playing:
-            album_art = [
-                img.get("#text")
-                for img in result.get("image", [])
-                if img.get("size") == "extralarge"
-            ]
-            return UserPlaying(
-                album_art="".join(album_art),
-                album_title=result.get("album", {}).get("#text"),
-                artists=", ".join(
-                    separate_artists(result.get("artist", {}).get("#text"))
-                ),
-                id=result.get("mbid") if result.get("mbid") else None,
-                timestamp=result.get("date", {}).get("uts") or time(),
-                title=result.get("name"),
-                url=result.get("url"),
-                is_playing=is_playing,
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Invalid response received from Last.fm API: {e}"
             )
-        return None
-
-
-if __name__ == "__main__":
-    with LastFm() as lastfm:
-        username = input("Enter Lasfm Username: ").strip()
-        result = lastfm.get_user_profile(username=username)
-
-        if result:
-            pprint(result)
         else:
-            print("No result was found. Make sure the username is correct!")
+            if not result:
+                return
+
+        # Whether the user currently scrobbling or not..
+        currently_playing = result.get("@attr", {}).get("nowplaying", "false") == "true"
+        if currently_playing:
+            return {
+                "album": result.get("album", {}).get("#text"),
+                "artist": result.get("artist", {}).get("#text"),
+                "cover": result.get("image", [{}])[-1].get("#text"),
+                "scrobbling_now": True,
+                "title": result.get("name"),
+                "url": result.get("url"),
+            }
+
+        # UNIX timestamp and datetime (in UTC) when user last scrobbled..
+        last_played_uts = result.get("date", {}).get("uts")
+        last_played_dt = result.get("date", {}).get("#text")
+        return {
+            "album": result.get("album", {}).get("#text"),
+            "artist": result.get("artist", {}).get("#text"),
+            "cover": result.get("image", [{}])[-1].get("#text"),
+            "last_played_utc": {
+                "unix_timestamp": last_played_uts,
+                "datetime": last_played_dt,
+            },
+            "scrobbling_now": False,
+            "title": result.get("name"),
+            "url": result.get("url"),
+        }

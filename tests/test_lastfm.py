@@ -1,8 +1,7 @@
 import pytest
 
-from yutipy.lastfm import LastFm
-from yutipy.models import UserPlaying
 from tests import BaseResponse
+from yutipy.lastfm import LastFm
 
 
 @pytest.fixture
@@ -10,109 +9,109 @@ def lastfm():
     return LastFm(api_key="test_api_key")
 
 
-class MockResponseActivity(BaseResponse):
-    @staticmethod
-    def json():
-        return {
-            "recenttracks": {
-                "track": [
-                    {
-                        "artist": {"mbid": "", "#text": "Test Artist"},
-                        "image": [
-                            {
-                                "size": "small",
-                                "#text": "https://example.com/image/small.jpg",
-                            },
-                            {
-                                "size": "extralarge",
-                                "#text": "https://example.com/image/extralarge.jpg",
-                            },
-                        ],
-                        "mbid": "",
-                        "album": {
-                            "mbid": "",
-                            "#text": "Test Album",
-                        },
-                        "name": "Test Track",
-                        "@attr": {"nowplaying": "true"},
-                        "url": "https://www.last.fm/music/test+track",
-                    }
-                ]
-            }
-        }
-
-
-class MockResponseProfile(BaseResponse):
+class MockProfileResponse(BaseResponse):
     @staticmethod
     def json():
         return {
             "user": {
-                "name": "john",
-                "realname": "Real John",
+                "name": "user123",
+                "realname": "User One",
+                "type": "user",
+                "url": "https://www.last.fm/user/user123",
                 "image": [
                     {
                         "size": "small",
-                        "#text": "https://example.com/image/john",
+                        "#text": "https://lastfm.freetls.fastly.net/i/u/34s/test.png",
                     },
                     {
                         "size": "extralarge",
-                        "#text": "https://example.com/image/john",
+                        "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/test.png",
                     },
                 ],
-                "url": "https://example.com/john",
-                "type": "user",
             }
         }
 
 
-@pytest.fixture
-def mock_response_activity(lastfm, monkeypatch):
-    def mock_get(*args, **kwargs):
-        return MockResponseActivity()
-
-    monkeypatch.setattr(lastfm._session, "get", mock_get)
-
-
-@pytest.fixture
-def mock_response_profile(lastfm, monkeypatch):
-    def mock_get(*args, **kwargs):
-        return MockResponseProfile()
-
-    monkeypatch.setattr(lastfm._session, "get", mock_get)
-
-
-def test_get_currently_playing(lastfm, mock_response_activity):
-    username = "bob"
-    currently_playing = lastfm.get_currently_playing(username=username)
-    assert currently_playing is not None
-    assert isinstance(currently_playing, UserPlaying)
-    assert currently_playing.title == "Test Track"
-    assert currently_playing.album_title == "Test Album"
-    assert "extralarge" in currently_playing.album_art
-    assert currently_playing.is_playing is True
+class MockCurrentlyPlayingResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "artist": {"mbid": "", "#text": "Artist X"},
+            "album": {"mbid": "", "#text": "Album Y"},
+            "name": "Track Z",
+            "url": "https://www.last.fm/music/Artist+X/_/Track+Z",
+            "image": [
+                {
+                    "size": "small",
+                    "#text": "https://lastfm.freetls.fastly.net/i/u/34s/test.jpg",
+                },
+                {
+                    "size": "extralarge",
+                    "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/test.jpg",
+                },
+            ],
+            "@attr": {"nowplaying": "true"},
+        }
 
 
-def test_get_user_profile(lastfm, mock_response_profile):
-    username = "john"
-    profile = lastfm.get_user_profile(username=username)
-    assert profile is not None
-    assert profile["username"] == username
-    assert profile["name"] == "Real John"
-    assert profile["type"] == "user"
+class MockLastPlayedResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "artist": {"mbid": "", "#text": "Artist Y"},
+            "album": {"mbid": "", "#text": "Album X"},
+            "name": "Track Q",
+            "url": "https://www.last.fm/music/Artist+Y/_/Track+Q",
+            "image": [
+                {
+                    "size": "small",
+                    "#text": "https://lastfm.freetls.fastly.net/i/u/34s/test2.jpg",
+                },
+                {
+                    "size": "extralarge",
+                    "#text": "https://lastfm.freetls.fastly.net/i/u/300x300/test2.jpg",
+                },
+            ],
+            "date": {"uts": "1769322583", "#text": "25 Jan 2026, 06:29"},
+        }
 
 
-def test_invalid_username(lastfm, monkeypatch):
-    def mock_get(*args, **kwargs):
-        class MockResponse(BaseResponse):
-            @staticmethod
-            def json():
-                return {"message": "User not found", "error": 6}
+def test_get_user_profile(lastfm, monkeypatch):
+    monkeypatch.setattr(lastfm._session, "get", lambda *a, **kw: MockProfileResponse())
+    result = lastfm.get_user_profile("user123")
+    assert result is not None
+    assert result["username"] == "user123"
+    assert result["name"] == "User One"
+    assert result["account_type"] == "user"
+    assert result["avatar"].endswith("test.png")
+    assert result["url"] == "https://www.last.fm/user/user123"
 
-        return MockResponse()
 
-    monkeypatch.setattr(lastfm._session, "get", mock_get)
+def test_get_currently_playing(lastfm, monkeypatch):
+    monkeypatch.setattr(
+        lastfm._session, "get", lambda *a, **kw: MockCurrentlyPlayingResponse()
+    )
+    result = lastfm.get_currently_playing("user123")
+    assert result is not None
+    assert result["scrobbling_now"] is True
+    assert result["artist"] == "Artist X"
+    assert result["album"] == "Album Y"
+    assert result["title"] == "Track Z"
+    assert result["cover"].endswith("test.jpg")
+    assert result["url"] == "https://www.last.fm/music/Artist+X/_/Track+Z"
 
-    username = "alksdjfalsjdfweurppqoweiuwu"
-    profile = lastfm.get_user_profile(username=username)
-    assert profile is not None
-    assert "error" in profile
+
+def test_get_last_played(lastfm, monkeypatch):
+    monkeypatch.setattr(
+        lastfm._session, "get", lambda *a, **kw: MockLastPlayedResponse()
+    )
+    result = lastfm.get_currently_playing("user123")
+    assert result is not None
+    assert result["scrobbling_now"] is False
+    assert result["artist"] == "Artist Y"
+    assert result["album"] == "Album X"
+    assert result["title"] == "Track Q"
+    assert result["cover"].endswith("test2.jpg")
+    assert result["url"] == "https://www.last.fm/music/Artist+Y/_/Track+Q"
+    assert result["last_played_utc"]["unix_timestamp"] == "1769322583"
+    assert result["last_played_utc"]["datetime"] == "25 Jan 2026, 06:29"
