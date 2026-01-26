@@ -208,7 +208,11 @@ class KKBox(BaseClient):
 
         return mapped_results if mapped_results else None
 
-    def get_track(self, track_id: str) -> Track | None:
+    def get_track(
+        self,
+        track_id: str,
+        territory: str = "SG",
+    ) -> Track | None:
         """
         Retrieves track information for a given track ID. Use it if you already have the track ID from KKBox.
 
@@ -216,6 +220,9 @@ class KKBox(BaseClient):
         ----------
         track_id : int
             The ID of the track.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
 
         Returns
         -------
@@ -224,10 +231,17 @@ class KKBox(BaseClient):
 
         Raises
         ------
+        InvalidValueException
+            If the input values are invalid.
         InvalidResponseException
             If the response from KKBox is invalid.
         """
-        query_url = f"{self._api_url}/tracks/{track_id}"
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/tracks/{track_id}?territory={territory}"
 
         self._refresh_access_token()
         try:
@@ -284,7 +298,11 @@ class KKBox(BaseClient):
             service_url=self.service_url,
         )
 
-    def get_album(self, album_id: str) -> Album | None:
+    def get_album(
+        self,
+        album_id: str,
+        territory: str = "SG",
+    ) -> Album | None:
         """
         Retrieves album information for a given album ID. Use it if you already have the album ID from KKBox.
 
@@ -292,6 +310,9 @@ class KKBox(BaseClient):
         ----------
         album_id : int
             The ID of the album.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
 
         Returns
         -------
@@ -300,10 +321,17 @@ class KKBox(BaseClient):
 
         Raises
         ------
+        InvalidValueException
+            If the input values are invalid.
         InvalidResponseException
             If the response from KKBox is invalid.
         """
-        query_url = f"{self._api_url}/albums/{album_id}"
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/albums/{album_id}?territory={territory}"
 
         self._refresh_access_token()
         try:
@@ -346,6 +374,75 @@ class KKBox(BaseClient):
             release_date=album.get("release_date"),
             title=album.get("name"),
             url=album.get("url"),
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+
+    def get_artist(
+        self,
+        artist_id: str,
+        territory: str = "SG",
+    ) -> Artist | None:
+        """
+        Retrieves artist information for a given artist ID. Use it if you already have the artist ID from KKBox.
+
+        Parameters
+        ----------
+        artist_id : str
+            The ID of the artist.
+        territory : str
+            Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
+            Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
+
+        Returns
+        -------
+        Artist | None
+            An Artist object containing artist information or None if not found.
+
+        Raises
+        ------
+        InvalidValueException
+            If the input values are invalid.
+        InvalidResponseException
+            If the response from KKBox is invalid.
+        """
+        if territory not in self._valid_territories:
+            raise InvalidValueException(
+                f"`territory` must be one of these: {self._valid_territories} !"
+            )
+
+        query_url = f"{self._api_url}/artists/{artist_id}?territory={territory}"
+
+        self._refresh_access_token()
+        try:
+            logger.info(f"Fetching artist info for artist_id: {artist_id}")
+            logger.debug(f"Query URL: {query_url}")
+            response = self._session.get(query_url, timeout=30)
+            logger.debug(f"Response status code: {response.status_code}")
+            response.raise_for_status()
+            logger.debug("Parsing Response JSON.")
+            artist = response.json()
+        except requests.RequestException as e:
+            logger.warning(
+                f"Unexpected error while fetching artist info from KKBox: {e}"
+            )
+            return None
+        except requests.JSONDecodeError as e:
+            raise InvalidResponseException(
+                f"Failed to parse JSON response from KKBox: {e}"
+            )
+        else:
+            if artist.get("error"):
+                logger.warning(
+                    f"Error response from KKBox while fetching artist info: {artist.get('error')}"
+                )
+                return None
+
+        return Artist(
+            id=artist.get("id"),
+            name=artist.get("name"),
+            picture=artist.get("images", [{}])[-1].get("url"),
+            url=artist.get("url"),
             service_name=self.service_name,
             service_url=self.service_url,
         )
