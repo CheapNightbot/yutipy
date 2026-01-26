@@ -1,252 +1,368 @@
 import pytest
-
-from tests import BaseResponse
-from yutipy.models import MusicInfo, UserPlaying
 from yutipy.spotify import Spotify, SpotifyAuth
+from yutipy.models import Track, Album, Artist
+from tests import BaseResponse
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def spotify():
-    def mock_get_access_token():
-        return {
-            "access_token": "test_access_token",
-            "expires_in": 3600,
-            "requested_at": 1234567890,
-        }
-
-    spotify_instance = Spotify(
-        client_id="test_client_id",
-        client_secret="test_client_secret",
-        defer_load=True
-    )
-
-    spotify_instance._get_access_token = mock_get_access_token
-    spotify_instance.load_token_after_init()
-    return spotify_instance
+    return Spotify(client_id="test_id", client_secret="test_secret", defer_load=True)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def spotify_auth():
-    def mock_get_access_token(*args, **kwargs):
-        return {
-            "access_token": "test_access_token",
-            "refresh_token": "test_refresh_token",
-            "expires_in": 3600,
-            "requested_at": 1234567890,
-        }
-
-    spotify_instance = SpotifyAuth(
-        client_id="test_client_id",
-        client_secret="test_client_secret",
+    return SpotifyAuth(
+        client_id="test_id",
+        client_secret="test_secret",
         redirect_uri="http://localhost/callback",
-        scopes=["user-read-email", "user-read-private"],
-        defer_load=True
+        scopes=["user-read-email"],
+        defer_load=True,
     )
 
-    spotify_instance._get_access_token = mock_get_access_token
-    spotify_instance.load_token_after_init()
-    return spotify_instance
 
-
-# Custom class to be the mock return value of requests.get()
-# for `Spotify` class only ~
-class MockResponse(BaseResponse):
+class MockSearchResponse(BaseResponse):
     @staticmethod
     def json():
         return {
-            "albums": {
-                "items": [
-                    {
-                        "album_type": "album",
-                        "total_tracks": 15,
-                        "external_urls": {
-                            "spotify": "https://open.spotify.com/album/adbjkl234"
-                        },
-                        "id": "asdfjkl",
-                        "images": [{"url": "https://example.com/image/asdfjkl2345"}],
-                        "name": "Test Album",
-                        "release_date": "1981-12-10",
-                        "type": "album",
-                        "artists": [{"id": "abc-xyz", "name": "Artist X"}],
-                    }
-                ]
-            },
             "tracks": {
                 "items": [
                     {
                         "album": {
-                            "album_type": "single",
-                            "total_tracks": 1,
-                            "id": "lkjfdsa",
+                            "album_type": "album",
+                            "id": "album1",
                             "images": [
-                                {
-                                    "url": "https://example.com/image/ewo35623131lf",
-                                }
+                                {"url": "https://open.spotify.com/image/album1.jpg"}
                             ],
                             "name": "Test Album",
-                            "release_date": "1981-12-10",
+                            "release_date": "2022-01-01",
+                            "total_tracks": 10,
                             "type": "album",
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/album/album1"
+                            },
                         },
                         "artists": [
-                            {"id": "abc-xyz", "name": "Artist X"},
-                            {"id": "123-xyz", "name": "Artist Y"},
+                            {
+                                "id": "artist1",
+                                "name": "Artist X",
+                                "external_urls": {
+                                    "spotify": "https://open.spotify.com/artist/artist1"
+                                },
+                            }
                         ],
-                        "external_ids": {"isrc": "ISRC", "upc": "UPC"},
-                        "external_urls": {
-                            "spotify": "https://open.spotify.com/track/abcd123xyz"
-                        },
-                        "id": "abcd123xyz",
+                        "duration_ms": 123000,
+                        "explicit": False,
+                        "id": "track1",
+                        "external_ids": {"isrc": "ISRC123"},
                         "name": "Test Track",
-                        "type": "track",
+                        "track_number": 1,
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/track/track1"
+                        },
                     }
                 ]
             },
-            "artists": {
+            "albums": {
                 "items": [
-                    {"id": "abc-xyz", "name": "Artist X"},
-                    {"id": "123-xyz", "name": "Artist Y"},
+                    {
+                        "album_type": "album",
+                        "id": "album1",
+                        "images": [
+                            {"url": "https://open.spotify.com/image/album1.jpg"}
+                        ],
+                        "name": "Test Album",
+                        "release_date": "2022-01-01",
+                        "total_tracks": 10,
+                        "type": "album",
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/album/album1"
+                        },
+                        "artists": [
+                            {
+                                "id": "artist1",
+                                "name": "Artist X",
+                                "external_urls": {
+                                    "spotify": "https://open.spotify.com/artist/artist1"
+                                },
+                            }
+                        ],
+                    }
                 ]
             },
         }
 
 
-@pytest.fixture
-def mock_response(spotify, monkeypatch):
-    def mock_get(*args, **kwargs):
-        return MockResponse()
-
-    monkeypatch.setattr(spotify._session, "get", mock_get)
-
-
-def test_search(spotify, mock_response):
-    artist = "Artist X"
-    song = "Test Track"
-    result = spotify.search(artist, song, normalize_non_english=False)
-    assert result is not None
-    assert isinstance(result, MusicInfo)
-    assert result.title == song
-    assert artist in result.artists
-
-
-def test_search_advanced_with_isrc(spotify, mock_response):
-    artist = "Artist Y"
-    song = "Test Track"
-    isrc = "ISRC"
-    result = spotify.search_advanced(
-        artist, song, isrc=isrc, normalize_non_english=False
-    )
-    assert result is not None
-    assert result.isrc == isrc
-
-
-def test_search_advanced_with_upc(spotify, mock_response):
-    artist = "Artist X"
-    album = "Test Album"
-    upc = "UPC"
-    result = spotify.search_advanced(
-        artist, album, upc=upc, normalize_non_english=False
-    )
-    print(result)
-    assert result is not None
-
-
-def test_get_artists_ids(spotify, mock_response):
-    artist = "Artist Y"
-    artist_ids = spotify._get_artists_ids(artist)
-    assert isinstance(artist_ids, list)
-    assert len(artist_ids) > 0
-
-
-def test_close_session(spotify):
-    spotify.close_session()
-    assert spotify.is_session_closed
-
-
-def test_get_authorization_url(spotify_auth):
-    state = spotify_auth.generate_state()
-    auth_url = spotify_auth.get_authorization_url(state=state)
-    assert "https://accounts.spotify.com/authorize" in auth_url
-    assert "response_type=code" in auth_url
-    assert f"client_id={spotify_auth.client_id}" in auth_url
-
-
-def test_callback_handler(spotify_auth, monkeypatch):
-    spotify_auth.callback_handler("test_code", "test_state", "test_state")
-    assert spotify_auth._access_token == "test_access_token"
-    assert spotify_auth._refresh_token == "test_refresh_token"
-    assert spotify_auth._token_expires_in == 3600
-    assert spotify_auth._token_requested_at == 1234567890
-
-
-def test_get_currently_playing(spotify_auth, monkeypatch):
-    def mock_get(*args, **kwargs):
-        class MockResponse(BaseResponse):
-            @staticmethod
-            def json():
-                return {
-                    "timestamp": 1745797530935,
-                    "is_playing": False,
-                    "item": {
-                        "album": {
-                            "album_type": "album",
-                            "total_tracks": 9,
-                            "images": [
-                                {
-                                    "url": "https://example.com/image/ewo35623131lf",
-                                }
-                            ],
-                            "name": "Test Album",
-                            "release_date": "1981-12-10",
-                            "type": "album",
-                        },
-                        "artists": [
-                            {"name": "Artist X", "type": "artist"},
-                            {"name": "Artist Y", "type": "artist"},
-                        ],
-                        "external_ids": {"isrc": "ISRC", "upc": "UPC"},
+class MockTrackResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "album": {
+                "album_type": "album",
+                "id": "album1",
+                "images": [{"url": "https://open.spotify.com/image/album1.jpg"}],
+                "name": "Test Album",
+                "release_date": "2022-01-01",
+                "total_tracks": 10,
+                "type": "album",
+                "external_urls": {"spotify": "https://open.spotify.com/album/album1"},
+                "artist": [
+                    {
+                        "id": "artist1",
+                        "name": "Artist X",
                         "external_urls": {
-                            "spotify": "https://open.spotify.com/track/abcd123xyz"
+                            "spotify": "https://open.spotify.com/artist/artist1"
                         },
-                        "id": "abcd123xyz",
-                        "name": "Test Track",
-                        "type": "track",
+                    }
+                ],
+            },
+            "artists": [
+                {
+                    "id": "artist1",
+                    "name": "Artist X",
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/artist/artist1"
                     },
                 }
-
-        return MockResponse()
-
-    monkeypatch.setattr(spotify_auth._session, "get", mock_get)
-
-    currently_playing = spotify_auth.get_currently_playing()
-    assert currently_playing is not None
-    assert isinstance(currently_playing, UserPlaying)
-    assert currently_playing.title == "Test Track"
-    assert currently_playing.artists == "Artist X, Artist Y"
-    assert currently_playing.type == "track"
+            ],
+            "duration_ms": 123000,
+            "explicit": False,
+            "id": "track1",
+            "external_ids": {"isrc": "ISRC123"},
+            "name": "Test Track",
+            "track_number": 1,
+            "external_urls": {"spotify": "https://open.spotify.com/track/track1"},
+        }
 
 
-def test_get_user_profile(spotify_auth, monkeypatch):
-    def mock_get(*args, **kwargs):
-        class MockResponse(BaseResponse):
-            @staticmethod
-            def json():
-                return {
-                    "display_name": "Test User",
+class MockAlbumResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "album_type": "album",
+            "id": "album1",
+            "images": [{"url": "https://open.spotify.com/image/album1.jpg"}],
+            "name": "Test Album",
+            "release_date": "2022-01-01",
+            "total_tracks": 10,
+            "type": "album",
+            "external_urls": {"spotify": "https://open.spotify.com/album/album1"},
+            "artist": [
+                {
+                    "id": "artist1",
+                    "name": "Artist X",
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/artist/artist1"
+                    },
+                }
+            ],
+            "tracks": [
+                {
+                    "artists": [
+                        {
+                            "id": "artist1",
+                            "name": "Artist X",
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/artist1"
+                            },
+                        }
+                    ],
+                    "duration_ms": 123000,
+                    "explicit": False,
+                    "id": "track1",
+                    "name": "Test Track",
+                    "track_number": 1,
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/track/track1"
+                    },
+                }
+            ],
+            "label": "Test Label",
+            "external_ids": {"upc": "UPC123"},
+        }
+
+
+class MockArtistResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "id": "artist1",
+            "name": "Artist X",
+            "genres": ["pop"],
+            "images": [{"url": "https://open.spotify.com/image/artist1.jpg"}],
+            "external_urls": {"spotify": "https://open.spotify.com/artist/artist1"},
+        }
+
+
+class MockUserProfileResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "display_name": "Test User",
+            "images": [{"url": "https://open.spotify.com/image/user.jpg"}],
+            "external_urls": {"spotify": "https://open.spotify.com/user/testuser"},
+        }
+
+
+class MockCurrentlyPlayingResponse(BaseResponse):
+    @staticmethod
+    def json():
+        return {
+            "item": {
+                "album": {
+                    "album_type": "compilation",
+                    "total_tracks": 9,
+                    "id": "album123",
                     "images": [
                         {
-                            "url": "https://example.com/image.jpg",
+                            "url": "https://open.spotify.com/image/album123.jpg",
                             "height": 300,
                             "width": 300,
                         }
                     ],
-                }
+                    "name": "Test Compilation Album",
+                    "release_date": "1981-12",
+                    "release_date_precision": "year",
+                    "type": "album",
+                    "uri": "spotify:album:album123",
+                    "artists": [
+                        {
+                            "id": "artist123",
+                            "name": "Artist Y",
+                            "type": "artist",
+                            "external_urls": {
+                                "spotify": "https://open.spotify.com/artist/artist123"
+                            },
+                        }
+                    ],
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/album/album123"
+                    },
+                },
+                "artists": [
+                    {
+                        "id": "artist123",
+                        "name": "Artist Y",
+                        "type": "artist",
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/artist123"
+                        },
+                    }
+                ],
+                "duration_ms": 234000,
+                "explicit": False,
+                "external_ids": {"isrc": "ISRC123", "ean": "EAN123", "upc": "UPC123"},
+                "id": "track123",
+                "name": "Test Compilation Track",
+                "preview_url": "https://open.spotify.com/preview/track123.mp3",
+                "track_number": 1,
+                "type": "track",
+                "uri": "spotify:track:track123",
+                "external_urls": {"spotify": "https://open.spotify.com/track/track123"},
+            }
+        }
 
-        return MockResponse()
+
+@pytest.fixture
+def mock_search_response(spotify, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockSearchResponse()
+
+    monkeypatch.setattr(spotify._session, "get", mock_get)
+
+
+@pytest.fixture
+def mock_track_response(spotify, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockTrackResponse()
+
+    monkeypatch.setattr(spotify._session, "get", mock_get)
+
+
+@pytest.fixture
+def mock_album_response(spotify, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockAlbumResponse()
+
+    monkeypatch.setattr(spotify._session, "get", mock_get)
+
+
+@pytest.fixture
+def mock_artist_response(spotify, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockArtistResponse()
+
+    monkeypatch.setattr(spotify._session, "get", mock_get)
+
+
+@pytest.fixture
+def mock_user_profile_response(spotify_auth, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockUserProfileResponse()
 
     monkeypatch.setattr(spotify_auth._session, "get", mock_get)
 
-    user_profile = spotify_auth.get_user_profile()
-    assert user_profile is not None
-    assert user_profile["display_name"] == "Test User"
-    assert len(user_profile["images"]) == 1
-    assert user_profile["images"][0]["url"] == "https://example.com/image.jpg"
+
+@pytest.fixture
+def mock_currently_playing_response(spotify_auth, monkeypatch):
+    def mock_get(*args, **kwargs):
+        return MockCurrentlyPlayingResponse()
+
+    monkeypatch.setattr(spotify_auth._session, "get", mock_get)
+
+
+def test_search_valid(spotify, mock_search_response):
+    result = spotify.search("Artist X", "Test Track")
+    assert result is not None
+    assert any(isinstance(x, Track) for x in result)
+    assert any(isinstance(x, Album) for x in result)
+    assert result[0].title == "Test Track"
+    assert result[1].title == "Test Album"
+
+
+def test_get_track(spotify, mock_track_response):
+    result = spotify.get_track("track1")
+    assert result is not None
+    assert isinstance(result, Track)
+    assert result.title == "Test Track"
+    assert result.album.title == "Test Album"
+    assert result.artists[0].name == "Artist X"
+
+
+def test_get_album(spotify, mock_album_response):
+    result = spotify.get_album("album1")
+    assert result is not None
+    assert isinstance(result, Album)
+    assert result.title == "Test Album"
+    assert result.artists[0].name == "Artist X"
+    assert result.tracks[0].title == "Test Track"
+
+
+def test_get_artist(spotify, mock_artist_response):
+    result = spotify.get_artist("artist1")
+    assert result is not None
+    assert isinstance(result, Artist)
+    assert result.name == "Artist X"
+    assert result.url == "https://open.spotify.com/artist/artist1"
+
+
+def test_auth_get_user_profile(spotify_auth, mock_user_profile_response):
+    result = spotify_auth.get_user_profile()
+    assert result is not None
+    assert result["display_name"] == "Test User"
+    assert result["images"][0]["url"] == "https://open.spotify.com/image/user.jpg"
+    assert result["url"] == "https://open.spotify.com/user/testuser"
+
+
+def test_auth_get_currently_playing(spotify_auth, mock_currently_playing_response):
+    result = spotify_auth.get_currently_playing()
+    assert result is not None
+    assert result.title == "Test Compilation Track"
+    assert result.album.title == "Test Compilation Album"
+    assert result.album.cover == "https://open.spotify.com/image/album123.jpg"
+    assert result.artists[0].name == "Artist Y"
+    assert result.album.artists[0].name == "Artist Y"
+    assert result.url == "https://open.spotify.com/track/track123"
+    assert result.album.url == "https://open.spotify.com/album/album123"
+    assert result.preview_url == "https://open.spotify.com/preview/track123.mp3"
+    assert result.isrc == "ISRC123"
+    assert result.duration == 234
