@@ -94,7 +94,7 @@ class Spotify(BaseClient):
 
         Returns
         -------
-        Optional[MusicInfo_]
+        list[Track | Album] | None
             The music information if found, otherwise None.
 
         Raises

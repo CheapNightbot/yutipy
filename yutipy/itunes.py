@@ -42,7 +42,7 @@ class Itunes(BaseService):
 
         Returns
         -------
-        Optional[list[Track | Album] | None]
+        list[Track | Album] | None
             A list of Track or Album objects if found, otherwise None.
 
         Raises

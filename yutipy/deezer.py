@@ -1,7 +1,5 @@
 __all__ = ["Deezer"]
 
-from typing import Optional
-
 import requests
 
 from yutipy.base_clients import BaseService
@@ -27,7 +25,7 @@ class Deezer(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> Optional[list[Track | Album] | None]:
+    ) -> list[Track | Album] | None:
         """
         Searches for a song by artist and title.
 
@@ -42,7 +40,7 @@ class Deezer(BaseService):
 
         Returns
         -------
-        Optional[list[Track | Album] | None]
+        list[Track | Album] | None
             A list of Track or Album objects containing search results, or None if an error occurs.
 
         Raises
