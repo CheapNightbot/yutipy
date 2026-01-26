@@ -137,7 +137,7 @@ class KKBox(BaseClient):
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
-            result = response.json()
+            results = response.json()
         except requests.RequestException as e:
             logger.warning(f"Unexpected error while searching KKBox: {e}")
             return None
@@ -146,8 +146,8 @@ class KKBox(BaseClient):
                 f"Failed to parse JSON response from KKBOX: {e}"
             )
 
-        tracks = result.get("tracks", {}).get("data", [])
-        albums = result.get("albums", {}).get("data", [])
+        tracks = results.get("tracks", {}).get("data", [])
+        albums = results.get("albums", {}).get("data", [])
         mapped_results: list[Track | Album] = []
 
         for item in tracks:
