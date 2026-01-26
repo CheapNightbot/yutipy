@@ -18,6 +18,28 @@ class BaseModel:
 
 
 @dataclass
+class Album(BaseModel):
+    artists: list["Artist"] | None = None
+    cover: str | None = None
+    duration: int | None = None
+    explicit: bool | None = None
+    genres: list[str] | None = None
+    id: int | None = None
+    label: str | None = None
+    release_date: str | None = None
+    title: str | None = None
+    total_tracks: int | None = None
+    tracks: list["Track"] | None = None
+    type: str | None = None
+    upc: str | None = None
+    url: str | None = None
+
+    # Metadata about the music platform/service
+    service_name: str | None = None
+    service_url: str | None = None
+
+
+@dataclass
 class Artist(BaseModel):
     genres: list[str] | None = None
     id: int | None = None
@@ -33,8 +55,8 @@ class Artist(BaseModel):
 
 @dataclass
 class Track(BaseModel):
-    album: Album | None = None
-    artists: list[Artist] | None = None
+    album: "Album" | None = None
+    artists: list["Artist"] | None = None
     bpm: float | None = None
     duration: int | None = None
     explicit: bool | None = None
@@ -46,28 +68,6 @@ class Track(BaseModel):
     release_date: str | None = None
     title: str | None = None
     track_number: int | None = None
-    url: str | None = None
-
-    # Metadata about the music platform/service
-    service_name: str | None = None
-    service_url: str | None = None
-
-
-@dataclass
-class Album(BaseModel):
-    artists: list[Artist] | None = None
-    cover: str | None = None
-    duration: int | None = None
-    explicit: bool | None = None
-    genres: list[str] | None = None
-    id: int | None = None
-    label: str | None = None
-    release_date: str | None = None
-    title: str | None = None
-    total_tracks: int | None = None
-    tracks: list[Track] | None = None
-    type: str | None = None
-    upc: str | None = None
     url: str | None = None
 
     # Metadata about the music platform/service
