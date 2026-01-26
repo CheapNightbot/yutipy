@@ -401,8 +401,8 @@ class BaseAuthClient(BaseService):
 
         if authorization_code:
             data = {
-                "grant_type": "authorization_code",
                 "code": authorization_code,
+                "grant_type": "authorization_code",
                 "redirect_uri": self.redirect_uri,
             }
 
