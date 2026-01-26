@@ -1,6 +1,7 @@
 __all__ = ["Spotify"]
 
 import os
+from typing import List, Optional, Union
 
 import requests
 from dotenv import load_dotenv
@@ -79,7 +80,7 @@ class Spotify(BaseClient):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> list[Track | Album] | None:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -200,7 +201,7 @@ class Spotify(BaseClient):
 
         return mapped_results if mapped_results else None
 
-    def get_track(self, track_id: str) -> Track | None:
+    def get_track(self, track_id: str) -> Optional[Track]:
         """
         Retrieves track information for a given track ID. Use it if you already have the track ID from Spotify.
 
@@ -277,7 +278,7 @@ class Spotify(BaseClient):
             service_url=self.service_url,
         )
 
-    def get_album(self, album_id: str) -> Album | None:
+    def get_album(self, album_id: str) -> Optional[Album]:
         """
         Retrieves album information for a given album ID. Use it if you already have the album ID from Spotify.
 
@@ -366,7 +367,7 @@ class Spotify(BaseClient):
             service_url=self.service_url,
         )
 
-    def get_artist(self, artist_id: str) -> Artist | None:
+    def get_artist(self, artist_id: str) -> Optional[Artist]:
         """
         Retrieves artist information for a given artist ID. Use it if you already have the artist ID from Spotify.
 
@@ -499,7 +500,7 @@ class SpotifyAuth(BaseAuthClient):
             defer_load=defer_load,
         )
 
-    def get_user_profile(self) -> dict | None:
+    def get_user_profile(self) -> Optional[dict]:
         """
         Fetches the user's display name and profile images.
 
@@ -549,7 +550,7 @@ class SpotifyAuth(BaseAuthClient):
             "url": result.get("external_urls", {}).get("spotify"),
         }
 
-    def get_currently_playing(self) -> CurrentlyPlaying | None:
+    def get_currently_playing(self) -> Optional[CurrentlyPlaying]:
         """
         Fetches information about the currently playing track for the authenticated user.
 

@@ -1,6 +1,7 @@
 __all__ = ["Itunes"]
 
 from datetime import datetime
+from typing import List, Optional, Union
 
 import requests
 
@@ -27,7 +28,7 @@ class Itunes(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> list[Track | Album] | None:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 

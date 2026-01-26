@@ -1,6 +1,7 @@
 __all__ = ["LastFm"]
 
 import os
+from typing import Optional
 
 import requests
 from dotenv import load_dotenv
@@ -46,7 +47,7 @@ class LastFm(BaseService):
             api_url="https://ws.audioscrobbler.com/2.0",
         )
 
-    def get_user_profile(self, username: str) -> dict | None:
+    def get_user_profile(self, username: str) -> Optional[dict]:
         """
         Fetches the user profile information for the provided username.
 
@@ -57,7 +58,7 @@ class LastFm(BaseService):
 
         Returns
         -------
-        dict
+        dict | None
             A dictionary containing the user's profile information or ``None`` if username does not exist.
         """
         query = (
@@ -89,7 +90,7 @@ class LastFm(BaseService):
             "url": user.get("url"),
         }
 
-    def get_currently_playing(self, username: str) -> dict | None:
+    def get_currently_playing(self, username: str) -> Optional[dict]:
         """
         Fetches information about the currently playing track for a user.
 

@@ -1,3 +1,5 @@
+from typing import List, Optional, Union
+
 from ytmusicapi import YTMusic, exceptions
 
 from yutipy.base_clients import BaseService
@@ -24,13 +26,13 @@ class MusicYT(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> list[Track | Album] | None:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
         Returns
         -------
-        list[Track | Album]
+        list[Track | Album] | None
             A list of Track or Album objects if found, otherwise None.
 
         Raises

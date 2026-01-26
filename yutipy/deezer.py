@@ -1,5 +1,7 @@
 __all__ = ["Deezer"]
 
+from typing import List, Optional, Union
+
 import requests
 
 from yutipy.base_clients import BaseService
@@ -25,7 +27,7 @@ class Deezer(BaseService):
         artist: str,
         song: str,
         limit: int = 10,
-    ) -> list[Track | Album] | None:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -130,7 +132,7 @@ class Deezer(BaseService):
 
         return mapped_results if mapped_results else None
 
-    def get_track(self, track_id: int) -> Track | None:
+    def get_track(self, track_id: int) -> Optional[Track]:
         """
         Retrieves track information for a given track ID. Use it if you already have the track ID from Deezer.
 
@@ -205,7 +207,7 @@ class Deezer(BaseService):
             service_url=self.service_url,
         )
 
-    def get_album(self, album_id: int) -> Album | None:
+    def get_album(self, album_id: int) -> Optional[Album]:
         """
         Retrieves album information for a given album ID. Use it if you already have the album ID from Deezer.
 

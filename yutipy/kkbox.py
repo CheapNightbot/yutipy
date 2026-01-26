@@ -1,6 +1,7 @@
 __all__ = ["KKBox"]
 
 import os
+from typing import List, Optional, Union
 
 import requests
 from dotenv import load_dotenv
@@ -81,7 +82,7 @@ class KKBox(BaseClient):
         song: str,
         territory: str = "SG",
         limit: int = 10,
-    ) -> list[Track | Album] | None:
+    ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
 
@@ -212,7 +213,7 @@ class KKBox(BaseClient):
         self,
         track_id: str,
         territory: str = "SG",
-    ) -> Track | None:
+    ) -> Optional[Track]:
         """
         Retrieves track information for a given track ID. Use it if you already have the track ID from KKBox.
 
@@ -302,7 +303,7 @@ class KKBox(BaseClient):
         self,
         album_id: str,
         territory: str = "SG",
-    ) -> Album | None:
+    ) -> Optional[Album]:
         """
         Retrieves album information for a given album ID. Use it if you already have the album ID from KKBox.
 
@@ -382,7 +383,7 @@ class KKBox(BaseClient):
         self,
         artist_id: str,
         territory: str = "SG",
-    ) -> Artist | None:
+    ) -> Optional[Artist]:
         """
         Retrieves artist information for a given artist ID. Use it if you already have the artist ID from KKBox.
 
