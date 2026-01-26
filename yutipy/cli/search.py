@@ -1,8 +1,7 @@
 import argparse
 from dataclasses import asdict
+from importlib.metadata import PackageNotFoundError, version
 from pprint import pprint
-
-from importlib.metadata import version, PackageNotFoundError
 
 try:
     __version__ = version("yutipy")
@@ -12,10 +11,9 @@ except PackageNotFoundError:
 from yutipy.deezer import Deezer
 from yutipy.itunes import Itunes
 from yutipy.kkbox import KKBox
+from yutipy.logger import disable_logging, enable_logging
 from yutipy.musicyt import MusicYT
 from yutipy.spotify import Spotify
-from yutipy.logger import disable_logging, enable_logging
-from yutipy.yutipy_music import YutipyMusic
 
 
 def main():
@@ -56,6 +54,7 @@ def main():
         type=str,
         choices=["deezer", "itunes", "kkbox", "spotify", "ytmusic"],
         help="Specify a single service to search (e.g., deezer, itunes, kkbox, spotify, ytmusic).",
+        required=True,
     )
 
     # Parse the arguments
@@ -66,30 +65,20 @@ def main():
 
     # Use the specified service or default to YutipyMusic
     try:
-        if args.service:
-            service_map = {
-                "deezer": Deezer,
-                "itunes": Itunes,
-                "kkbox": KKBox,
-                "spotify": Spotify,
-                "ytmusic": MusicYT,
-            }
-            service_class = service_map[args.service]
-            with service_class() as service:
-                result = service.search(
-                    artist=args.artist,
-                    song=args.song,
-                    limit=args.limit,
-                    normalize_non_english=args.normalize,
-                )
-        else:
-            with YutipyMusic() as yutipy_music:
-                result = yutipy_music.search(
-                    artist=args.artist,
-                    song=args.song,
-                    limit=args.limit,
-                    normalize_non_english=args.normalize,
-                )
+        service_map = {
+            "deezer": Deezer,
+            "itunes": Itunes,
+            "kkbox": KKBox,
+            "spotify": Spotify,
+            "ytmusic": MusicYT,
+        }
+        service_class = service_map[args.service]
+        with service_class() as service:
+            result = service.search(
+                artist=args.artist,
+                song=args.song,
+                limit=args.limit,
+            )
 
         if result:
             print("\nSEARCH RESULTS:\n")
