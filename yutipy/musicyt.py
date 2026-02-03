@@ -23,12 +23,21 @@ class MusicYT(BaseService):
 
     def search(
         self,
-        artist: str,
-        song: str,
+        artist: str = "",
+        song: str = "",
         limit: int = 10,
     ) -> Optional[List[Union[Track, Album]]]:
         """
         Searches for a song by artist and title.
+
+        Parameters
+        ----------
+        artist: str, optional
+            The name of the artist.
+        song: str, optional
+            The title of the song.
+        limit: int, optional
+            The number of the items to retrieve from API. ``limit >= 1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -40,7 +49,7 @@ class MusicYT(BaseService):
         InvalidValueException
             If the input values are invalid.
         """
-        if not is_valid_string(artist) or not is_valid_string(song):
+        if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )

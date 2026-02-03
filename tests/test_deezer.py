@@ -2,6 +2,7 @@ import pytest
 
 from tests import BaseResponse
 from yutipy.deezer import Deezer
+from yutipy.exceptions import InvalidValueException
 
 
 @pytest.fixture
@@ -141,6 +142,23 @@ def test_search_valid(deezer, monkeypatch):
     assert len(result) == 2
     assert result[0].title == "Test Song Title (Extended Version)"
     assert result[1].title == "Another Test Track"
+
+
+def test_search_empty_artist(deezer, monkeypatch):
+    monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
+    result = deezer.search(song="Test Song Title", limit=2)
+    assert result is not None
+
+
+def test_search_empty_song(deezer, monkeypatch):
+    monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
+    result = deezer.search(artist="Test Artist", limit=2)
+    assert result is not None
+
+
+def test_search_empty(deezer, monkeypatch):
+    with pytest.raises(InvalidValueException):
+        deezer.search("", "")
 
 
 def test_get_track(deezer, monkeypatch):

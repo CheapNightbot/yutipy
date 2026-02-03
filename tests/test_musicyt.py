@@ -1,6 +1,7 @@
 import pytest
 
 from yutipy.models import Album, Track
+from yutipy.exceptions import InvalidValueException
 from yutipy.musicyt import MusicYT
 
 
@@ -73,14 +74,19 @@ def test_search_valid(musicyt, mock_ytmusic):
     assert result[1].url == "https://music.youtube.com/browse/testalbum1"
 
 
-def test_search_invalid_artist(musicyt):
-    with pytest.raises(Exception):
-        musicyt.search("", "Test Song Title")
+def test_search_empty_artist(musicyt, mock_ytmusic):
+    result = musicyt.search(song="Test Song Title")
+    assert result is not None
 
 
-def test_search_invalid_song(musicyt):
-    with pytest.raises(Exception):
-        musicyt.search("Artist One", "")
+def test_search_empty_song(musicyt, mock_ytmusic):
+    result = musicyt.search("Artist One", "")
+    assert result is not None
+
+
+def test_search_empty(musicyt, mock_ytmusic):
+    with pytest.raises(InvalidValueException):
+        musicyt.search("", "")
 
 
 def test_search_invalid_limit(musicyt):
