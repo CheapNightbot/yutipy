@@ -72,14 +72,19 @@ def test_search(itunes, mock_response):
     assert result[1].artists[0].name == "Artist Two"
 
 
-def test_search_empty_artist(itunes):
-    with pytest.raises(InvalidValueException):
-        itunes.search("", "Song X")
+def test_search_empty_artist(itunes, mock_response):
+    result = itunes.search(song="Song X", limit=2)
+    assert result is not None
 
 
-def test_search_empty_song(itunes):
+def test_search_empty_song(itunes, mock_response):
+    result = itunes.search(artist="Artist Two", limit=2)
+    assert result is not None
+
+
+def test_search_empty(itunes, mock_response):
     with pytest.raises(InvalidValueException):
-        itunes.search("Artist One", "")
+        itunes.search("", "")
 
 
 def test_close_session(itunes):

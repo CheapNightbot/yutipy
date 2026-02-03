@@ -24,8 +24,8 @@ class Deezer(BaseService):
 
     def search(
         self,
-        artist: str,
-        song: str,
+        artist: str = "",
+        song: str = "",
         limit: int = 10,
     ) -> Optional[List[Union[Track, Album]]]:
         """
@@ -33,12 +33,12 @@ class Deezer(BaseService):
 
         Parameters
         ----------
-        artist : str
+        artist : str, optional
             The name of the artist.
-        song : str
+        song : str, optional
             The title of the song.
         limit: int, optional
-            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >= 1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -52,9 +52,9 @@ class Deezer(BaseService):
         InvalidResponseException
             If the response from Deezer is invalid.
         """
-        if not is_valid_string(artist) or not is_valid_string(song):
+        if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
-                "Artist and song names must be valid strings and can't be empty."
+                "Artist or song names must be valid strings and can't be empty."
             )
 
         if limit < 1 or limit > 50:

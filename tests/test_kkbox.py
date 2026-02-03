@@ -194,6 +194,21 @@ def test_search_valid(kkbox, mock_search_response):
     assert result[1].title == "Test Album"
 
 
+def test_search_empty_artist(kkbox, mock_search_response):
+    result = kkbox.search(song="Test Track")
+    assert result is not None
+
+
+def test_search_empty_song(kkbox, mock_search_response):
+    result = kkbox.search(artist="Artist one")
+    assert result is not None
+
+
+def test_search_empty(kkbox, mock_search_response):
+    with pytest.raises(InvalidValueException):
+        kkbox.search("", "")
+
+
 def test_get_track(kkbox, mock_track_response):
     result = kkbox.get_track("track123")
     assert result is not None

@@ -78,8 +78,8 @@ class KKBox(BaseClient):
 
     def search(
         self,
-        artist: str,
-        song: str,
+        artist: str = "",
+        song: str = "",
         territory: str = "SG",
         limit: int = 10,
     ) -> Optional[List[Union[Track, Album]]]:
@@ -88,15 +88,15 @@ class KKBox(BaseClient):
 
         Parameters
         ----------
-        artist : str
+        artist : str, optional
             The name of the artist.
-        song : str
+        song : str, optional
             The title of the song.
         territory : str
             Two-letter country codes from ISO 3166-1 alpha-2. Default is ``SG``.
             Allowed values: ``HK``, ``JP``, ``MY``, ``SG``, ``TW``.
         limit: int, optional
-            The number of items to retrieve from API. ``limit >=1 and <= 50``. Default is ``10``.
+            The number of items to retrieve from API. ``limit >= 1 and <= 50``. Default is ``10``.
 
         Returns
         -------
@@ -110,7 +110,7 @@ class KKBox(BaseClient):
         InvalidResponseException
             If the response from KKBox is invalid.
         """
-        if not is_valid_string(artist) or not is_valid_string(song):
+        if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
                 "Artist and song names must be valid strings and can't be empty."
             )

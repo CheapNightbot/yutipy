@@ -1,7 +1,9 @@
 import pytest
-from yutipy.spotify import Spotify, SpotifyAuth
-from yutipy.models import Track, Album, Artist
+
 from tests import BaseResponse
+from yutipy.exceptions import InvalidValueException
+from yutipy.models import Album, Artist, Track
+from yutipy.spotify import Spotify, SpotifyAuth
 
 
 @pytest.fixture
@@ -319,6 +321,21 @@ def test_search_valid(spotify, mock_search_response):
     assert result[1].title == "Test Album"
 
 
+def test_search_empty_artist(spotify, mock_search_response):
+    result = spotify.search(song="Test Track")
+    assert result is not None
+
+
+def test_search_empty_song(spotify, mock_search_response):
+    result = spotify.search(artist="Artist X")
+    assert result is not None
+
+
+def test_search_empty(spotify, mock_search_response):
+    with pytest.raises(InvalidValueException):
+        spotify.search("", "")
+
+
 def test_get_track(spotify, mock_track_response):
     result = spotify.get_track("track1")
     assert result is not None
@@ -366,3 +383,13 @@ def test_auth_get_currently_playing(spotify_auth, mock_currently_playing_respons
     assert result.preview_url == "https://open.spotify.com/preview/track123.mp3"
     assert result.isrc == "ISRC123"
     assert result.duration == 234
+
+
+def test_close_session(spotify):
+    spotify.close_session()
+    assert spotify.is_session_closed
+
+
+def test_spotify_auth_close_session(spotify_auth):
+    spotify_auth.close_session()
+    assert spotify_auth.is_session_closed
