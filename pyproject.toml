@@ -7,7 +7,7 @@ name = "yutipy"
 dynamic = ["version"]
 dependencies = [
   "python-dotenv>=1.2.1",
-  "requests>=2.32.5",
+  "requests>=2.33.1",
   "ytmusicapi>=1.11.5",
 ]
 requires-python = ">= 3.10"
