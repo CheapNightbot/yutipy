@@ -117,12 +117,6 @@ Generic Exceptions
     :noindex:
     :exclude-members: add_note, args, with_traceback
 
-.. autoclass:: yutipy.exceptions.InvalidResponseException
-    :members:
-    :inherited-members:
-    :noindex:
-    :exclude-members: add_note, args, with_traceback
-
 .. autoclass:: yutipy.exceptions.InvalidValueException
     :members:
     :inherited-members:
