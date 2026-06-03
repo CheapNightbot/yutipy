@@ -9,7 +9,7 @@ from yutipy.models import Album, Track
 
 @pytest.fixture(scope="module")
 def kkbox():
-    def mock_get_access_token():
+    def mock_get_access_token(*args, **kwargs):
         return {
             "access_token": "test_access_token",
             "expires_in": 3600,
@@ -17,7 +17,9 @@ def kkbox():
         }
 
     kkbox_instance = KKBox(
-        client_id="test_client_id", client_secret="test_client_secret", defer_load=True
+        client_id="test_client_id",
+        client_secret="test_client_secret",
+        defer_load=True,
     )
     kkbox_instance._get_access_token = mock_get_access_token
     kkbox_instance.load_token_after_init()
