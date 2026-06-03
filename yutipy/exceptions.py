@@ -1,6 +1,6 @@
 __all__ = [
+    "YutipyException",
     "AuthenticationException",
-    "InvalidResponseException",
     "InvalidValueException",
 ]
 
@@ -21,19 +21,6 @@ class AuthenticationException(YutipyException):
     Attributes:
         message (str): Explanation of the authentication error.
     """
-
-
-class InvalidResponseException(YutipyException):
-    """
-    Exception raised for invalid responses from APIs.
-
-    This exception should be used when an API returns a response that is
-    malformed, unexpected, or cannot be processed as intended.
-
-    Attributes:
-        message (str): Explanation of the invalid response error.
-    """
-
 
 class InvalidValueException(YutipyException):
     """
