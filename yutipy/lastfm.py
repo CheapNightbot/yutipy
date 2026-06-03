@@ -3,11 +3,11 @@ __all__ = ["LastFm"]
 import os
 from typing import Optional
 
-import requests
+import httpx
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import AuthenticationException, InvalidResponseException
+from yutipy.exceptions import AuthenticationException
 from yutipy.logger import logger
 
 load_dotenv()
@@ -23,7 +23,7 @@ class LastFm(BaseService):
     Alternatively, you can manually provide this values when creating an object.
     """
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: Optional[str] = LASTFM_API_KEY):
         """
         Parameters
         ----------
@@ -35,8 +35,8 @@ class LastFm(BaseService):
         AuthenticationException
             If the Lastfm API key is not provided or found in environment variables.
         """
-        self.api_key = api_key or LASTFM_API_KEY
-        if not self.api_key:
+        self._api_key = api_key
+        if not self._api_key:
             raise AuthenticationException(
                 "Lastfm API key was not found. Set it in environment variable or directly pass it when creating object."
             )
@@ -62,24 +62,21 @@ class LastFm(BaseService):
             A dictionary containing the user's profile information or ``None`` if username does not exist.
         """
         query = (
-            f"?method=user.getinfo&user={username}&api_key={self.api_key}&format=json"
+            f"?method=user.getinfo&user={username}&api_key={self._api_key}&format=json"
         )
         query_url = self._api_url + query
 
         try:
             logger.info(f"Fetching profile for Last.fm user: {username}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON")
             result = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Failed to fetch user profile: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Invalid response received from Last.fm API: {e}"
-            )
 
         user = result.get("user", {})
         return {
@@ -105,25 +102,22 @@ class LastFm(BaseService):
             A dictionary containing details about the currently
             playing track if available, or ``None`` if the request fails or no data is available.
         """
-        query = f"?method=user.getrecenttracks&user={username}&limit=1&api_key={self.api_key}&format=json"
+        query = f"?method=user.getrecenttracks&user={username}&limit=1&api_key={self._api_key}&format=json"
         query_url = self._api_url + query
 
         try:
             logger.info(
                 f"Fetching currently playing music for Last.fm user: {username}"
             )
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON")
             result = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Failed to fetch user profile: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Invalid response received from Last.fm API: {e}"
-            )
         else:
             if not result:
                 return

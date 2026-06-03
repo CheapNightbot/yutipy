@@ -3,13 +3,12 @@ __all__ = ["Spotify"]
 import os
 from typing import List, Optional, Union
 
-import requests
+import httpx
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseAuthClient, BaseClient
 from yutipy.exceptions import (
     AuthenticationException,
-    InvalidResponseException,
     InvalidValueException,
 )
 from yutipy.logger import logger
@@ -33,8 +32,8 @@ class Spotify(BaseClient):
 
     def __init__(
         self,
-        client_id: str = None,
-        client_secret: str = None,
+        client_id: Optional[str] = SPOTIFY_CLIENT_ID,
+        client_secret: Optional[str] = SPOTIFY_CLIENT_SECRET,
         defer_load: bool = False,
     ) -> None:
         """
@@ -52,15 +51,13 @@ class Spotify(BaseClient):
         AuthenticationException
             If the Client ID or Client Secret is not provided.
         """
-        self.client_id = client_id or SPOTIFY_CLIENT_ID
-        self.client_secret = client_secret or SPOTIFY_CLIENT_SECRET
 
-        if not self.client_id:
+        if not client_id:
             raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        if not self.client_secret:
+        if not client_secret:
             raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
@@ -70,8 +67,8 @@ class Spotify(BaseClient):
             service_url="https://open.spotify.com",
             api_url="https://api.spotify.com/v1",
             access_token_url="https://accounts.spotify.com/api/token",
-            client_id=self.client_id,
-            client_secret=self.client_secret,
+            client_id=client_id,
+            client_secret=client_secret,
             defer_load=defer_load,
         )
 
@@ -102,8 +99,6 @@ class Spotify(BaseClient):
         ------
         InvalidValueException
             If the input values are invalid.
-        InvalidResponseException
-            If the response from Spotify is invalid.
         """
         if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
@@ -122,6 +117,7 @@ class Spotify(BaseClient):
                 f"Searching Spotify for `artist='{artist}'` and `song='{song}'`"
             )
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(
                 query_url,
                 headers=self._authorization_header(),
@@ -131,13 +127,9 @@ class Spotify(BaseClient):
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             results = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while searching Spotify: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
 
         tracks = results.get("tracks", {}).get("items", [{}])
         albums = results.get("albums", {}).get("items", [{}])
@@ -214,11 +206,6 @@ class Spotify(BaseClient):
         -------
         Track | None
             A Track object containing track information or None if not found.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Spotify is invalid.
         """
         query_url = f"{self._api_url}/tracks/{track_id}"
 
@@ -226,20 +213,17 @@ class Spotify(BaseClient):
         try:
             logger.info(f"Fetching track info for track_id: {track_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             track = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching track info from Spotify: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
         else:
             if track.get("error"):
                 logger.warning(
@@ -291,11 +275,6 @@ class Spotify(BaseClient):
         -------
         Album | None
             An Album object containing album information or None if not found.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Spotify is invalid.
         """
         query_url = f"{self._api_url}/albums/{album_id}"
 
@@ -303,20 +282,17 @@ class Spotify(BaseClient):
         try:
             logger.info(f"Fetching album info for album_id: {album_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             album = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching album info from Spotify: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
         else:
             if album.get("error"):
                 logger.warning(
@@ -380,11 +356,6 @@ class Spotify(BaseClient):
         -------
         Artist | None
             An Artist object containing artist information or None if not found.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Spotify is invalid.
         """
         query_url = f"{self._api_url}/artists/{artist_id}"
 
@@ -392,20 +363,17 @@ class Spotify(BaseClient):
         try:
             logger.info(f"Fetching artist info for artist_id: {artist_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             artist = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching artist info from Spotify: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
         else:
             if artist.get("error"):
                 logger.warning(
@@ -435,10 +403,10 @@ class SpotifyAuth(BaseAuthClient):
 
     def __init__(
         self,
-        client_id: str = None,
-        client_secret: str = None,
-        redirect_uri: str = None,
-        scopes: list[str] = None,
+        client_id: Optional[str] = SPOTIFY_CLIENT_ID,
+        client_secret: Optional[str] = SPOTIFY_CLIENT_SECRET,
+        redirect_uri: Optional[str] = SPOTIFY_REDIRECT_URI,
+        scopes: list[str] = [],
         defer_load: bool = False,
     ):
         """
@@ -460,32 +428,28 @@ class SpotifyAuth(BaseAuthClient):
         AuthenticationException
             If the Client ID or Client Secret is not provided.
         """
-        self.client_id = client_id or os.getenv("SPOTIFY_CLIENT_ID")
-        self.client_secret = client_secret or os.getenv("SPOTIFY_CLIENT_SECRET")
-        self.redirect_uri = redirect_uri or os.getenv("SPOTIFY_REDIRECT_URI")
-        self.scopes = scopes
-
-        if not self.client_id:
+        if not client_id:
             raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        if not self.client_secret:
+        if not client_secret:
             raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        if not self.redirect_uri:
+        if not redirect_uri:
             raise AuthenticationException(
                 "No redirect URI was provided! Set it in environment variable or directly pass it when creating object."
             )
 
+        _scopes = ""
         if not scopes:
             logger.warning(
                 "No scopes were provided. Authorization will only grant access to publicly available information."
             )
         else:
-            self.scopes = " ".join(scopes)
+            _scopes = " ".join(scopes)
 
         super().__init__(
             service_name="Spotify",
@@ -493,10 +457,10 @@ class SpotifyAuth(BaseAuthClient):
             api_url="https://api.spotify.com/v1/me",
             access_token_url="https://accounts.spotify.com/api/token",
             user_auth_url="https://accounts.spotify.com/authorize",
-            client_id=self.client_id,
-            client_secret=self.client_secret,
-            redirect_uri=self.redirect_uri,
-            scopes=self.scopes,
+            client_id=client_id,
+            client_secret=client_secret,
+            redirect_uri=redirect_uri,
+            scopes=_scopes,
             defer_load=defer_load,
         )
 
@@ -512,11 +476,6 @@ class SpotifyAuth(BaseAuthClient):
         -------
         dict | None
             A dictionary containing the user's display name and profile images.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Spotify is invalid.
         """
         self._refresh_access_token()
         query_url = self._api_url
@@ -525,6 +484,7 @@ class SpotifyAuth(BaseAuthClient):
         try:
             logger.info("Fetching user's Spotify profile information.")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(
                 query_url,
                 headers=header,
@@ -534,15 +494,11 @@ class SpotifyAuth(BaseAuthClient):
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             result = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching user's Spotify profile: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
 
         return {
             "display_name": result.get("display_name"),
@@ -574,6 +530,7 @@ class SpotifyAuth(BaseAuthClient):
         try:
             logger.info("Fetching user's Spotify listening activity.")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(
                 query_url,
                 headers=header,
@@ -583,15 +540,11 @@ class SpotifyAuth(BaseAuthClient):
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             result = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while getting user's Spotify activity: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from Spotify: {e}"
-            )
         else:
             if response.status_code == 204:  # no content
                 logger.info("Requested user is currently not listening to any music.")

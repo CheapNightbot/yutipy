@@ -3,13 +3,12 @@ __all__ = ["KKBox"]
 import os
 from typing import List, Optional, Union
 
-import requests
+import httpx
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseClient
 from yutipy.exceptions import (
     AuthenticationException,
-    InvalidResponseException,
     InvalidValueException,
 )
 from yutipy.logger import logger
@@ -32,8 +31,8 @@ class KKBox(BaseClient):
 
     def __init__(
         self,
-        client_id: str = None,
-        client_secret: str = None,
+        client_id: Optional[str] = KKBOX_CLIENT_ID,
+        client_secret: Optional[str] = KKBOX_CLIENT_SECRET,
         defer_load: bool = False,
     ) -> None:
         """
@@ -50,16 +49,13 @@ class KKBox(BaseClient):
         ------
         AuthenticationException
             If the Client ID or Client Secret is not provided.
-        """
-        self.client_id = client_id or KKBOX_CLIENT_ID
-        self.client_secret = client_secret or KKBOX_CLIENT_SECRET
-
-        if not self.client_id:
+        """ 
+        if not client_id:
             raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
             )
 
-        if not self.client_secret:
+        if not client_secret:
             raise AuthenticationException(
                 "Client Secret was not found. Set it in environment variable or directly pass it when creating object."
             )
@@ -69,8 +65,8 @@ class KKBox(BaseClient):
             service_url="https://www.kkbox.com",
             api_url="https://api.kkbox.com/v1.1",
             access_token_url="https://account.kkbox.com/oauth2/token",
-            client_id=self.client_id,
-            client_secret=self.client_secret,
+            client_id=client_id,
+            client_secret=client_secret,
             defer_load=defer_load,
         )
 
@@ -107,8 +103,6 @@ class KKBox(BaseClient):
         ------
         InvalidValueException
             If the input values are invalid.
-        InvalidResponseException
-            If the response from KKBox is invalid.
         """
         if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
@@ -130,6 +124,7 @@ class KKBox(BaseClient):
         try:
             logger.info(f"Searching KKBOX for `artist='{artist}'` and `song='{song}'`")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(
                 query_url,
                 headers=self._authorization_header(),
@@ -139,13 +134,9 @@ class KKBox(BaseClient):
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             results = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while searching KKBox: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from KKBOX: {e}"
-            )
 
         tracks = results.get("tracks", {}).get("data", [])
         albums = results.get("albums", {}).get("data", [])
@@ -234,8 +225,6 @@ class KKBox(BaseClient):
         ------
         InvalidValueException
             If the input values are invalid.
-        InvalidResponseException
-            If the response from KKBox is invalid.
         """
         if territory not in self._valid_territories:
             raise InvalidValueException(
@@ -248,20 +237,17 @@ class KKBox(BaseClient):
         try:
             logger.info(f"Fetching track info for track_id: {track_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             track = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching track info from KKBox: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from KKBOX: {e}"
-            )
         else:
             if track.get("error"):
                 logger.warning(
@@ -324,8 +310,6 @@ class KKBox(BaseClient):
         ------
         InvalidValueException
             If the input values are invalid.
-        InvalidResponseException
-            If the response from KKBox is invalid.
         """
         if territory not in self._valid_territories:
             raise InvalidValueException(
@@ -338,20 +322,17 @@ class KKBox(BaseClient):
         try:
             logger.info(f"Fetching album info for album_id: {album_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             album = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching album info from KKBox: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from KKBOX: {e}"
-            )
         else:
             if album.get("error"):
                 logger.warning(
@@ -404,8 +385,6 @@ class KKBox(BaseClient):
         ------
         InvalidValueException
             If the input values are invalid.
-        InvalidResponseException
-            If the response from KKBox is invalid.
         """
         if territory not in self._valid_territories:
             raise InvalidValueException(
@@ -418,20 +397,17 @@ class KKBox(BaseClient):
         try:
             logger.info(f"Fetching artist info for artist_id: {artist_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             artist = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(
                 f"Unexpected error while fetching artist info from KKBox: {e}"
             )
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from KKBox: {e}"
-            )
         else:
             if artist.get("error"):
                 logger.warning(

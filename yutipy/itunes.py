@@ -3,10 +3,10 @@ __all__ = ["Itunes"]
 from datetime import datetime
 from typing import List, Optional, Union
 
-import requests
+import httpx
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import InvalidResponseException, InvalidValueException
+from yutipy.exceptions import InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import Album, Artist, Track
 from yutipy.utils.helpers import guess_album_type, is_valid_string
@@ -50,8 +50,6 @@ class Itunes(BaseService):
         ------
         InvalidValueException
             If the artist or song name is invalid, or if the limit is out of range.
-        InvalidResponseException
-            If the API response cannot be parsed.
         """
         if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
@@ -69,18 +67,15 @@ class Itunes(BaseService):
         try:
             logger.info(f'Searching iTunes for `artist="{artist}"` and `song="{song}"`')
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             result = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while searching iTunes: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Failed to parse JSON response from iTunes: {e}"
-            )
 
         mapped_results: list[Track | Album] = []
         for item in result.get("results", []):
