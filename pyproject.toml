@@ -6,17 +6,16 @@ build-backend = "setuptools.build_meta"
 name = "yutipy"
 dynamic = ["version"]
 dependencies = [
+  "httpx>=0.28.1",
   "python-dotenv>=1.2.1",
-  "requests>=2.33.1",
   "ytmusicapi>=1.11.5",
 ]
 requires-python = ">= 3.10"
 authors = [
-  {name = "Cheap Nightbot"},
-  {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"},
+  {name = "ポテト ^. .^₎ฅ"},
 ]
 maintainers = [
-  {name = "Cheap Nightbot", email = "hi@cheapnightbot.slmail.me"}
+  {name = "ポテト ^. .^₎ฅ"},
 ]
 description = "A simple Python package to interact with various music platforms APIs."
 readme = "README.md"
@@ -39,7 +38,6 @@ Documentation = "https://yutipy.readthedocs.io/"
 Repository = "https://github.com/CheapNightbot/yutipy.git"
 Issues = "https://github.com/CheapNightbot/yutipy/issues"
 Changelog = "https://github.com/CheapNightbot/yutipy/blob/master/CHANGELOG.md"
-funding = "https://ko-fi.com/cheapnightbot"
 
 [tool.setuptools_scm]
 version_scheme = "guess-next-dev"

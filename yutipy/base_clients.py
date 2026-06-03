@@ -5,7 +5,7 @@ import secrets
 from time import time
 from urllib.parse import urlencode
 
-import requests
+import httpx
 
 from yutipy.exceptions import AuthenticationException, InvalidValueException
 from yutipy.logger import logger
@@ -32,12 +32,12 @@ class BaseService:
         api_url : str
             The base API URL for the service.
         session : bool, optional
-            Whether to create a requests session for API calls. Default is ``True``.
+            Whether to create a session for API calls. Default is ``True``.
         """
         self.service_name = service_name
         self.service_url = service_url
         self._api_url = api_url
-        self._session = requests.Session() if session else None
+        self._session = httpx.Client() if session else None
         self._is_session_closed = False
 
     def __enter__(self):
@@ -70,8 +70,8 @@ class BaseClient(BaseService):
         service_url: str,
         api_url: str,
         access_token_url: str,
-        client_id: str = None,
-        client_secret: str = None,
+        client_id: str = "",
+        client_secret: str = "",
         defer_load: bool = False,
     ) -> None:
         """Initializes client (using Client Credentials grant type/flow) and sets up the session.
@@ -99,13 +99,13 @@ class BaseClient(BaseService):
             api_url=api_url,
         )
 
-        self._access_token = None
+        self._access_token = ""
         self._access_token_url = access_token_url
         self._client_id = client_id
         self._client_secret = client_secret
         self._defer_load = defer_load
-        self._token_expires_in = None
-        self._token_requested_at = None
+        self._token_expires_in = 0.0
+        self._token_requested_at = 0.0
 
         if not defer_load:
             # Attempt to load access token during initialization if not deferred
@@ -179,12 +179,14 @@ class BaseClient(BaseService):
             logger.info(
                 f"Authenticating with {self.service_name} API using Client Credentials grant type."
             )
+
+            assert self._session is not None
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             raise AuthenticationException(
                 f"Something went wrong authenticating with {self.service_name}: {e}"
             )
@@ -281,7 +283,7 @@ class BaseAuthClient(BaseService):
         client_id: str,
         client_secret: str,
         redirect_uri: str,
-        scopes: str = None,
+        scopes: str = "",
         defer_load: bool = False,
     ):
         """
@@ -306,7 +308,7 @@ class BaseAuthClient(BaseService):
         redirect_uri : str
             The redirect URI for the service.
         scopes : str, optional
-            The scopes for the service. Default is ``None``.
+            The scopes for the service. Default is an empty string.
         defer_load : bool, optional
             Whether to defer loading the access token until explicitly requested. Default is ``False``.
         """
@@ -325,8 +327,8 @@ class BaseAuthClient(BaseService):
         self._defer_load = defer_load
         self._redirect_uri = redirect_uri
         self._scopes = scopes
-        self._token_expires_in = None
-        self._token_requested_at = None
+        self._token_expires_in = 0.0
+        self._token_requested_at = 0.0
 
         if not defer_load:
             # Attempt to load access token during initialization if not deferred
@@ -376,8 +378,8 @@ class BaseAuthClient(BaseService):
 
     def _get_access_token(
         self,
-        authorization_code: str = None,
-        refresh_token: str = None,
+        authorization_code: str = "",
+        refresh_token: str = "",
     ) -> dict:
         """
         Gets the API access token information.
@@ -390,7 +392,7 @@ class BaseAuthClient(BaseService):
         dict
             The API access token, with additional information such as expires in, refresh token, etc.
         """
-        auth_string = f"{self.client_id}:{self.client_secret}"
+        auth_string = f"{self._client_id}:{self._client_secret}"
         auth_base64 = base64.b64encode(auth_string.encode("utf-8")).decode("utf-8")
 
         url = self._access_token_url
@@ -399,11 +401,12 @@ class BaseAuthClient(BaseService):
             "Content-Type": "application/x-www-form-urlencoded",
         }
 
+        data = None
         if authorization_code:
             data = {
                 "code": authorization_code,
                 "grant_type": "authorization_code",
-                "redirect_uri": self.redirect_uri,
+                "redirect_uri": self._redirect_uri,
             }
 
         if refresh_token:
@@ -421,12 +424,14 @@ class BaseAuthClient(BaseService):
             logger.info(
                 f"Authenticating with {self.service_name} API using Authorization Code grant type."
             )
+
+            assert self._session is not None
             response = self._session.post(
                 url=url, headers=headers, data=data, timeout=30
             )
             logger.debug(f"Authentication response status code: {response.status_code}")
             response.raise_for_status()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             raise AuthenticationException(
                 f"Something went wrong authenticating with {self.service_name}: {e}"
             )
@@ -485,7 +490,9 @@ class BaseAuthClient(BaseService):
         return secrets.token_urlsafe()
 
     def get_authorization_url(
-        self, state: str = None, show_dialog: bool = False
+        self,
+        state: str = "",
+        show_dialog: bool = False,
     ) -> str:
         """
         Constructs the Spotify authorization URL for user authentication.
@@ -513,15 +520,13 @@ class BaseAuthClient(BaseService):
         """
         payload = {
             "response_type": "code",
-            "client_id": self.client_id,
-            "redirect_uri": self.redirect_uri,
+            "client_id": self._client_id,
+            "redirect_uri": self._redirect_uri,
+            "show_dialog": str(show_dialog),
         }
 
         if self._scopes:
             payload["scope"] = self._scopes
-
-        if show_dialog:
-            payload["show_dialog"] = show_dialog
 
         if state:
             payload["state"] = state

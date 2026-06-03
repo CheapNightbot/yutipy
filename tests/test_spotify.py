@@ -8,19 +8,44 @@ from yutipy.spotify import Spotify, SpotifyAuth
 
 @pytest.fixture
 def spotify():
-    return Spotify(client_id="test_id", client_secret="test_secret", defer_load=True)
+    def mock_get_access_token(*args, **kwargs):
+        return {
+            "access_token": "test_access_token",
+            "expires_in": 3600,
+            "requested_at": 1234567890,
+        }
+    
+    spotify_instance = Spotify(
+        client_id="test_id",
+        client_secret="test_secret",
+        defer_load=True,
+    )
+    spotify_instance._get_access_token = mock_get_access_token
+    spotify_instance.load_token_after_init()
+    return spotify_instance
 
 
 @pytest.fixture
 def spotify_auth():
-    return SpotifyAuth(
+    def mock_get_access_token(*args, **kwargs):
+        return {
+            "access_token": "test_access_token",
+            "refresh_token": "refresh_token",
+            "expires_in": 3600,
+            "requested_at": 1234567890,
+        }
+
+    spotify_auth_instance = SpotifyAuth(
         client_id="test_id",
         client_secret="test_secret",
         redirect_uri="http://localhost/callback",
         scopes=["user-read-email"],
         defer_load=True,
     )
-
+    spotify_auth_instance._get_access_token = mock_get_access_token
+    spotify_auth_instance.load_token_after_init()
+    return spotify_auth_instance
+    
 
 class MockSearchResponse(BaseResponse):
     @staticmethod

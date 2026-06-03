@@ -2,10 +2,10 @@ __all__ = ["Deezer"]
 
 from typing import List, Optional, Union
 
-import requests
+import httpx
 
 from yutipy.base_clients import BaseService
-from yutipy.exceptions import InvalidResponseException, InvalidValueException
+from yutipy.exceptions import InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import Album, Artist, Track
 from yutipy.utils.helpers import is_valid_string
@@ -49,8 +49,6 @@ class Deezer(BaseService):
         ------
         InvalidValueException
             If the artist or song names are invalid or if the limit is out of range.
-        InvalidResponseException
-            If the response from Deezer is invalid.
         """
         if not is_valid_string(artist) and not is_valid_string(song):
             raise InvalidValueException(
@@ -68,18 +66,15 @@ class Deezer(BaseService):
                 f'Searching music info for `artist="{artist}"` and `song="{song}"`'
             )
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON.")
             results = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while searching Deezer: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Invalid response received from Deezer: {e}"
-            )
 
         mapped_results: list[Track | Album] = []
         for item in results.get("data", [{}]):
@@ -145,29 +140,21 @@ class Deezer(BaseService):
         -------
         Track | None
             A Track object containing track information or None if not found.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Deezer is invalid.
         """
         query_url = f"{self._api_url}/track/{track_id}"
 
         try:
             logger.info(f"Fetching track info for track_id: {track_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             track = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while fetching track info: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Invalid response received from Deezer: {e}"
-            )
         else:
             if track.get("error"):
                 logger.warning(
@@ -220,28 +207,20 @@ class Deezer(BaseService):
         -------
         Album | None
             An Album object containing album information or None if not found.
-
-        Raises
-        ------
-        InvalidResponseException
-            If the response from Deezer is invalid.
         """
         query_url = f"{self._api_url}/album/{album_id}"
         try:
             logger.info(f"Fetching album info for album_id: {album_id}")
             logger.debug(f"Query URL: {query_url}")
+            assert self._session is not None
             response = self._session.get(query_url, timeout=30)
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing Response JSON.")
             album = response.json()
-        except requests.RequestException as e:
+        except httpx.RequestError as e:
             logger.warning(f"Unexpected error while fetching album info: {e}")
             return None
-        except requests.JSONDecodeError as e:
-            raise InvalidResponseException(
-                f"Invalid response received from Deezer: {e}"
-            )
         else:
             if album.get("error"):
                 logger.warning(
