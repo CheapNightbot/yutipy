@@ -21,8 +21,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="Search for music information across multiple platforms using yutipy."
     )
-    parser.add_argument("artist", type=str, help="The name of the artist.")
-    parser.add_argument("song", type=str, help="The title of the song.")
+    parser.add_argument("--artist", type=str, help="The name of the artist.")
+    parser.add_argument("--song", type=str, help="The title of the song.")
     parser.add_argument(
         "--service",
         type=str,
@@ -51,6 +51,10 @@ def main():
 
     # Parse the arguments
     args = parser.parse_args()
+
+    # Validate that at least one of --artist or --song is provided
+    if not args.artist and not args.song:
+        parser.error("At least one of --artist or --song must be provided.")
 
     if args.verbose:
         enable_logging()

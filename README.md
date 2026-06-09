@@ -105,7 +105,7 @@ The `yutipy` package includes a CLI tool that allows you to search for music dir
 You can use the CLI tool to search for music across multiple platforms:
 
 ```bash
-yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
+yutipy-cli --artist "Rick Astley" --song "Never Gonna Give You Up" --service spotify
 ```
 
 #### Options:

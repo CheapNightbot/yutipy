@@ -40,7 +40,7 @@ You can use the CLI tool to search for music directly from the command line:
 
 .. code-block:: bash
 
-    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
+    yutipy-cli --artist "Rick Astley" --song "Never Gonna Give You Up" --service spotify
 
 Deezer
 ------
