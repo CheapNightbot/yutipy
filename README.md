@@ -45,6 +45,7 @@ A _**simple**_ Python package to interact with various music platforms APIs.
 
 - Simple & Easy integration with popular music APIs.
 - Search for music by artist and song title across multiple platforms.
+- Async support for Deezer, iTunes, KKBOX, Spotify, and YouTube Music.
 - Authorize and access user resources easily.
 
 ### Available Music Platforms
@@ -77,6 +78,20 @@ from yutipy.deezer import Deezer
 with Deezer() as deezer:
     result = deezer.search("Artist Name", "Song Title")
     print(result)
+```
+
+For asynchronous usage, you can use the matching async service class from the ``yutipy.async_*`` modules. For example:
+
+```python
+import asyncio
+from yutipy.async_deezer import AsyncDeezer
+
+async def main():
+    async with AsyncDeezer() as deezer:
+        result = await deezer.search("Artist Name", "Song Title")
+        print(result)
+
+asyncio.run(main())
 ```
 
 For more usage examples, see the [Usage Examples](https://yutipy.readthedocs.io/en/latest/usage_examples.html) page in docs.
