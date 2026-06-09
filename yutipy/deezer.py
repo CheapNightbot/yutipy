@@ -1,6 +1,6 @@
 __all__ = ["Deezer"]
 
-from typing import List, Optional, Union
+from typing import Optional
 
 import httpx
 
@@ -27,7 +27,7 @@ class Deezer(BaseService):
         artist: str = "",
         song: str = "",
         limit: int = 10,
-    ) -> Optional[List[Union[Track, Album]]]:
+    ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
 
@@ -42,8 +42,8 @@ class Deezer(BaseService):
 
         Returns
         -------
-        list[Track | Album] | None
-            A list of Track or Album objects containing search results, or None if an error occurs.
+        dict[str, list[Track | Album | Artist]] | None
+            A dictionary containing separate lists for tracks, albums, and artists, or None if an error occurs.
 
         Raises
         ------
@@ -58,7 +58,12 @@ class Deezer(BaseService):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f'?q=artist:"{artist}" {song}&limit={limit}'
+        if artist and song:
+            query = f'?q=artist:"{artist}" track:"{song}"&limit={limit}'
+        elif artist:
+            query = f'?q=artist:"{artist}"&limit={limit}'
+        else:
+            query = f'?q=track:"{song}"&limit={limit}'
         query_url = f"{self._api_url}/search/{query}"
 
         try:
@@ -76,7 +81,11 @@ class Deezer(BaseService):
             logger.warning(f"Unexpected error while searching Deezer: {e}")
             return None
 
-        mapped_results: list[Track | Album] = []
+        mapped_results: dict[str, list[Track | Album | Artist]] = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
         for item in results.get("data", [{}]):
             if item.get("type") == "track":
                 track = Track(
@@ -102,7 +111,7 @@ class Deezer(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results.append(track)
+                mapped_results["tracks"].append(track)
             elif item.get("type") == "album":
                 album = Album(
                     artists=[
@@ -123,9 +132,19 @@ class Deezer(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results.append(album)
+                mapped_results["albums"].append(album)
+            elif item.get("type") == "artist":
+                artist = Artist(
+                    id=item.get("id"),
+                    name=item.get("name"),
+                    picture=item.get("picture_xl"),
+                    url=item.get("link"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results["artists"].append(artist)
 
-        return mapped_results if mapped_results else None
+        return mapped_results if any(mapped_results.values()) else None
 
     def get_track(self, track_id: int) -> Optional[Track]:
         """

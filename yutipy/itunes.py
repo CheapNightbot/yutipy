@@ -1,7 +1,7 @@
 __all__ = ["Itunes"]
 
 from datetime import datetime
-from typing import List, Optional, Union
+from typing import Optional
 
 import httpx
 
@@ -28,7 +28,7 @@ class Itunes(BaseService):
         artist: str = "",
         song: str = "",
         limit: int = 10,
-    ) -> Optional[List[Union[Track, Album]]]:
+    ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
 
@@ -43,8 +43,8 @@ class Itunes(BaseService):
 
         Returns
         -------
-        list[Track | Album] | None
-            A list of Track or Album objects if found, otherwise None.
+        dict[str, list[Track | Album | Artist]] | None
+            A dictionary containing separate lists for tracks, albums, and artists, or None if no results are found.
 
         Raises
         ------
@@ -59,9 +59,13 @@ class Itunes(BaseService):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = (
-            f'?term="{song}" by "{artist}"&media=music&entity=song,album&limit={limit}'
-        )
+        if artist and song:
+            query = f'?term="{song}" by "{artist}"&media=music&entity=song,album&limit={limit}'
+        elif artist:
+            query = f'?term="{artist}"&media=music&entity=musicArtist&limit={limit}'
+        else:
+            query = f'?term="{song}"&media=music&entity=song,album&limit={limit}'
+
         query_url = f"{self._api_url}/search{query}"
 
         try:
@@ -77,7 +81,11 @@ class Itunes(BaseService):
             logger.warning(f"Unexpected error while searching iTunes: {e}")
             return None
 
-        mapped_results: list[Track | Album] = []
+        mapped_results: dict[str, list[Track | Album | Artist]] = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
         for item in result.get("results", []):
             kind = item.get("kind")
             wrapper_type = item.get("wrapperType")
@@ -112,7 +120,7 @@ class Itunes(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results.append(track)
+                mapped_results["tracks"].append(track)
 
             elif wrapper_type == "collection":
                 album = Album(
@@ -135,9 +143,24 @@ class Itunes(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results.append(album)
+                mapped_results["albums"].append(album)
 
-        return mapped_results if mapped_results else None
+            elif wrapper_type == "artist":
+                artist = Artist(
+                    genres=(
+                        [item.get("primaryGenreName")]
+                        if item.get("primaryGenreName")
+                        else None
+                    ),
+                    id=item.get("artistId"),
+                    name=item.get("artistName"),
+                    url=item.get("artistLinkUrl"),
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results["artists"].append(artist)
+
+        return mapped_results if any(mapped_results.values()) else None
 
     def _format_release_date(self, release_date: str) -> str:
         """

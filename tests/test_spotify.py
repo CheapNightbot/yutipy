@@ -14,7 +14,7 @@ def spotify():
             "expires_in": 3600,
             "requested_at": 1234567890,
         }
-    
+
     spotify_instance = Spotify(
         client_id="test_id",
         client_secret="test_secret",
@@ -45,7 +45,7 @@ def spotify_auth():
     spotify_auth_instance._get_access_token = mock_get_access_token
     spotify_auth_instance.load_token_after_init()
     return spotify_auth_instance
-    
+
 
 class MockSearchResponse(BaseResponse):
     @staticmethod
@@ -113,6 +113,21 @@ class MockSearchResponse(BaseResponse):
                                 },
                             }
                         ],
+                    }
+                ]
+            },
+            "artists": {
+                "items": [
+                    {
+                        "id": "artist1",
+                        "name": "Artist X",
+                        "genres": ["pop", "rock"],
+                        "images": [
+                            {"url": "https://open.spotify.com/image/artist1.jpg"}
+                        ],
+                        "external_urls": {
+                            "spotify": "https://open.spotify.com/artist/artist1"
+                        },
                     }
                 ]
             },
@@ -340,20 +355,24 @@ def mock_currently_playing_response(spotify_auth, monkeypatch):
 def test_search_valid(spotify, mock_search_response):
     result = spotify.search("Artist X", "Test Track")
     assert result is not None
-    assert any(isinstance(x, Track) for x in result)
-    assert any(isinstance(x, Album) for x in result)
-    assert result[0].title == "Test Track"
-    assert result[1].title == "Test Album"
+    assert any(isinstance(x, Track) for x in result["tracks"])
+    assert any(isinstance(x, Album) for x in result["albums"])
+    assert any(isinstance(x, Artist) for x in result["artists"])
+    assert result["tracks"][0].title == "Test Track"
+    assert result["albums"][0].title == "Test Album"
+    assert result["artists"][0].name == "Artist X"
 
 
 def test_search_empty_artist(spotify, mock_search_response):
     result = spotify.search(song="Test Track")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty_song(spotify, mock_search_response):
     result = spotify.search(artist="Artist X")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty(spotify, mock_search_response):

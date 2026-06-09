@@ -65,21 +65,25 @@ def mock_response(itunes, monkeypatch):
 def test_search(itunes, mock_response):
     result = itunes.search("Artist One", "Song X", limit=2)
     assert result is not None
-    assert len(result) == 2
-    assert result[0].title == "Song X"
-    assert result[0].album.title == "Album Alpha"
-    assert result[1].title == "Album Beta"
-    assert result[1].artists[0].name == "Artist Two"
+    assert len(result["tracks"]) == 1
+    assert len(result["albums"]) == 1
+    assert isinstance(result["artists"], list)
+    assert result["tracks"][0].title == "Song X"
+    assert result["tracks"][0].album.title == "Album Alpha"
+    assert result["albums"][0].title == "Album Beta"
+    assert result["albums"][0].artists[0].name == "Artist Two"
 
 
 def test_search_empty_artist(itunes, mock_response):
     result = itunes.search(song="Song X", limit=2)
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty_song(itunes, mock_response):
     result = itunes.search(artist="Artist Two", limit=2)
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty(itunes, mock_response):

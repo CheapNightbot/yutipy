@@ -55,6 +55,13 @@ class MockSearchResponse(BaseResponse):
                     },
                     "type": "track",
                 },
+                {
+                    "id": "1001",
+                    "name": "Test Artist",
+                    "picture_xl": "https://cdn-images.dzcdn.net/images/artist/abc123/1000x1000-000000-80-0-0.jpg",
+                    "link": "https://www.deezer.com/artist/1001",
+                    "type": "artist",
+                },
             ]
         }
 
@@ -139,21 +146,26 @@ def test_search_valid(deezer, monkeypatch):
     monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
     result = deezer.search("Test Artist", "Test Song Title", limit=2)
     assert result is not None
-    assert len(result) == 2
-    assert result[0].title == "Test Song Title (Extended Version)"
-    assert result[1].title == "Another Test Track"
+    assert len(result["tracks"]) == 2
+    assert result["albums"] == []
+    assert len(result["artists"]) == 1
+    assert result["tracks"][0].title == "Test Song Title (Extended Version)"
+    assert result["tracks"][1].title == "Another Test Track"
+    assert result["artists"][0].name == "Test Artist"
 
 
 def test_search_empty_artist(deezer, monkeypatch):
     monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
     result = deezer.search(song="Test Song Title", limit=2)
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty_song(deezer, monkeypatch):
     monkeypatch.setattr(deezer._session, "get", lambda *a, **kw: MockSearchResponse())
     result = deezer.search(artist="Test Artist", limit=2)
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty(deezer, monkeypatch):

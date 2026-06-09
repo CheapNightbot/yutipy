@@ -1,16 +1,13 @@
 __all__ = ["KKBox"]
 
 import os
-from typing import List, Optional, Union
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseClient
-from yutipy.exceptions import (
-    AuthenticationException,
-    InvalidValueException,
-)
+from yutipy.exceptions import AuthenticationException, InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import Album, Artist, Track
 from yutipy.utils.helpers import is_valid_string
@@ -49,7 +46,7 @@ class KKBox(BaseClient):
         ------
         AuthenticationException
             If the Client ID or Client Secret is not provided.
-        """ 
+        """
         if not client_id:
             raise AuthenticationException(
                 "Client ID was not found. Set it in environment variable or directly pass it when creating object."
@@ -78,7 +75,7 @@ class KKBox(BaseClient):
         song: str = "",
         territory: str = "SG",
         limit: int = 10,
-    ) -> Optional[List[Union[Track, Album]]]:
+    ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
 
@@ -96,8 +93,8 @@ class KKBox(BaseClient):
 
         Returns
         -------
-        list[Track | Album] | None
-            A list of Track and Album objects matching the search criteria, or None if no results found.
+        dict[str, list[Track | Album | Artist]] | None
+            A dictionary containing separate lists for tracks, albums, and artists, or None if no results found.
 
         Raises
         ------
@@ -117,7 +114,12 @@ class KKBox(BaseClient):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f'?q="{artist}" - "{song}"&type=track,album&territory={territory}&limit={limit}'
+        if artist and song:
+            query = f'?q="{song}" by "{artist}"&type=track,album&territory={territory}&limit={limit}'
+        elif artist:
+            query = f'?q="{artist}"&type=artist&territory={territory}&limit={limit}'
+        else:
+            query = f'?q="{song}"&type=track,album&territory={territory}&limit={limit}'
         query_url = f"{self._api_url}/search{query}"
 
         self._refresh_access_token()
@@ -140,7 +142,12 @@ class KKBox(BaseClient):
 
         tracks = results.get("tracks", {}).get("data", [])
         albums = results.get("albums", {}).get("data", [])
-        mapped_results: list[Track | Album] = []
+        artists = results.get("artists", {}).get("data", [])
+        mapped_results: dict[str, list[Track | Album | Artist]] = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
 
         for item in tracks:
             album = item.get("album", {})
@@ -173,7 +180,7 @@ class KKBox(BaseClient):
                 service_name=self.service_name,
                 service_url=self.service_url,
             )
-            mapped_results.append(track)
+            mapped_results["tracks"].append(track)
 
         for item in albums:
             album = Album(
@@ -196,9 +203,20 @@ class KKBox(BaseClient):
                 service_name=self.service_name,
                 service_url=self.service_url,
             )
-            mapped_results.append(album)
+            mapped_results["albums"].append(album)
 
-        return mapped_results if mapped_results else None
+        for item in artists:
+            artist = Artist(
+                id=item.get("id"),
+                name=item.get("name"),
+                url=item.get("url"),
+                picture=item.get("images", [{}])[-1].get("url"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results["artists"].append(artist)
+
+        return mapped_results if any(mapped_results.values()) else None
 
     def get_track(
         self,

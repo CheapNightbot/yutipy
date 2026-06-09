@@ -1,4 +1,4 @@
-from typing import List, Optional, Union
+from typing import Optional
 
 from ytmusicapi import YTMusic, exceptions
 
@@ -26,7 +26,7 @@ class MusicYT(BaseService):
         artist: str = "",
         song: str = "",
         limit: int = 10,
-    ) -> Optional[List[Union[Track, Album]]]:
+    ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
 
@@ -41,8 +41,8 @@ class MusicYT(BaseService):
 
         Returns
         -------
-        list[Track | Album] | None
-            A list of Track or Album objects if found, otherwise None.
+        dict[str, list[Track | Album | Artist]] | None
+            A dictionary containing separate lists for tracks, albums, and artists, or None if no results are found.
 
         Raises
         ------
@@ -57,16 +57,28 @@ class MusicYT(BaseService):
             raise InvalidValueException("Limit must be between 1 and 50.")
 
         query = f"{artist} - {song}"
+        if artist and not song:
+            search_filter = "artists"
+        else:
+            search_filter = None
         try:
             logger.info(
                 f"Searching YouTube Music for `artist='{artist}'` and `song='{song}'`"
             )
-            results = self.ytmusic.search(query=query, limit=limit)
+            results = (
+                self.ytmusic.search(query=query, limit=limit, filter=search_filter)
+                if search_filter
+                else self.ytmusic.search(query=query, limit=limit)
+            )
         except exceptions.YTMusicServerError as e:
             logger.warning(f"Something went wrong while searching YTMusic: {e}")
             return None
 
-        mapped_results: list[Track | Album] = []
+        mapped_results: dict[str, list[Track | Album | Artist]] = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
         for result in results:
             if not self._is_relevant_result(result):
                 continue
@@ -91,7 +103,7 @@ class MusicYT(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results.append(track)
+                mapped_results["tracks"].append(track)
             elif result.get("resultType") == "album":
                 album = Album(
                     artists=[
@@ -107,10 +119,22 @@ class MusicYT(BaseService):
                     title=result.get("title"),
                     type=(result.get("type", "") or "").lower(),
                     url=f"{self.service_url}/browse/{result.get('browseId')}",
+                    service_name=self.service_name,
+                    service_url=self.service_url,
                 )
-                mapped_results.append(album)
+                mapped_results["albums"].append(album)
 
-        return mapped_results if mapped_results else None
+            elif result.get("resultType") == "artist":
+                artist = Artist(
+                    id=result.get("browseId"),
+                    name=result.get("artist"),
+                    url=f"{self.service_url}/artist/{result.get('browseId')}",
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                mapped_results["artists"].append(artist)
+
+        return mapped_results if any(mapped_results.values()) else None
 
     def _is_relevant_result(
         self,

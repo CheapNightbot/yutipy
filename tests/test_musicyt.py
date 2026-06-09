@@ -57,31 +57,35 @@ def mock_ytmusic(monkeypatch, musicyt):
 def test_search_valid(musicyt, mock_ytmusic):
     result = musicyt.search("Artist One", "Test Song Title", limit=2)
     assert result is not None
-    assert len(result) == 2
-    assert isinstance(result[0], Track)
-    assert result[0].title == "Test Song Title"
-    assert result[0].artists[0].name == "Artist One"
-    assert result[0].album.title == "Test Album"
-    assert result[0].album.cover == "https://music.youtube.com/image/test1.jpg"
-    assert result[0].duration == 210
-    assert result[0].explicit is False
-    assert result[0].url == "https://music.youtube.com/watch?v=testvideo1"
-    assert isinstance(result[1], Album)
-    assert result[1].title == "Test Album"
-    assert result[1].artists[0].name == "Artist Two"
-    assert result[1].cover == "https://music.youtube.com/image/test2.jpg"
-    assert result[1].explicit is False
-    assert result[1].url == "https://music.youtube.com/browse/testalbum1"
+    assert len(result["tracks"]) == 1
+    assert len(result["albums"]) == 1
+    assert isinstance(result["artists"], list)
+    assert isinstance(result["tracks"][0], Track)
+    assert result["tracks"][0].title == "Test Song Title"
+    assert result["tracks"][0].artists[0].name == "Artist One"
+    assert result["tracks"][0].album.title == "Test Album"
+    assert result["tracks"][0].album.cover == "https://music.youtube.com/image/test1.jpg"
+    assert result["tracks"][0].duration == 210
+    assert result["tracks"][0].explicit is False
+    assert result["tracks"][0].url == "https://music.youtube.com/watch?v=testvideo1"
+    assert isinstance(result["albums"][0], Album)
+    assert result["albums"][0].title == "Test Album"
+    assert result["albums"][0].artists[0].name == "Artist Two"
+    assert result["albums"][0].cover == "https://music.youtube.com/image/test2.jpg"
+    assert result["albums"][0].explicit is False
+    assert result["albums"][0].url == "https://music.youtube.com/browse/testalbum1"
 
 
 def test_search_empty_artist(musicyt, mock_ytmusic):
     result = musicyt.search(song="Test Song Title")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty_song(musicyt, mock_ytmusic):
     result = musicyt.search("Artist One", "")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty(musicyt, mock_ytmusic):
