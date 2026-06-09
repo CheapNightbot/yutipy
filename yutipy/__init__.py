@@ -1,6 +1,25 @@
-from yutipy import deezer, exceptions, itunes, kkbox, lastfm, logger, musicyt, spotify
+from yutipy import (
+    async_deezer,
+    async_itunes,
+    async_kkbox,
+    async_musicyt,
+    async_spotify,
+    deezer,
+    exceptions,
+    itunes,
+    kkbox,
+    lastfm,
+    logger,
+    musicyt,
+    spotify,
+)
 
 __all__ = [
+    "async_deezer",
+    "async_itunes",
+    "async_kkbox",
+    "async_musicyt",
+    "async_spotify",
     "deezer",
     "exceptions",
     "itunes",

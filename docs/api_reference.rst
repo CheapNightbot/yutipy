@@ -14,10 +14,22 @@ Deezer
     :noindex:
     :exclude-members: is_session_closed
 
+.. autoclass:: yutipy.async_deezer.AsyncDeezer
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
 iTunes
 ------
 
 .. autoclass:: yutipy.itunes.Itunes
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
+.. autoclass:: yutipy.async_itunes.AsyncItunes
     :members:
     :inherited-members:
     :noindex:
@@ -31,6 +43,12 @@ KKBox
     :inherited-members:
     :noindex:
     :exclude-members: is_session_closed, SERVICE_NAME, ACCESS_TOKEN_URL
+
+.. autoclass:: yutipy.async_kkbox.AsyncKKBox
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
 
 Lastfm
 ------
@@ -50,6 +68,12 @@ Spotify
     :noindex:
     :exclude-members: is_session_closed, SERVICE_NAME, ACCESS_TOKEN_URL
 
+.. autoclass:: yutipy.async_spotify.AsyncSpotify
+    :members:
+    :inherited-members:
+    :noindex:
+    :exclude-members: is_session_closed
+
 .. autoclass:: yutipy.spotify.SpotifyAuth
     :members:
     :inherited-members:
@@ -60,6 +84,11 @@ YouTube Music
 -------------
 
 .. autoclass:: yutipy.musicyt.MusicYT
+    :members:
+    :inherited-members:
+    :noindex:
+
+.. autoclass:: yutipy.async_musicyt.AsyncMusicYT
     :members:
     :inherited-members:
     :noindex:

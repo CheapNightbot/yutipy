@@ -5,14 +5,33 @@ Usage Examples
 Here's a quick example of how to use the **yutipy** package to search for a song:
 
 .. important::
-    - All examples here use the ``with`` context manager to initialize an instance of the respective class,
-      as those classes internally use ``requests.Session()`` for making requests to APIs.
-      This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` is not mandatory,
+    - All examples here use the ``with`` or ``async with`` context manager to initialize an instance of the respective class,
+      as those classes internally use ``httpx.Client()`` or ``httpx.AsyncClient()`` for making requests to APIs.
+      This approach ensures that the session is automatically closed once you exit the context. Although using ``with`` or ``async with`` is not mandatory,
       if you instantiate an object without it, you are responsible for closing the session after use by calling the ``close_session()`` method on that object.
 
     - Following examples suggest to create ``.env`` file for storing, for example api keys. However, when hosting or deplyoing your application on production,
       it is suggested and you may store them in environment variable(s) provided by your hosting provider.
 
+
+Async Usage
+-----------
+
+You can use the async versions of supported services from the ``yutipy.async_*`` modules.
+
+.. code-block:: python
+
+    import asyncio
+    from yutipy.async_deezer import AsyncDeezer
+
+    async def main():
+        async with AsyncDeezer() as deezer:
+            result = await deezer.search("Artist Name", "Song Title")
+            print(result)
+
+    asyncio.run(main())
+
+The async modules are available for Deezer, iTunes, KKBOX, Spotify, and YouTube Music.
 
 CLI Tool
 --------
@@ -21,7 +40,7 @@ You can use the CLI tool to search for music directly from the command line:
 
 .. code-block:: bash
 
-    yutipy-cli "Rick Astley" "Never Gonna Give You Up" --service spotify
+    yutipy-cli --artist "Rick Astley" --song "Never Gonna Give You Up" --service spotify
 
 Deezer
 ------
