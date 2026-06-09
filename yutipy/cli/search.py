@@ -75,9 +75,14 @@ def main():
         if result:
             print("\nSEARCH RESULTS:")
             print("=" * 14)
-            for item in result:
-                print(item)
-                print("-+-" * 20)
+            for result_type, items in result.items():
+                if not items:
+                    continue
+                print(f"\n{result_type.upper()}:" )
+                print("-" * 14)
+                for item in items:
+                    print(item)
+                    print("-+-" * 20)
         else:
             print("No results found.")
     except Exception as e:

@@ -1,7 +1,3 @@
-from dataclasses import asdict, dataclass
-from json import dumps
-from typing import Optional, List
-
 """
 For the service metadata fields in each model,
 no need to add to each model individually.
@@ -11,6 +7,10 @@ Example:
 - Track(service_name="Example Music", service_url="https://example.com", Artist(...), ...)  # no need to add in Artist model.
 - Album(service_name="Example Music", service_url="https://example.com", Artist(...), Track(...), ...)  # no need to add in Artist and Track models.
 """
+
+from dataclasses import asdict, dataclass
+from json import dumps
+from typing import Optional, List
 
 
 class BaseModel:

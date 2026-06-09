@@ -4,7 +4,7 @@ from pytest import raises
 from tests import BaseResponse
 from yutipy.exceptions import InvalidValueException
 from yutipy.kkbox import KKBox
-from yutipy.models import Album, Track
+from yutipy.models import Album, Artist, Track
 
 
 @pytest.fixture(scope="module")
@@ -98,8 +98,23 @@ class MockSearchResponse(BaseResponse):
                         },
                     }
                 ]
-            },
-        }
+            },            "artists": {
+                "data": [
+                    {
+                        "id": "artist123",
+                        "name": "Artist One",
+                        "url": "https://www.kkbox.com/sg/en/artist/artist123",
+                        "images": [
+                            {
+                                "url": "https://www.kkbox.com/image/artist123_160.jpg"
+                            },
+                            {
+                                "url": "https://www.kkbox.com/image/artist123_300.jpg"
+                            },
+                        ],
+                    }
+                ]
+            },        }
 
 
 class MockTrackResponse(BaseResponse):
@@ -190,20 +205,24 @@ def mock_album_response(kkbox, monkeypatch):
 def test_search_valid(kkbox, mock_search_response):
     result = kkbox.search("Artist One", "Test Track")
     assert result is not None
-    assert any(isinstance(x, Track) for x in result)
-    assert any(isinstance(x, Album) for x in result)
-    assert result[0].title == "Test Track"
-    assert result[1].title == "Test Album"
+    assert any(isinstance(x, Track) for x in result["tracks"])
+    assert any(isinstance(x, Album) for x in result["albums"])
+    assert any(isinstance(x, Artist) for x in result["artists"])
+    assert result["tracks"][0].title == "Test Track"
+    assert result["albums"][0].title == "Test Album"
+    assert result["artists"][0].name == "Artist One"
 
 
 def test_search_empty_artist(kkbox, mock_search_response):
     result = kkbox.search(song="Test Track")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty_song(kkbox, mock_search_response):
     result = kkbox.search(artist="Artist one")
     assert result is not None
+    assert isinstance(result, dict)
 
 
 def test_search_empty(kkbox, mock_search_response):

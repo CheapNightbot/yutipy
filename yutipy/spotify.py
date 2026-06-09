@@ -1,16 +1,13 @@
 __all__ = ["Spotify"]
 
 import os
-from typing import List, Optional, Union
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
 
 from yutipy.base_clients import BaseAuthClient, BaseClient
-from yutipy.exceptions import (
-    AuthenticationException,
-    InvalidValueException,
-)
+from yutipy.exceptions import AuthenticationException, InvalidValueException
 from yutipy.logger import logger
 from yutipy.models import Album, Artist, CurrentlyPlaying, Track
 from yutipy.utils.helpers import is_valid_string
@@ -77,7 +74,7 @@ class Spotify(BaseClient):
         artist: str = "",
         song: str = "",
         limit: int = 10,
-    ) -> Optional[List[Union[Track, Album]]]:
+    ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
 
@@ -92,8 +89,8 @@ class Spotify(BaseClient):
 
         Returns
         -------
-        list[Track | Album] | None
-            The music information if found, otherwise None.
+        dict[str, list[Track | Album | Artist]] | None
+            A dictionary containing separate lists for tracks, albums, and artists, or None if no results are found.
 
         Raises
         ------
@@ -108,7 +105,13 @@ class Spotify(BaseClient):
         if limit < 1 or limit > 50:
             raise InvalidValueException("Limit must be between 1 and 50.")
 
-        query = f"?q=artist:{artist} - {song}&type=track,album&limit={limit}"
+        # query = f"?q=artist:{artist} - {song}&type=track,album&limit={limit}"
+        if artist and song:
+            query = f"?q=artist:{artist} track:{song}&type=track,album&limit={limit}"
+        elif artist:
+            query = f"?q=artist:{artist}&type=artist&limit={limit}"
+        else:
+            query = f"?q=track:{song}&type=track,album&limit={limit}"
         query_url = f"{self._api_url}/search{query}"
 
         self._refresh_access_token()
@@ -131,9 +134,14 @@ class Spotify(BaseClient):
             logger.warning(f"Unexpected error while searching Spotify: {e}")
             return None
 
-        tracks = results.get("tracks", {}).get("items", [{}])
-        albums = results.get("albums", {}).get("items", [{}])
-        mapped_results: list[Track | Album] = []
+        tracks = results.get("tracks", {}).get("items", [])
+        albums = results.get("albums", {}).get("items", [])
+        artists = results.get("artists", {}).get("items", [])
+        mapped_results: dict[str, list[Track | Album | Artist]] = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
 
         for item in tracks:
             album = item.get("album", {})
@@ -166,10 +174,10 @@ class Spotify(BaseClient):
                 service_name=self.service_name,
                 service_url=self.service_url,
             )
-            mapped_results.append(track)
+            mapped_results["tracks"].append(track)
 
         for item in albums:
-            artists = item.get("artists", [{}])
+            artists = item.get("artists", [])
             album = Album(
                 artists=[
                     Artist(
@@ -189,9 +197,21 @@ class Spotify(BaseClient):
                 service_name=self.service_name,
                 service_url=self.service_url,
             )
-            mapped_results.append(album)
+            mapped_results["albums"].append(album)
 
-        return mapped_results if mapped_results else None
+        for item in artists:
+            artist = Artist(
+                genres=item.get("genres"),
+                id=item.get("id"),
+                name=item.get("name"),
+                picture=item.get("images", [{}])[0].get("url"),
+                url=item.get("external_urls", {}).get("spotify"),
+                service_name=self.service_name,
+                service_url=self.service_url,
+            )
+            mapped_results["artists"].append(artist)
+
+        return mapped_results if any(mapped_results.values()) else None
 
     def get_track(self, track_id: str) -> Optional[Track]:
         """
