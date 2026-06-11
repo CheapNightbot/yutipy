@@ -1,6 +1,6 @@
 import os
 import webbrowser
-
+from getpass import getpass
 from dotenv import load_dotenv, set_key
 
 
@@ -69,8 +69,15 @@ def run_config_wizard():
     for i, service in enumerate(services.keys(), start=1):
         print(f"{i}. {service}")
 
-    # Prompt the user to select a service
-    choice = input("\nEnter the number of the service you want to configure: ").strip()
+    try:
+        # Prompt the user to select a service
+        choice = input(
+            "\nEnter the number of the service you want to configure: "
+        ).strip()
+    except KeyboardInterrupt:
+        print("\n> Configuration wizard interrupted. No changes have been made.")
+        exit()
+
     try:
         service_name = list(services.keys())[int(choice) - 1]
     except (IndexError, ValueError):
@@ -97,25 +104,39 @@ def run_config_wizard():
 
         # Check if the browser has already been opened for this service
         if details["url"] not in browser_opened:
-            open_browser = (
-                input(
-                    f"Do you want to open the website to get your {details['description']}? (y/N): "
+            try:
+                open_browser = (
+                    input(
+                        f"Do you want to open the website to get your {details['description']}? (y/N): "
+                    )
+                    .strip()
+                    .lower()
                 )
-                .strip()
-                .lower()
-            )
+            except KeyboardInterrupt:
+                print(
+                    "\n> Configuration wizard interrupted. No changes have been made."
+                )
+                exit()
+
             if open_browser == "y":
                 webbrowser.open(details["url"])
                 print(f"The website has been opened in your browser: {details['url']}")
                 browser_opened.add(details["url"])  # Mark this URL as opened
 
         # Prompt the user to enter the value
-        new_value = input(f"Enter your {details['description']}: ").strip()
+        try:
+            new_value = getpass(
+                f"\n[Note: The characters will not be displayed as you type]\nEnter your {details['description']}: "
+            )
+        except KeyboardInterrupt:
+            print("\n> Configuration wizard interrupted. No changes have been made.")
+            exit()
+
         if new_value:
             set_key(env_file, var, new_value)
             print(f"{details['description']} has been saved to the .env file.")
 
-    print("\nConfiguration complete! Your API keys have been saved to the .env file.")
+    print("\n> Configuration complete! Your API keys have been saved to the .env file.")
 
 
 if __name__ == "__main__":
