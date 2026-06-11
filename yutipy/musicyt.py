@@ -136,6 +136,126 @@ class MusicYT(BaseService):
 
         return mapped_results if any(mapped_results.values()) else None
 
+    def get_track(self, track_id: str) -> Optional[Track]:
+        """
+        Get a track by its ID (i.e. Video ID from YouTube Music).
+
+        Parameters
+        ----------
+        track_id : str
+            The ID of the track.
+
+        Returns
+        -------
+        Track | None
+            The track object if found, else None.
+        """
+        try:
+            logger.info(f"Getting track with ID '{track_id}' from YouTube Music")
+            result = self.ytmusic.get_song(track_id)
+        except exceptions.YTMusicServerError as e:
+            logger.warning(
+                f"Something went wrong while getting track from YTMusic: {e}"
+            )
+            return None
+
+        if not result:
+            return None
+
+        details = result.get("videoDetails", {})
+        data = result.get("microformat", {}).get("microformatDataRenderer", {})
+        streaming = result.get("streamingData", {}).get("adaptiveFormats", [{}])[0]
+
+        track = Track(
+            album=Album(
+                cover=data.get("thumbnail", {}).get("thumbnails", [{}])[-1].get("url"),
+            ),
+            artists=[Artist(name=details.get("author"))],
+            duration=int(
+                details.get("lengthSeconds", 0)
+                or data.get("videoDetails", {}).get("durationSeconds", 0)
+            ),
+            explicit=data.get("familySafe", True) is False,
+            gain=streaming.get("loudnessDb"),
+            id=details.get("videoId"),
+            preview_url=streaming.get("url"),
+            release_date=data.get("publishDate"),
+            title=details.get("title"),
+            url=data.get("urlCanonical")
+            or f"{self.service_url}/watch?v={details.get('videoId')}",
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+        return track
+
+    def get_album(self, album_id: str) -> Optional[Album]:
+        """
+        Get an album by its ID (i.e. Browse ID or Playlist ID from YouTube Music).
+
+        Parameters
+        ----------
+        album_id : str
+            The ID of the album.
+
+        Returns
+        -------
+        Album | None
+            The album object if found, else None.
+        """
+        try:
+            logger.info(f"Getting album with ID '{album_id}' from YouTube Music")
+            result = self.ytmusic.get_album(album_id)
+        except exceptions.YTMusicServerError as e:
+            logger.warning(
+                f"Something went wrong while getting album from YTMusic: {e}"
+            )
+            return None
+
+        if not result:
+            return None
+
+        album = Album(
+            artists=[
+                Artist(
+                    id=artist.get("id"),
+                    name=artist.get("name"),
+                )
+                for artist in result.get("artists", [{}])
+            ],
+            cover=result.get("thumbnails", [{}])[-1].get("url"),
+            duration=int(result.get("duration_seconds", 0)),
+            id=result.get("audioPlaylistId"),
+            release_date=result.get("year"),
+            title=result.get("title"),
+            total_tracks=result.get("trackCount"),
+            tracks=[
+                Track(
+                    artists=(
+                        [
+                            Artist(id=artist.get("id"), name=artist.get("name"))
+                            for artist in track.get("artists", [{}])
+                        ]
+                        if track.get("artists")
+                        else None
+                    ),
+                    duration=int(track.get("duration_seconds", 0)),
+                    explicit=track.get("isExplicit"),
+                    id=track.get("videoId"),
+                    title=track.get("title"),
+                    track_number=track.get("trackNumber"),
+                    url=f"{self.service_url}/watch?v={track.get('videoId')}",
+                    service_name=self.service_name,
+                    service_url=self.service_url,
+                )
+                for track in result.get("tracks", [])
+            ],
+            type=(result.get("type", "") or "").lower(),
+            url=f"{self.service_url}/playlist?list={result.get('audioPlaylistId')}",
+            service_name=self.service_name,
+            service_url=self.service_url,
+        )
+        return album
+
     def _is_relevant_result(
         self,
         result: dict,
