@@ -134,7 +134,7 @@ class Deezer(BaseService):
                 )
                 mapped_results["albums"].append(album)
             elif item.get("type") == "artist":
-                artist = Artist(
+                artist_ = Artist(
                     id=item.get("id"),
                     name=item.get("name"),
                     picture=item.get("picture_xl"),
@@ -142,7 +142,7 @@ class Deezer(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results["artists"].append(artist)
+                mapped_results["artists"].append(artist_)
 
         return mapped_results if any(mapped_results.values()) else None
 
@@ -275,6 +275,7 @@ class Deezer(BaseService):
                         Artist(
                             id=track.get("artist", {}).get("id"),
                             name=track.get("artist", {}).get("name"),
+                            url=f"{self.service_url}/us/artist/{track.get('artist', {}).get('id')}",
                         )
                     ],
                     duration=track.get("duration"),
