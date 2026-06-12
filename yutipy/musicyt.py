@@ -92,6 +92,7 @@ class MusicYT(BaseService):
                         Artist(
                             id=artist.get("id"),
                             name=artist.get("name"),
+                            url=f"{self.service_url}/channel/{artist.get('id')}",
                         )
                         for artist in result.get("artists", [{}])
                     ],
@@ -110,6 +111,7 @@ class MusicYT(BaseService):
                         Artist(
                             id=artist.get("id"),
                             name=artist.get("name"),
+                            url=f"{self.service_url}/channel/{artist.get('id')}",
                         )
                         for artist in result.get("artists", [{}])
                     ],
@@ -125,14 +127,14 @@ class MusicYT(BaseService):
                 mapped_results["albums"].append(album)
 
             elif result.get("resultType") == "artist":
-                artist = Artist(
+                artist_ = Artist(
                     id=result.get("browseId"),
                     name=result.get("artist"),
-                    url=f"{self.service_url}/artist/{result.get('browseId')}",
+                    url=f"{self.service_url}/channel/{result.get('browseId')}",
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results["artists"].append(artist)
+                mapped_results["artists"].append(artist_)
 
         return mapped_results if any(mapped_results.values()) else None
 
@@ -170,7 +172,12 @@ class MusicYT(BaseService):
             album=Album(
                 cover=data.get("thumbnail", {}).get("thumbnails", [{}])[-1].get("url"),
             ),
-            artists=[Artist(name=details.get("author"))],
+            artists=[
+                Artist(
+                    name=details.get("author"),
+                    url=f"{self.service_url}/channel/{data.get('pageOwnerDetails', {}).get('externalChannelId')}",
+                )
+            ],
             duration=int(
                 details.get("lengthSeconds", 0)
                 or data.get("videoDetails", {}).get("durationSeconds", 0)
@@ -219,6 +226,7 @@ class MusicYT(BaseService):
                 Artist(
                     id=artist.get("id"),
                     name=artist.get("name"),
+                    url=f"{self.service_url}/channel/{artist.get('id')}",
                 )
                 for artist in result.get("artists", [{}])
             ],
@@ -232,7 +240,11 @@ class MusicYT(BaseService):
                 Track(
                     artists=(
                         [
-                            Artist(id=artist.get("id"), name=artist.get("name"))
+                            Artist(
+                                id=artist.get("id"),
+                                name=artist.get("name"),
+                                url=f"{self.service_url}/channel/{artist.get('id')}",
+                            )
                             for artist in track.get("artists", [{}])
                         ]
                         if track.get("artists")
