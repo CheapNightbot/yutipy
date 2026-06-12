@@ -21,14 +21,21 @@ class AsyncMusicYT(AsyncBaseService):
     it for async compatibility by running calls in a thread pool.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        language: str = "en",
+        location: str = "US",
+    ) -> None:
         """Initializes the YouTube Music async service."""
         super().__init__(
             service_name="YouTube Music",
             service_url="https://music.youtube.com",
             api_url="",
         )
-        self.ytmusic = YTMusic()
+        self.ytmusic = YTMusic(
+            language=language,
+            location=location,
+        )
 
     async def search(
         self,
@@ -163,11 +170,15 @@ class AsyncMusicYT(AsyncBaseService):
             The track object if found, else None.
         """
         try:
-            logger.info(f"Getting track with ID '{track_id}' from YouTube Music (async)")
+            logger.info(
+                f"Getting track with ID '{track_id}' from YouTube Music (async)"
+            )
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, self._get_song_sync, track_id)
         except exceptions.YTMusicServerError as e:
-            logger.warning(f"Something went wrong while getting track from YTMusic: {e}")
+            logger.warning(
+                f"Something went wrong while getting track from YTMusic: {e}"
+            )
             return None
 
         if not result:
@@ -213,11 +224,15 @@ class AsyncMusicYT(AsyncBaseService):
             The album object if found, else None.
         """
         try:
-            logger.info(f"Getting album with ID '{album_id}' from YouTube Music (async)")
+            logger.info(
+                f"Getting album with ID '{album_id}' from YouTube Music (async)"
+            )
             loop = asyncio.get_event_loop()
             result = await loop.run_in_executor(None, self._get_album_sync, album_id)
         except exceptions.YTMusicServerError as e:
-            logger.warning(f"Something went wrong while getting album from YTMusic: {e}")
+            logger.warning(
+                f"Something went wrong while getting album from YTMusic: {e}"
+            )
             return None
 
         if not result:
@@ -241,7 +256,9 @@ class AsyncMusicYT(AsyncBaseService):
                 Track(
                     artists=(
                         [
-                            Artist(id=artist_item.get("id"), name=artist_item.get("name"))
+                            Artist(
+                                id=artist_item.get("id"), name=artist_item.get("name")
+                            )
                             for artist_item in track.get("artists", [{}])
                         ]
                         if track.get("artists")
@@ -273,7 +290,9 @@ class AsyncMusicYT(AsyncBaseService):
         """Synchronous album fetch wrapper for use in async context."""
         return self.ytmusic.get_album(album_id)
 
-    def _search_sync(self, query: str, limit: int, search_filter: Optional[str]) -> list:
+    def _search_sync(
+        self, query: str, limit: int, search_filter: Optional[str]
+    ) -> list:
         """Synchronous search wrapper for use in async context."""
         if search_filter:
             return self.ytmusic.search(query=query, limit=limit, filter=search_filter)

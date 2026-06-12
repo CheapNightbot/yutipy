@@ -15,7 +15,7 @@ class MusicYT(BaseService):
     def __init__(
         self,
         language: str = "en",
-        location: str = "us",
+        location: str = "US",
     ) -> None:
         self.ytmusic = YTMusic(
             language=language,
