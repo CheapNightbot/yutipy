@@ -30,6 +30,7 @@ class AsyncItunes(AsyncBaseService):
         artist: str = "",
         song: str = "",
         limit: int = 10,
+        location: str = "us",
     ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """Async search for a song by artist and title.
 
@@ -41,6 +42,8 @@ class AsyncItunes(AsyncBaseService):
             The title of the song.
         limit: int, optional
             The number of items to retrieve from API. ``limit >= 1 and <= 50``. Default is ``10``.
+        location: str, optional
+            The location to use for search results (might effect the language of results as well). It's ISO country code.
 
         Returns
         -------
@@ -67,7 +70,7 @@ class AsyncItunes(AsyncBaseService):
         else:
             query = f'?term="{song}"&media=music&entity=song,album&limit={limit}'
 
-        query_url = f"{self._api_url}/search{query}"
+        query_url = f"{self._api_url}/{location}/search{query}"
 
         try:
             logger.info(
