@@ -206,7 +206,7 @@ class KKBox(BaseClient):
             mapped_results["albums"].append(album)
 
         for item in artists:
-            artist = Artist(
+            artist_ = Artist(
                 id=item.get("id"),
                 name=item.get("name"),
                 url=item.get("url"),
@@ -214,7 +214,7 @@ class KKBox(BaseClient):
                 service_name=self.service_name,
                 service_url=self.service_url,
             )
-            mapped_results["artists"].append(artist)
+            mapped_results["artists"].append(artist_)
 
         return mapped_results if any(mapped_results.values()) else None
 

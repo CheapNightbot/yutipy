@@ -146,7 +146,7 @@ class Itunes(BaseService):
                 mapped_results["albums"].append(album)
 
             elif wrapper_type == "artist":
-                artist = Artist(
+                artist_ = Artist(
                     genres=(
                         [item.get("primaryGenreName")]
                         if item.get("primaryGenreName")
@@ -158,7 +158,7 @@ class Itunes(BaseService):
                     service_name=self.service_name,
                     service_url=self.service_url,
                 )
-                mapped_results["artists"].append(artist)
+                mapped_results["artists"].append(artist_)
 
         return mapped_results if any(mapped_results.values()) else None
 
