@@ -12,8 +12,15 @@ from yutipy.utils.helpers import is_valid_string
 class MusicYT(BaseService):
     """A class to interact with the YouTube Music API."""
 
-    def __init__(self) -> None:
-        self.ytmusic = YTMusic()
+    def __init__(
+        self,
+        language: str = "en",
+        location: str = "us",
+    ) -> None:
+        self.ytmusic = YTMusic(
+            language=language,
+            location=location,
+        )
         super().__init__(
             service_name="YouTube Music",
             service_url="https://music.youtube.com",
