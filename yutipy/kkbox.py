@@ -115,12 +115,22 @@ class KKBox(BaseClient):
             raise InvalidValueException("Limit must be between 1 and 50.")
 
         if artist and song:
-            query = f'?q="{song}" by "{artist}"&type=track,album&territory={territory}&limit={limit}'
-        elif artist:
-            query = f'?q="{artist}"&type=artist&territory={territory}&limit={limit}'
+            query = f'"{song}" by "{artist}"'
+            type = "track,album"
+        elif song:
+            query = song
+            type = "track,album"
         else:
-            query = f'?q="{song}"&type=track,album&territory={territory}&limit={limit}'
-        query_url = f"{self._api_url}/search{query}"
+            query = artist
+            type = "artist"
+
+        payload = {
+            "q": query,
+            "type": type,
+            "territory": territory,
+            "limit": limit,
+        }
+        query_url = f"{self._api_url}/search"
 
         self._refresh_access_token()
         try:
@@ -128,7 +138,8 @@ class KKBox(BaseClient):
             logger.debug(f"Query URL: {query_url}")
             assert self._session is not None
             response = self._session.get(
-                query_url,
+                url=query_url,
+                params=payload,
                 headers=self._authorization_header(),
                 timeout=30,
             )

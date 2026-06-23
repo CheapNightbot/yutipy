@@ -15,8 +15,23 @@ from yutipy.utils.helpers import guess_album_type, is_valid_string
 class Itunes(BaseService):
     """A class to interact with the iTunes API."""
 
-    def __init__(self) -> None:
-        """"""
+    def __init__(
+        self,
+        language: str = "en",
+        location: str = "US",
+    ) -> None:
+        """Initializes the iTunes async service.
+
+        Parameters
+        ----------
+        language: str, optional
+            The language, English or Japanese, you want to use when returning search results. The default is `en` (English).
+        location: str, optional
+            The two-letter country code for the store you want to search. The default is `US`.
+        """
+        self.language = f"{language.lower()}_{location.lower()}"
+        self.location = location.lower()
+
         super().__init__(
             service_name="iTunes",
             service_url="https://music.apple.com",
@@ -28,7 +43,6 @@ class Itunes(BaseService):
         artist: str = "",
         song: str = "",
         limit: int = 10,
-        location: str = "us",
     ) -> Optional[dict[str, list[Track | Album | Artist]]]:
         """
         Searches for a song by artist and title.
@@ -41,8 +55,6 @@ class Itunes(BaseService):
             The title of the song.
         limit: int, optional
             The number of items to retrieve from API. ``limit >= 1 and <= 50``. Default is ``10``.
-        location: str, optional
-            The location to use for search results (might effect the language of results as well). It's ISO country code.
 
         Returns
         -------
@@ -63,19 +75,34 @@ class Itunes(BaseService):
             raise InvalidValueException("Limit must be between 1 and 50.")
 
         if artist and song:
-            query = f'?term="{song}" by "{artist}"&media=music&entity=song,album&limit={limit}'
-        elif artist:
-            query = f'?term="{artist}"&media=music&entity=musicArtist&limit={limit}'
+            term = f"{song} by {artist}"
+            entity = "song,album"
+        elif song:
+            term = song
+            entity = "song,album"
         else:
-            query = f'?term="{song}"&media=music&entity=song,album&limit={limit}'
+            term = artist
+            entity = "musicArtist"
 
-        query_url = f"{self._api_url}/{location}/search{query}"
+        payload = {
+            "term": term,
+            "entity": entity,
+            "media": "music",
+            "limit": limit,
+            "country": self.location,
+            "lang": self.language,
+        }
+        query_url = f"{self._api_url}/search"
 
         try:
             logger.info(f'Searching iTunes for `artist="{artist}"` and `song="{song}"`')
             logger.debug(f"Query URL: {query_url}")
             assert self._session is not None
-            response = self._session.get(query_url, timeout=30)
+            response = self._session.get(
+                url=query_url,
+                params=payload,
+                timeout=30,
+            )
             logger.debug(f"Response status code: {response.status_code}")
             response.raise_for_status()
             logger.debug("Parsing response JSON.")

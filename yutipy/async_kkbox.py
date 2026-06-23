@@ -79,12 +79,22 @@ class AsyncKKBox(AsyncBaseClient):
             raise InvalidValueException("Limit must be between 1 and 50.")
 
         if artist and song:
-            query = f'?q="{song}" by "{artist}"&type=track,album&territory={territory}&limit={limit}'
-        elif artist:
-            query = f'?q="{artist}"&type=artist&territory={territory}&limit={limit}'
+            query = f'"{song}" by "{artist}"'
+            type = "track,album"
+        elif song:
+            query = song
+            type = "track,album"
         else:
-            query = f'?q="{song}"&type=track,album&territory={territory}&limit={limit}'
-        query_url = f"{self._api_url}/search{query}"
+            query = artist
+            type = "artist"
+
+        payload = {
+            "q": query,
+            "type": type,
+            "territory": territory,
+            "limit": limit,
+        }
+        query_url = f"{self._api_url}/search"
 
         await self._refresh_access_token()
         try:
@@ -94,7 +104,8 @@ class AsyncKKBox(AsyncBaseClient):
             logger.debug(f"Query URL: {query_url}")
             assert self._session is not None
             response = await self._session.get(
-                query_url,
+                url=query_url,
+                params=payload,
                 headers=self._authorization_header(),
                 timeout=30,
             )
@@ -130,7 +141,9 @@ class AsyncKKBox(AsyncBaseClient):
                     Artist(
                         id=album.get("artist", {}).get("id"),
                         name=album.get("artist", {}).get("name"),
-                        picture=album.get("artist", {}).get("images", [{}])[-1].get("url"),
+                        picture=album.get("artist", {})
+                        .get("images", [{}])[-1]
+                        .get("url"),
                         url=album.get("artist", {}).get("url"),
                     )
                 ],
@@ -152,7 +165,9 @@ class AsyncKKBox(AsyncBaseClient):
                     Artist(
                         id=item.get("artist", {}).get("id"),
                         name=item.get("artist", {}).get("name"),
-                        picture=item.get("artist", {}).get("images", [{}])[-1].get("url"),
+                        picture=item.get("artist", {})
+                        .get("images", [{}])[-1]
+                        .get("url"),
                         url=item.get("artist", {}).get("url"),
                     )
                 ],
@@ -172,7 +187,9 @@ class AsyncKKBox(AsyncBaseClient):
             artist_obj = Artist(
                 id=item.get("id"),
                 name=item.get("name"),
-                picture=item.get("images", [{}])[-1].get("url") if item.get("images") else None,
+                picture=item.get("images", [{}])[-1].get("url")
+                if item.get("images")
+                else None,
                 url=item.get("url"),
                 service_name=self.service_name,
                 service_url=self.service_url,
