@@ -257,3 +257,14 @@ YouTube Music
     with MusicYT() as music_yt:
         result = music_yt.search("Artist Name", "Song Title")
         print(result)
+
+To retrieve lyrics for a track, use the video ID returned by the search or track methods:
+
+.. code-block:: python
+
+    from yutipy.musicyt import MusicYT
+
+    with MusicYT() as music_yt:
+        lyrics = music_yt.get_lyrics("dQw4w9WgXcQ")
+        if lyrics is not None:
+            print(lyrics.plain or lyrics.synced)

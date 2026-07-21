@@ -1,7 +1,9 @@
+from types import SimpleNamespace
+
 import pytest
 from ytmusicapi import exceptions
 
-from yutipy.models import Album, Track
+from yutipy.models import Album, Lyrics, Track
 from yutipy.exceptions import InvalidValueException
 from yutipy.musicyt import MusicYT
 
@@ -98,6 +100,33 @@ class MockYTMusic:
             "type": "Album",
         }
 
+    def get_watch_playlist(self, videoId=None, playlistId=None, limit=25, radio=False, shuffle=False):
+        return {
+            "lyrics": "MPLYt_testlyrics",
+            "playlistId": "RDAMVMtestvideo1",
+            "tracks": [
+                {
+                    "videoId": "testvideo1",
+                    "title": "Test Song Title",
+                    "artists": [{"name": "Artist One"}],
+                }
+            ],
+        }
+
+    def get_lyrics(self, browse_id, timestamps=False):
+        if timestamps:
+            return {
+                "lyrics": [
+                    SimpleNamespace(text="Line one", start_time=1000, end_time=2000, id=1),
+                    SimpleNamespace(text="Line two", start_time=2100, end_time=3000, id=2),
+                ],
+                "hasTimestamps": True,
+            }
+        return {
+            "lyrics": "Line one\nLine two",
+            "hasTimestamps": False,
+        }
+
 
 @pytest.fixture
 def mock_ytmusic(monkeypatch, musicyt):
@@ -181,6 +210,32 @@ def test_get_album_valid(musicyt, mock_ytmusic):
     assert result.tracks[0].title == "Test Track Title"
     assert result.tracks[0].track_number == 1
     assert result.tracks[0].service_name == "YouTube Music"
+
+
+def test_get_lyrics_valid(musicyt, mock_ytmusic):
+    result = musicyt.get_lyrics("testvideo1")
+
+    assert result is not None
+    assert isinstance(result, Lyrics)
+    assert result.title == "Test Song Title"
+    assert result.artist == "Artist One"
+    assert result.plain == "Line one\nLine two"
+    assert result.synced is None
+    assert result.has_timestamps is False
+
+
+def test_get_lyrics_with_timestamps(musicyt, mock_ytmusic):
+    result = musicyt.get_lyrics("testvideo1", timestamps=True)
+
+    assert result is not None
+    assert isinstance(result, Lyrics)
+    assert result.title == "Test Song Title"
+    assert result.artist == "Artist One"
+    assert result.plain is None
+    assert result.synced is not None
+    assert result.synced.startswith("[00:01.00]Line one")
+    assert "[00:02.10]Line two" in result.synced
+    assert result.has_timestamps is True
 
 
 def test_get_track_handles_server_error(musicyt, monkeypatch):
