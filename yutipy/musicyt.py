@@ -5,7 +5,7 @@ from ytmusicapi import YTMusic, exceptions
 from yutipy.base_clients import BaseService
 from yutipy.exceptions import InvalidValueException
 from yutipy.logger import logger
-from yutipy.models import Album, Artist, Track
+from yutipy.models import Album, Artist, Lyrics, Track
 from yutipy.utils.helpers import is_valid_string
 
 
@@ -274,6 +274,84 @@ class MusicYT(BaseService):
             service_url=self.service_url,
         )
         return album
+
+    def get_lyrics(self, track_id: str, timestamps: bool = False) -> Optional[Lyrics]:
+        """
+        Get lyrics for a track by its YouTube Music video ID.
+
+        Parameters
+        ----------
+        track_id : str
+            The YouTube Music video ID for the track.
+        timestamps : bool, optional
+            Whether to include timing information for the lyrics when available.
+            Default is ``False``.
+
+        Returns
+        -------
+        Lyrics | None
+            A lyrics object containing the text and metadata, or ``None`` if no
+            lyrics are available.
+        """
+        try:
+            logger.info(f"Getting lyrics for track with ID '{track_id}' from YouTube Music")
+            watch_playlist = self.ytmusic.get_watch_playlist(videoId=track_id)
+            browse_id = watch_playlist.get("lyrics") if watch_playlist else None
+            if not browse_id:
+                return None
+
+            result = self.ytmusic.get_lyrics(browse_id, timestamps=timestamps)
+        except exceptions.YTMusicServerError as e:
+            logger.warning(f"Something went wrong while getting lyrics from YTMusic: {e}")
+            return None
+        except exceptions.YTMusicUserError as e:
+            logger.warning(f"Invalid lyrics request for YTMusic: {e}")
+            return None
+
+        if not result:
+            return None
+
+        lyrics_value = result.get("lyrics")
+        has_timestamps = bool(result.get("hasTimestamps", False))
+
+        title = watch_playlist.get("tracks", [{}])[0].get("title") if watch_playlist else None
+        
+        artist = None
+        if watch_playlist:
+            artists = watch_playlist.get("tracks", [{}])[0].get("artists", [])
+            if artists:
+                artist = ", ".join(
+                    artist_item.get("name", "")
+                    for artist_item in artists
+                    if artist_item.get("name")
+                )
+
+        plain = None
+        synced = None
+        if isinstance(lyrics_value, str):
+            plain = lyrics_value
+        elif isinstance(lyrics_value, list):
+            synced_lines = []
+            for line in lyrics_value:
+                text = getattr(line, "text", None)
+                start_ms = getattr(line, "start_time", None)
+                if text and start_ms is not None:
+                    minutes = start_ms // 60000
+                    seconds = (start_ms % 60000) // 1000
+                    hundredths = (start_ms % 1000) // 10
+                    synced_lines.append(
+                        f"[{minutes:02d}:{seconds:02d}.{hundredths:02d}]{text}"
+                    )
+            if synced_lines:
+                synced = "\n".join(synced_lines)
+
+        return Lyrics(
+            title=title,
+            artist=artist,
+            plain=plain,
+            synced=synced,
+            has_timestamps=has_timestamps,
+        )
 
     def _is_relevant_result(
         self,

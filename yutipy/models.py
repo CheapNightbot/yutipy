@@ -77,6 +77,15 @@ class Track(BaseModel):
 
 
 @dataclass
+class Lyrics(BaseModel):
+    title: Optional[str] = None
+    artist: Optional[str] = None
+    plain: Optional[str] = None
+    synced: Optional[str] = None
+    has_timestamps: Optional[bool] = None
+
+
+@dataclass
 class CurrentlyPlaying(Track):
     timestamp: Optional[int] = None
     progress: Optional[int] = None

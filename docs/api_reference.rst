@@ -118,6 +118,13 @@ Track
     :members:
     :noindex:
 
+Lyrics
+------
+
+.. autoclass:: yutipy.models.Lyrics
+    :members:
+    :noindex:
+
 CurrentlyPlaying
 ----------------
 
